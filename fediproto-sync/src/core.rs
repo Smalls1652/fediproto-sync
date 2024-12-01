@@ -14,7 +14,7 @@ pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error:
     let db_connection = &mut SqliteConnection::establish(&database_url)?;
     tracing::info!("Connected to database.");
 
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(15));
+    let mut interval = tokio::time::interval(config.sync_interval);
 
     loop {
         interval.tick().await;

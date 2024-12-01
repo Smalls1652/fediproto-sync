@@ -10,7 +10,8 @@ struct FediProtoSyncEnvVars {
     pub mastodon_access_token: String,
     pub bluesky_pds_server: String,
     pub bluesky_handle: String,
-    pub bluesky_app_password: String
+    pub bluesky_app_password: String,
+    pub sync_interval: std::time::Duration
 }
 
 impl FediProtoSyncEnvVars {
@@ -20,13 +21,20 @@ impl FediProtoSyncEnvVars {
         let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER")?;
         let bluesky_handle = std::env::var("BLUESKY_HANDLE")?;
         let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD")?;
+        let sync_interval = std::time::Duration::from_secs(
+            std::env::var("SYNC_INTERVAL_SECONDS")
+                .unwrap_or("30".to_string())
+                .parse::<u64>()
+                .unwrap()
+        );
 
         Ok(Self {
             mastodon_server,
             mastodon_access_token,
             bluesky_pds_server,
             bluesky_handle,
-            bluesky_app_password
+            bluesky_app_password,
+            sync_interval
         })
     }
 }
