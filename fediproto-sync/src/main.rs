@@ -43,6 +43,9 @@ impl FediProtoSyncEnvVars {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
 
+    let mut sig_term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    let mut sig_quit = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::quit())?;
+
     let trace_subscriber = tracing_subscriber::fmt()
         .compact()
         .with_file(false)
@@ -78,6 +81,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Received Ctrl-C, shutting down...");
             shutdown_send.send(()).unwrap();
         },
+
+        _ = sig_term.recv() => {
+            println!("Received SIGTERM, shutting down...");
+            shutdown_send.send(()).unwrap();
+        },
+
+        _ = sig_quit.recv() => {
+            println!("Received SIGQUIT, shutting down...");
+            shutdown_send.send(()).unwrap();
+        },
+
         _ = shutdown_recv.recv() => {
             println!("Shutting down...");
 
