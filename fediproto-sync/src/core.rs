@@ -1,18 +1,17 @@
 use diesel::{
-    Connection,
-    ExpressionMethods,
-    OptionalExtension,
-    QueryDsl,
-    RunQueryDsl,
-    SqliteConnection
+    sqlite::Sqlite, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
+
+pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations = diesel_migrations::embed_migrations!("./migrations");
 
 pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error::Error>> {
     let database_url = std::env::var("DATABASE_URL")?;
     let db_connection = &mut SqliteConnection::establish(&database_url)?;
     tracing::info!("Connected to database.");
+
+    run_migrations(db_connection).expect("Failed to run migrations.");
 
     let mut interval = tokio::time::interval(config.sync_interval);
 
@@ -31,6 +30,28 @@ pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error:
             }
         }
     }
+}
+
+fn run_migrations(
+    connection: &mut impl diesel_migrations::MigrationHarness<Sqlite>
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let pending_migrations = connection.pending_migrations(MIGRATIONS)?;
+
+    if pending_migrations.is_empty() {
+        tracing::info!("No pending database migrations.");
+        return Ok(());
+    }
+
+    tracing::info!("Applying '{}' pending database migrations...", pending_migrations.len());
+
+    for migration_item in pending_migrations {
+        connection.run_migration(&migration_item)?;
+        tracing::info!("Applied migration '{}'", migration_item.name());
+    }
+
+    tracing::info!("Applied all pending database migrations.");
+
+    Ok(())
 }
 
 async fn run_sync(
@@ -65,11 +86,7 @@ async fn run_sync(
         let initial_post = latest_posts.json[0].clone();
 
         diesel::insert_into(schema::mastodon_posts::table)
-            .values(models::NewMastodonPost::new(
-                &initial_post,
-                None,
-                None
-            ))
+            .values(models::NewMastodonPost::new(&initial_post, None, None))
             .execute(db_connection)?;
 
         tracing::info!("Added initial post to database for future syncs.");

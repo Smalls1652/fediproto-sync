@@ -6,6 +6,8 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+build = "build.rs"
+
 [dependencies]
 chrono = { version = "0.4.38", features = ["serde"] }
 serde = { version = "1.0.215", features = ["derive"] }
@@ -27,3 +29,4 @@ diesel = { version = "2.2.5", features = [
 tokio-util = { version = "0.7.12", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
