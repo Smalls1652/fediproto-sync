@@ -202,7 +202,7 @@ pub async fn generate_post_item(
 
     let (html_parse_tx, html_parse_rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let doc = dom_query::Document::fragment(mastodon_status.content.clone());
+        let doc = mastodon::parse_mastodon_status_html(&mastodon_status.content).unwrap();
 
         let stripped_html = mastodon::parse_mastodon_status(&doc).unwrap();
         let found_links = mastodon::find_links_in_status(&doc).unwrap();
