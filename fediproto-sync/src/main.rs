@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = FediProtoSyncEnvVars::new()?;
 
     tokio::spawn(async move {
-        core::run(config).await;
+        core::run(config).await.unwrap();
     });
 
     tokio::select! {
