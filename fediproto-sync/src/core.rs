@@ -7,7 +7,7 @@ use diesel::{
     SqliteConnection
 };
 
-use crate::{bsky, mastodon::MastodonApiExtensions, schema, FediProtoSyncEnvVars};
+use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
 
 pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error::Error>> {
     let database_url = std::env::var("DATABASE_URL")?;
@@ -33,7 +33,10 @@ pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error:
     }
 }
 
-async fn run_sync(config: FediProtoSyncEnvVars, db_connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_sync(
+    config: FediProtoSyncEnvVars,
+    db_connection: &mut SqliteConnection
+) -> Result<(), Box<dyn std::error::Error>> {
     let mastodon_client = megalodon::generator(
         megalodon::SNS::Mastodon,
         format!("https://{}", config.mastodon_server.clone()),
@@ -53,10 +56,26 @@ async fn run_sync(config: FediProtoSyncEnvVars, db_connection: &mut SqliteConnec
         .optional()?;
 
     let mut latest_posts = mastodon_client
-        .get_latest_posts(&account.json.id, last_synced_post_id)
+        .get_latest_posts(&account.json.id, last_synced_post_id.clone())
         .await?;
-    
+
     latest_posts.json.reverse();
+
+    if last_synced_post_id.clone().is_none() && latest_posts.json.len() > 0 {
+        let initial_post = latest_posts.json[0].clone();
+
+        diesel::insert_into(schema::mastodon_posts::table)
+            .values(models::NewMastodonPost::new(
+                &initial_post,
+                None,
+                None
+            ))
+            .execute(db_connection)?;
+
+        tracing::info!("Added initial post to database for future syncs.");
+
+        return Ok(());
+    }
 
     tracing::info!(
         "Retrieved '{}' new posts from Mastodon.",
