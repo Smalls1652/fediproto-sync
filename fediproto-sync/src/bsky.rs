@@ -277,7 +277,12 @@ pub async fn generate_post_item(
             tracing::info!("Post has no embeds, adding external embed for link '{}'", first_link);
             let link_thumbnail_url = link_metadata["image"].as_str();
             let link_thumbnail_bytes = match link_thumbnail_url {
-                Some(link_thumbnail_url) => get_link_thumbnail(link_thumbnail_url).await?,
+                Some(link_thumbnail_url) => {
+                    match link_thumbnail_url == "" {
+                        true => Vec::new(),
+                        false => get_link_thumbnail(link_thumbnail_url).await?
+                    }
+                },
                 None => Vec::new()
             };
 
