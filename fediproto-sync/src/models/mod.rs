@@ -3,6 +3,7 @@ use diesel::prelude::{Insertable, Queryable, Selectable};
 use megalodon::entities::Status;
 
 #[derive(Queryable, Selectable)]
+#[allow(dead_code)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct MastodonPost {
@@ -71,6 +72,7 @@ impl NewMastodonPost {
 }
 
 #[derive(Queryable, Selectable, Clone)]
+#[allow(dead_code)]
 #[diesel(table_name = crate::schema::synced_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct SyncedPost {
