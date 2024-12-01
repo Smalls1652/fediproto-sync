@@ -1,0 +1,14 @@
+target/
+local/
+.forgejo/
+.github/
+.vscode/
+tools/
+
+.env
+*.env
+
+.editorconfig
+.gitignore
+.git-branches.toml
+rustfmt.toml
