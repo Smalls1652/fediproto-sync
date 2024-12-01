@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+name: Build
+on:
+  push:
+    tags-ignore: ["v*.*.*", "v*.*.*-*"]
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  packages: read
+
+jobs:
+  build:
+    name: Build project
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: true
+      matrix:
+        package_name: ["fediproto-sync"]
+        runs-on: ["ubuntu-latest", "ubuntu-latest-arm64"]
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: https://git.smalls.online/smallsonline-actions/setup-rs@v1
+
+      - name: Build project
+        run: cargo build --package ${{ matrix.package_name }} --verbose
