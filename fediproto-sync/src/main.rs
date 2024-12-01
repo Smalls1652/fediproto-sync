@@ -54,7 +54,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let env_vars_path = root_app_dir.join(format!("{}.env", environment_name.to_lowercase()));
-    let _ = dotenvy::from_path(env_vars_path)?;
+
+    if env_vars_path.exists() {
+        let _ = dotenvy::from_path(env_vars_path)?;
+    }
 
     let config = FediProtoSyncEnvVars::new()?;
 
