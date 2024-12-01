@@ -1,0 +1,12 @@
+# Cargo files
+debug/
+target/
+#Cargo.lock
+
+# macOS
+.DS_Store
+
+.env
+*.env
+!sample.env
+.local/

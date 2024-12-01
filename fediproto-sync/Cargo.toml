@@ -1,0 +1,29 @@
+[package]
+name = "fediproto-sync"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+chrono = { version = "0.4.38", features = ["serde"] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+reqwest = { version = "0.12.9", features = ["json"] }
+atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", features = [
+    "apicalls",
+] }
+tokio = { version = "1.41.1", features = ["full"] }
+megalodon = "0.14.1"
+dotenvy = "0.15.7"
+dom_query = "0.10.0"
+tendril = "0.4.3"
+diesel = { version = "2.2.5", features = [
+    "chrono",
+    "returning_clauses_for_sqlite_3_35",
+    "sqlite",
+] }
+tokio-util = { version = "0.7.12", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"

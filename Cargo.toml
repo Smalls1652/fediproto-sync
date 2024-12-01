@@ -1,0 +1,7 @@
+[workspace]
+members = ["fediproto-sync"]
+resolver = "2"
+
+package.authors = []
+package.homepage = ""
+package.repository = ""

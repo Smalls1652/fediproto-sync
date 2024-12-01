@@ -1,0 +1,101 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build package",
+      "detail": "Build a package in the workspace",
+      "icon": {
+        "id": "tools",
+        "color": "terminal.ansiGreen"
+      },
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-File",
+        "${workspaceFolder}/tools/Build-Package.ps1",
+        "-PackageName",
+        "${input:packageName}",
+        "-BuildProfile",
+        "${input:buildProfile}",
+        "-Verbose"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": "$rustc"
+    },
+    {
+      "label": "Clean package",
+      "detail": "Clean a package in the workspace",
+      "icon": {
+        "id": "trash",
+        "color": "terminal.ansiYellow"
+      },
+      "type": "process",
+      "command": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-File",
+        "${workspaceFolder}/tools/Clean-Package.ps1",
+        "-PackageName",
+        "${input:packageName}",
+        "-BuildProfile",
+        "${input:buildProfile}",
+        "-Verbose"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": "$rustc"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "packageName",
+      "type": "pickString",
+      "description": "Select a package to build",
+      "default": "fediproto-sync",
+      "options": [
+        {
+          "label": "fediproto-sync",
+          "value": "fediproto-sync"
+        }
+      ]
+    },
+    {
+      "id": "buildProfile",
+      "description": "Select the build profile",
+      "type": "pickString",
+      "default": "Debug",
+      "options": [
+        {
+          "label": "Debug",
+          "value": "Debug"
+        },
+        {
+          "label": "Release",
+          "value": "Release"
+        }
+      ]
+    }
+  ]
+}
