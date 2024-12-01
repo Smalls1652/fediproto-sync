@@ -17,7 +17,6 @@ atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", featu
     "apicalls",
 ] }
 tokio = { version = "1.41.1", features = [
-    "io-util",
     "rt",
     "macros",
     "signal",
@@ -34,7 +33,6 @@ diesel = { version = "2.2.5", features = [
     "sqlite",
 ] }
 tokio-util = { version = "0.7.12", features = [
-    "io-util",
     "rt",
     "time"
 ] }
