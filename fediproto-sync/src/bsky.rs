@@ -86,8 +86,10 @@ pub async fn sync_post(
     bsky_auth: &BlueSkyAuthentication,
     db_connection: &mut diesel::SqliteConnection,
     mastodon_account: &megalodon::entities::account::Account,
-    mastodon_status: megalodon::entities::Status
+    mastodon_status: &megalodon::entities::Status
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let mastodon_status = mastodon_status.clone();
+
     let mut post_item = generate_post_item(
         &bsky_auth.host_name,
         &bsky_auth.auth_config,

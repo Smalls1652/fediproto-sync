@@ -111,7 +111,17 @@ async fn run_sync(
 
     for post_item in latest_posts.json {
         tracing::info!("Processing post '{}'", post_item.id);
-        bsky::sync_post(&bsky_auth, db_connection, &account.json, post_item).await?;
+
+        let sync_result = bsky::sync_post(&bsky_auth, db_connection, &account.json, &post_item).await;
+
+        match sync_result {
+            Ok(_) => {
+                tracing::info!("Post '{}' processed successfully.", post_item.id);
+            }
+            Err(e) => {
+                tracing::error!("Failed to process post '{}': {:#?}", post_item.id, e);
+            }
+        }
     }
 
     Ok(())
