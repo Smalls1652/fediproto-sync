@@ -6,9 +6,19 @@ use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSync
 
 pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations = diesel_migrations::embed_migrations!("./migrations");
 
-pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), Box<dyn std::error::Error>> {
-    let database_url = std::env::var("DATABASE_URL")?;
-    let db_connection = &mut SqliteConnection::establish(&database_url)?;
+pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), crate::error::Error> {
+    let database_url = std::env::var("DATABASE_URL").map_err(|e| crate::error::Error::with_source(
+        "Failed to read DATABASE_URL environment variable.",
+        crate::error::ErrorKind::EnvironmentVariableError,
+        Box::new(e)
+    ))?;
+
+    let db_connection = &mut SqliteConnection::establish(&database_url)
+        .map_err(|e| crate::error::Error::with_source(
+            "Failed to connect to database.",
+            crate::error::ErrorKind::DatabaseConnectionError,
+            Box::new(e)
+        ))?;
     tracing::info!("Connected to database.");
 
     run_migrations(db_connection).expect("Failed to run migrations.");
