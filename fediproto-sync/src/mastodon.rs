@@ -61,13 +61,38 @@ pub fn parse_mastodon_status(
 }
 
 pub fn find_links_in_status(
-    parsed_html: &dom_query::Document
+    parsed_html: &dom_query::Document,
+    tags: &Vec<megalodon::entities::status::Tag>
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut found_links = Vec::new();
 
     for node in parsed_html.select("a").iter() {
-        found_links.push(node.attr("href").unwrap().to_string());
+        let href = node.attr("href").unwrap().to_string();
+
+        if tags.iter().any(|tag| &tag.url.to_lowercase() == &href.to_lowercase()) {
+            tracing::info!("Ignoring tag link: {}", href);
+            continue;
+        }
+
+        found_links.push(href);
     }
 
     Ok(found_links)
+}
+
+pub fn find_tags_in_status(
+    parsed_html: &dom_query::Document,
+    tags: &Vec<megalodon::entities::status::Tag>
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut found_tags = Vec::new();
+
+    for node in parsed_html.select("a").iter() {
+        let href = node.attr("href").unwrap().to_string();
+
+        if tags.iter().any(|tag| &tag.url.to_lowercase() == &href.to_lowercase()) {
+            found_tags.push(node.text().to_string());
+        }
+    }
+
+    Ok(found_tags)
 }

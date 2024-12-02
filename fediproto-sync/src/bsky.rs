@@ -5,7 +5,13 @@ use atprotolib_rs::{
             self,
             embed::{ExternalEmbed, ImageEmbed},
             feed::{PostEmbedExternal, PostEmbedImage, PostEmbeds},
-            richtext::{ByteSlice, RichTextFacet, RichTextFacetFeature, RichTextFacetLink}
+            richtext::{
+                ByteSlice,
+                RichTextFacet,
+                RichTextFacetFeature,
+                RichTextFacetLink,
+                RichTextFacetTag
+            }
         },
         com_atproto::{self, server::CreateSessionRequest}
     }
@@ -16,17 +22,20 @@ use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
 
 struct ParsedHtml {
     stripped_html: String,
-    found_links: Vec<String>
+    found_links: Vec<String>,
+    found_tags: Vec<String>
 }
 
 impl ParsedHtml {
     pub fn new(
         stripped_html: String,
-        found_links: Vec<String>
+        found_links: Vec<String>,
+        found_tags: Vec<String>
     ) -> Self {
         Self {
             stripped_html,
-            found_links
+            found_links,
+            found_tags
         }
     }
 }
@@ -162,11 +171,13 @@ pub async fn sync_post(
     match apply_write_result {
         Ok(result) => {
             let post_result = match result.results.first().unwrap() {
-                com_atproto::repo::ApplyWritesResponseResults::CreateResult(create_result) => create_result,
-        
+                com_atproto::repo::ApplyWritesResponseResults::CreateResult(create_result) => {
+                    create_result
+                }
+
                 _ => panic!("Unexpected response from Bluesky")
             };
-        
+
             diesel::insert_into(schema::mastodon_posts::table)
                 .values(models::NewMastodonPost::new(
                     &mastodon_status,
@@ -174,7 +185,7 @@ pub async fn sync_post(
                     previous_post_id
                 ))
                 .execute(db_connection)?;
-        
+
             diesel::insert_into(schema::synced_posts::table)
                 .values(models::NewSyncedPost::new(
                     &mastodon_status.id,
@@ -182,11 +193,11 @@ pub async fn sync_post(
                     &post_result.uri
                 ))
                 .execute(db_connection)?;
-        
+
             tracing::info!("Synced post '{}' to BlueSky.", mastodon_status.id);
-        
+
             Ok(())
-        },
+        }
 
         Err(error) => {
             tracing::error!("Error syncing post '{}': {}", mastodon_status.id, error);
@@ -202,14 +213,24 @@ pub async fn generate_post_item(
 ) -> Result<app_bsky::feed::Post, Box<dyn std::error::Error>> {
     let mastodon_status = mastodon_status.clone();
 
+    let status_tags = mastodon_status.tags.clone();
+
     let (html_parse_tx, html_parse_rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let doc = mastodon::parse_mastodon_status_html(&mastodon_status.content).unwrap();
 
         let stripped_html = mastodon::parse_mastodon_status(&doc).unwrap();
-        let found_links = mastodon::find_links_in_status(&doc).unwrap();
 
-        let parsed_html = ParsedHtml::new(stripped_html, found_links);
+        let found_links = mastodon::find_links_in_status(&doc, &status_tags).unwrap();
+
+        // I know it seems a little weird to find tags in the status, since we already
+        // have the tags in the status response from Mastodon, but it's
+        // necessary to find the tags in the status content itself because the
+        // tags in the status response are all lowercase. That isn't 100% a big deal,
+        // but it helps keep things consistent between the two platforms.
+        let found_tags = mastodon::find_tags_in_status(&doc, &status_tags).unwrap();
+
+        let parsed_html = ParsedHtml::new(stripped_html, found_links, found_tags);
 
         html_parse_tx.send(parsed_html).unwrap();
     });
@@ -218,11 +239,18 @@ pub async fn generate_post_item(
 
     let stripped_html = parsed_html.stripped_html.clone();
     let found_links = parsed_html.found_links.clone();
+    let found_tags = parsed_html.found_tags.clone();
 
     let mut post_item = app_bsky::feed::Post::new(&stripped_html, mastodon_status.created_at, None);
 
+    let mut richtext_facets = Vec::new();
+
     if mastodon_status.media_attachments.len() > 0 {
-        tracing::info!("Found '{}' media attachments in post '{}'", mastodon_status.media_attachments.len(), mastodon_status.id);
+        tracing::info!(
+            "Found '{}' media attachments in post '{}'",
+            mastodon_status.media_attachments.len(),
+            mastodon_status.id
+        );
         let mut image_attachments = Vec::new();
 
         let media_attachment_client = reqwest::Client::new();
@@ -269,21 +297,45 @@ pub async fn generate_post_item(
         }));
     }
 
+    if found_tags.len() > 0 {
+        for tag in found_tags {
+            let tag_start_index = stripped_html.find(tag.as_str()).unwrap();
+            let tag_end_index = tag_start_index + tag.len();
+
+            let richtext_facet_tag = RichTextFacet {
+                index: ByteSlice {
+                    byte_start: tag_start_index as i64,
+                    byte_end: tag_end_index as i64
+                },
+                features: vec![RichTextFacetFeature::Tag(RichTextFacetTag {
+                    tag: tag.trim_start_matches("#").to_string()
+                })]
+            };
+
+            richtext_facets.push(richtext_facet_tag);
+        }
+    }
+
     if found_links.len() != 0 {
-        tracing::info!("Found '{}' links in post '{}'", found_links.len(), mastodon_status.id);
+        tracing::info!(
+            "Found '{}' links in post '{}'",
+            found_links.len(),
+            mastodon_status.id
+        );
         let first_link = found_links[0].clone();
 
         let link_metadata = get_link_metadata(&first_link).await?;
 
         if post_item.embed.is_none() {
-            tracing::info!("Post has no embeds, adding external embed for link '{}'", first_link);
+            tracing::info!(
+                "Post has no embeds, adding external embed for link '{}'",
+                first_link
+            );
             let link_thumbnail_url = link_metadata["image"].as_str();
             let link_thumbnail_bytes = match link_thumbnail_url {
-                Some(link_thumbnail_url) => {
-                    match link_thumbnail_url == "" {
-                        true => Vec::new(),
-                        false => get_link_thumbnail(link_thumbnail_url).await?
-                    }
+                Some(link_thumbnail_url) => match link_thumbnail_url == "" {
+                    true => Vec::new(),
+                    false => get_link_thumbnail(link_thumbnail_url).await?
                 },
                 None => Vec::new()
             };
@@ -309,17 +361,23 @@ pub async fn generate_post_item(
         let link_start_index = stripped_html.find(first_link.as_str()).unwrap();
         let link_end_index = link_start_index + first_link.len();
 
-        let rich_text_facet_link =
-            RichTextFacetFeature::Link(RichTextFacetLink { uri: first_link });
-
-        post_item.facets = Some(vec![RichTextFacet {
+        let richtext_facet_link = RichTextFacet {
             index: ByteSlice {
                 byte_start: link_start_index as i64,
                 byte_end: link_end_index as i64
             },
-            features: vec![rich_text_facet_link]
-        }]);
+            features: vec![RichTextFacetFeature::Link(RichTextFacetLink {
+                uri: first_link
+            })]
+        };
+
+        richtext_facets.push(richtext_facet_link);
     }
+
+    post_item.facets = match richtext_facets.len() > 0 {
+        true => Some(richtext_facets),
+        false => None
+    };
 
     Ok(post_item)
 }
