@@ -191,50 +191,35 @@ pub async fn generate_post_item(
     auth_config: &ApiAuthConfig,
     mastodon_status: &megalodon::entities::Status
 ) -> Result<app_bsky::feed::Post, Box<dyn std::error::Error>> {
-    let mastodon_status = mastodon_status.clone();
-
-    let status_tags = mastodon_status.tags.clone();
-
+    let (mastodon_status_send, mastodon_status_recv) = std::sync::mpsc::channel();
     let (html_parse_tx, html_parse_rx) = std::sync::mpsc::channel();
+
+    mastodon_status_send.send(mastodon_status.clone()).unwrap();
     std::thread::spawn(move || {
-        let doc = mastodon::parse_mastodon_status_html(&mastodon_status.content).unwrap();
+        let recieved_status = mastodon_status_recv.recv().unwrap();
 
-        let stripped_html = mastodon::parse_mastodon_status(&doc).unwrap();
+        let parsed_status = mastodon::ParsedMastodonPost::from_mastodon_status(&recieved_status).unwrap();
 
-        let found_links = mastodon::find_links_in_status(&doc, &status_tags).unwrap();
-
-        // I know it seems a little weird to find tags in the status, since we already
-        // have the tags in the status response from Mastodon, but it's
-        // necessary to find the tags in the status content itself because the
-        // tags in the status response are all lowercase. That isn't 100% a big deal,
-        // but it helps keep things consistent between the two platforms.
-        let found_tags = mastodon::find_tags_in_status(&doc, &status_tags).unwrap();
-
-        let parsed_html = ParsedHtml::new(stripped_html, found_links, found_tags);
-
-        html_parse_tx.send(parsed_html).unwrap();
+        html_parse_tx.send(parsed_status).unwrap();
     });
 
-    let parsed_html = html_parse_rx.recv().unwrap();
+    let mut parsed_status = html_parse_rx.recv().unwrap();
+    parsed_status.truncate_post_content()?;
 
-    let stripped_html = parsed_html.stripped_html.clone();
-    let found_links = parsed_html.found_links.clone();
-    let found_tags = parsed_html.found_tags.clone();
-
-    let mut post_item = app_bsky::feed::Post::new(&stripped_html, mastodon_status.created_at, None);
+    let mut post_item = app_bsky::feed::Post::new(&parsed_status.stripped_html, parsed_status.mastodon_status.created_at, None);
 
     let mut richtext_facets = Vec::new();
 
-    if mastodon_status.media_attachments.len() > 0 {
+    if parsed_status.mastodon_status.media_attachments.len() > 0 {
         tracing::info!(
             "Found '{}' media attachments in post '{}'",
-            mastodon_status.media_attachments.len(),
-            mastodon_status.id
+            parsed_status.mastodon_status.media_attachments.len(),
+            parsed_status.mastodon_status.id
         );
         let mut image_attachments = Vec::new();
 
         let media_attachment_client = reqwest::Client::new();
-        for media_attachment in mastodon_status.media_attachments {
+        for media_attachment in parsed_status.mastodon_status.media_attachments {
             if media_attachment.r#type != megalodon::entities::attachment::AttachmentType::Image {
                 tracing::warn!(
                     "Skipping non-image media attachment '{}'",
@@ -277,9 +262,9 @@ pub async fn generate_post_item(
         }));
     }
 
-    if found_tags.len() > 0 {
-        for tag in found_tags {
-            let tag_start_index = stripped_html.find(tag.as_str()).unwrap();
+    if parsed_status.found_tags.len() > 0 {
+        for tag in parsed_status.found_tags {
+            let tag_start_index = parsed_status.stripped_html.find(tag.as_str()).unwrap();
             let tag_end_index = tag_start_index + tag.len();
 
             let richtext_facet_tag = RichTextFacet {
@@ -296,13 +281,13 @@ pub async fn generate_post_item(
         }
     }
 
-    if found_links.len() != 0 {
+    if parsed_status.found_links.len() > 0 {
         tracing::info!(
             "Found '{}' links in post '{}'",
-            found_links.len(),
+            parsed_status.found_links.len(),
             mastodon_status.id
         );
-        let first_link = found_links[0].clone();
+        let first_link = parsed_status.found_links[0].clone();
 
         let link_metadata = get_link_metadata(&first_link).await?;
 
@@ -311,34 +296,35 @@ pub async fn generate_post_item(
                 "Post has no embeds, adding external embed for link '{}'",
                 first_link
             );
-            let link_thumbnail_url = link_metadata["image"].as_str();
-            let link_thumbnail_bytes = match link_thumbnail_url {
-                Some(link_thumbnail_url) => match link_thumbnail_url == "" {
-                    true => Vec::new(),
+            let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
+            let link_thumbnail_bytes = match link_thumbnail_url == "" {
+                    true => vec![],
                     false => get_link_thumbnail(link_thumbnail_url).await?
-                },
-                None => Vec::new()
             };
 
-            let blob_upload_response = com_atproto::repo::upload_blob(
-                host_name,
-                auth_config,
-                link_thumbnail_bytes,
-                Some("image/jpeg")
-            )
-            .await?;
+
+            let blob_item = match link_thumbnail_bytes.len() > 0 {
+                true => Some(com_atproto::repo::upload_blob(
+                    host_name,
+                    auth_config,
+                    link_thumbnail_bytes,
+                    Some("image/jpeg")
+                ).await?.blob),
+
+                _ => None
+            };
 
             post_item.embed = Some(PostEmbeds::External(PostEmbedExternal {
                 external: ExternalEmbed {
                     uri: link_metadata["url"].as_str().unwrap().to_string(),
                     title: link_metadata["title"].as_str().unwrap().to_string(),
                     description: link_metadata["description"].as_str().unwrap().to_string(),
-                    thumb: blob_upload_response.blob
+                    thumb: blob_item
                 }
             }));
         }
 
-        let link_start_index = stripped_html.find(first_link.as_str()).unwrap();
+        let link_start_index = parsed_status.stripped_html.find(first_link.as_str()).unwrap();
         let link_end_index = link_start_index + first_link.len();
 
         let richtext_facet_link = RichTextFacet {
