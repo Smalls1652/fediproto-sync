@@ -2,35 +2,72 @@ use chrono::NaiveDateTime;
 use diesel::prelude::{Insertable, Queryable, Selectable};
 use megalodon::entities::Status;
 
+/// Represents a Mastodon post in the `mastodon_posts` table.
 #[derive(Queryable, Selectable)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct MastodonPost {
+    /// A unique identifier for the Mastodon post in the database.
     pub id: i32,
+
+    /// The Mastodon account ID that created the post.
     pub account_id: String,
+
+    /// The Mastodon post ID.
     pub post_id: String,
+
+    /// The date and time the post was created.
     pub created_at: NaiveDateTime,
+
+    /// Whether the post is a thread post.
     pub is_thread_post: bool,
+
+    /// The previous post ID in the thread, if any.
     pub previous_post_id: Option<String>,
+
+    /// The BlueSky post ID when the post was synced, if any.
     pub bsky_post_id: Option<String>,
+
+    /// The root Mastodon post ID in the thread, if any.
     pub root_mastodon_post_id: Option<String>
 }
 
+/// Represents a new Mastodon post to insert into the `mastodon_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewMastodonPost {
+    /// The Mastodon account ID that created the post.
     pub account_id: String,
+
+    /// The Mastodon post ID.
     pub post_id: String,
+
+    /// The date and time the post was created.
     pub created_at: NaiveDateTime,
+
+    /// Whether the post is a thread post.
     pub is_thread_post: bool,
+
+    /// The previous post ID in the thread, if any.
     pub previous_post_id: Option<String>,
+
+    /// The BlueSky post ID when the post was synced, if any.
     pub bsky_post_id: Option<String>,
+
+    /// The root Mastodon post ID in the thread, if any.
     pub root_mastodon_post_id: Option<String>
 }
 
 impl NewMastodonPost {
+    /// Create a new instance of the `NewMastodonPost` struct.
+    /// 
+    /// ## Arguments
+    /// 
+    /// - `post` - The Mastodon post to create a new post from.
+    /// - `bsky_post_id` - The BlueSky post ID when the post was synced, if any.
+    /// - `root_mastodon_post_id` - The root Mastodon post ID in the thread, if any.
     pub fn new(
         post: &Status,
         bsky_post_id: Option<String>,
@@ -71,27 +108,48 @@ impl NewMastodonPost {
     }
 }
 
+/// Represents a synced post in the `synced_posts` table.
 #[derive(Queryable, Selectable, Clone)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::synced_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct SyncedPost {
+    /// A unique identifier for the synced post in the database.
     pub id: i32,
+
+    /// The Mastodon post ID.
     pub mastodon_post_id: String,
+
+    /// The CID of the BlueSky post.
     pub bsky_post_cid: String,
+
+    /// The URI of the BlueSky post.
     pub bsky_post_uri: String
 }
 
+/// Represents a new synced post to insert into the `synced_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::synced_posts)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewSyncedPost {
+    /// The Mastodon post ID.
     pub mastodon_post_id: String,
+
+    /// The CID of the BlueSky post.
     pub bsky_post_cid: String,
+
+    /// The URI of the BlueSky post.
     pub bsky_post_uri: String
 }
 
 impl NewSyncedPost {
+    /// Create a new instance of the `NewSyncedPost` struct.
+    /// 
+    /// ## Arguments
+    /// 
+    /// - `mastodon_post_id` - The Mastodon post ID.
+    /// - `bsky_post_cid` - The CID of the BlueSky post.
+    /// - `bsky_post_uri` - The URI of the BlueSky post.
     pub fn new(
         mastodon_post_id: &str,
         bsky_post_cid: &str,

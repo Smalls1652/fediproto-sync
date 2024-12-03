@@ -1,30 +1,50 @@
 use diesel::{
-    sqlite::Sqlite, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SqliteConnection
+    sqlite::Sqlite,
+    Connection,
+    ExpressionMethods,
+    OptionalExtension,
+    QueryDsl,
+    RunQueryDsl,
+    SqliteConnection
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
 
-pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations = diesel_migrations::embed_migrations!("./migrations");
+pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations =
+    diesel_migrations::embed_migrations!("./migrations");
 
+/// Run the main sync loop.
+///
+/// This function will run the main sync loop for the FediProtoSync application.
+/// It will connect to the database, run any pending migrations, and then run
+/// the sync loop at the specified interval.
+///
+/// ## Arguments
+///
+/// - `config` - The environment variables for the FediProtoSync application.
 pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), crate::error::Error> {
-    let database_url = std::env::var("DATABASE_URL").map_err(|e| crate::error::Error::with_source(
-        "Failed to read DATABASE_URL environment variable.",
-        crate::error::ErrorKind::EnvironmentVariableError,
-        Box::new(e)
-    ))?;
+    // TODO: Should probably add this to the `FediProtoSyncEnvVars` struct.
+    let database_url = std::env::var("DATABASE_URL").map_err(|e| {
+        crate::error::Error::with_source(
+            "Failed to read DATABASE_URL environment variable.",
+            crate::error::ErrorKind::EnvironmentVariableError,
+            Box::new(e)
+        )
+    })?;
 
-    let db_connection = &mut SqliteConnection::establish(&database_url)
-        .map_err(|e| crate::error::Error::with_source(
+    let db_connection = &mut SqliteConnection::establish(&database_url).map_err(|e| {
+        crate::error::Error::with_source(
             "Failed to connect to database.",
             crate::error::ErrorKind::DatabaseConnectionError,
             Box::new(e)
-        ))?;
+        )
+    })?;
     tracing::info!("Connected to database.");
 
     run_migrations(db_connection).expect("Failed to run migrations.");
 
+    // Run the sync loop.
     let mut interval = tokio::time::interval(config.sync_interval);
-
     loop {
         interval.tick().await;
 
@@ -42,6 +62,11 @@ pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), crate::error::Error
     }
 }
 
+/// Run any pending database migrations.
+/// 
+/// ## Arguments
+/// 
+/// - `connection` - The database connection to run the migrations on.
 fn run_migrations(
     connection: &mut impl diesel_migrations::MigrationHarness<Sqlite>
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -52,7 +77,10 @@ fn run_migrations(
         return Ok(());
     }
 
-    tracing::info!("Applying '{}' pending database migrations...", pending_migrations.len());
+    tracing::info!(
+        "Applying '{}' pending database migrations...",
+        pending_migrations.len()
+    );
 
     for migration_item in pending_migrations {
         connection.run_migration(&migration_item)?;
@@ -64,10 +92,17 @@ fn run_migrations(
     Ok(())
 }
 
+/// Run the Mastodon to BlueSky sync.
+/// 
+/// ## Arguments
+/// 
+/// - `config` - The environment variables for the FediProtoSync application.
+/// - `db_connection` - The database connection to use for the sync.
 async fn run_sync(
     config: FediProtoSyncEnvVars,
     db_connection: &mut SqliteConnection
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Create the Mastodon client and authenticate.
     let mastodon_client = megalodon::generator(
         megalodon::SNS::Mastodon,
         format!("https://{}", config.mastodon_server.clone()),
@@ -77,21 +112,31 @@ async fn run_sync(
     let account = mastodon_client.verify_account_credentials().await?;
     tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
 
+    // Authenticate to BlueSky.
     let bsky_auth = bsky::create_session_token(&config).await?;
     tracing::info!("Authenticated to BlueSky as '{}'", bsky_auth.session.handle);
 
+    // Get the last synced post ID, if any.
     let last_synced_post_id = schema::mastodon_posts::table
         .order(schema::mastodon_posts::created_at.desc())
         .select(schema::mastodon_posts::post_id)
         .first::<String>(db_connection)
         .optional()?;
 
+    // Get the latest posts from Mastodon.
+    // If there is no last synced post ID, we will only get the latest post.
+    // Otherwise, we will get all posts since the last synced post.
     let mut latest_posts = mastodon_client
         .get_latest_posts(&account.json.id, last_synced_post_id.clone())
         .await?;
 
+    // Reverse the posts so we process them in ascending order.
     latest_posts.json.reverse();
 
+    // If there is no last synced post ID, we need to add the initial post to the database.
+    // This is so we have a starting point for future syncs.
+    // 
+    // Note: The initial post **is not synced** to BlueSky.
     if last_synced_post_id.clone().is_none() && latest_posts.json.len() > 0 {
         let initial_post = latest_posts.json[0].clone();
 
@@ -109,10 +154,12 @@ async fn run_sync(
         latest_posts.json.len()
     );
 
+    // Process each new post and sync it to BlueSky.
     for post_item in latest_posts.json {
         tracing::info!("Processing post '{}'", post_item.id);
 
-        let sync_result = bsky::sync_post(&bsky_auth, db_connection, &account.json, &post_item).await;
+        let sync_result =
+            bsky::sync_post(&bsky_auth, db_connection, &account.json, &post_item).await;
 
         match sync_result {
             Ok(_) => {

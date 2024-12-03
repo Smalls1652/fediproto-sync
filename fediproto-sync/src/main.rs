@@ -5,17 +5,30 @@ mod mastodon;
 mod models;
 mod schema;
 
+/// The environment variable values for configuring the FediProtoSync application.
 #[derive(Debug, Clone)]
 struct FediProtoSyncEnvVars {
+    /// The Mastodon server URL to connect to.
     pub mastodon_server: String,
+
+    /// The Mastodon access token to use for authentication.
     pub mastodon_access_token: String,
+
+    /// The BlueSky PDS URL to connect to.
     pub bluesky_pds_server: String,
+
+    /// The BlueSky handle to use for authentication.
     pub bluesky_handle: String,
+
+    /// The BlueSky app password to use for authentication.
     pub bluesky_app_password: String,
+
+    /// The interval, in seconds, to sync posts.
     pub sync_interval: std::time::Duration
 }
 
 impl FediProtoSyncEnvVars {
+    /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
         let mastodon_server = std::env::var("MASTODON_SERVER")
             .map_err(|e| {
@@ -85,15 +98,18 @@ impl FediProtoSyncEnvVars {
     }
 }
 
+/// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Set up unbounded channels for shutdown and error signals.
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
-
     let (sig_error_send, mut sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
 
+    // Set up signal handlers for SIGTERM and SIGQUIT.
     let mut sig_term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     let mut sig_quit = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::quit())?;
 
+    // Set up tracing subscriber for logging.
     let trace_subscriber = tracing_subscriber::fmt()
         .compact()
         .with_file(false)
@@ -101,11 +117,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_target(false)
         .with_thread_ids(true)
         .finish();
-
     tracing::subscriber::set_global_default(trace_subscriber)?;
 
+    // Load environment variables from the .env file for the specified environment, if it exists.
     let root_app_dir = std::env::current_dir()?;
-
     let environment_name_result = std::env::var("FEDIPROTO_SYNC_ENVIRONMENT");
     let environment_name = match environment_name_result {
         Ok(environment_name) => environment_name,
@@ -129,6 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    // Spawn the core loop for running the syncs.
     tokio::spawn(async move {
         let result = core::run(config).await;
 
@@ -144,6 +160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // Wait for signals to be received.
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
             tracing::warn!("Received Ctrl+C, shutting down...");

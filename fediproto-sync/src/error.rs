@@ -1,16 +1,26 @@
 
+/// Error value for FediProtoSync.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Error {
+    /// A message describing the error.
     pub message: String,
 
+    /// The kind of error that occurred.
     pub kind: ErrorKind,
 
+    /// The source of the error, if any.
     pub source: Option<Box<dyn std::error::Error>>
 }
 
 #[allow(dead_code)]
 impl Error {
+    /// Create a new error.
+    /// 
+    /// ## Arguments
+    /// 
+    /// - `message` - A message describing the error.
+    /// - `kind` - The kind of error that occurred.
     pub fn new(
         message: &str,
         kind: ErrorKind
@@ -22,6 +32,13 @@ impl Error {
         }
     }
 
+    /// Create a new error with a source.
+    /// 
+    /// ## Arguments
+    /// 
+    /// - `message` - A message describing the error.
+    /// - `kind` - The kind of error that occurred.
+    /// - `source` - The source of the error.
     pub fn with_source(
         message: &str,
         kind: ErrorKind,
@@ -50,10 +67,14 @@ impl std::error::Error for Error {
     }
 }
 
+/// The kind of error that occurred.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ErrorKind {
+    /// An error occurred while trying to read an environment variable.
     EnvironmentVariableError,
+
+    /// An error occurred while trying to connect to the database.
     DatabaseConnectionError
 }
 
