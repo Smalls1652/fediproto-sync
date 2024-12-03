@@ -20,26 +20,6 @@ use diesel::*;
 
 use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
 
-struct ParsedHtml {
-    stripped_html: String,
-    found_links: Vec<String>,
-    found_tags: Vec<String>
-}
-
-impl ParsedHtml {
-    pub fn new(
-        stripped_html: String,
-        found_links: Vec<String>,
-        found_tags: Vec<String>
-    ) -> Self {
-        Self {
-            stripped_html,
-            found_links,
-            found_tags
-        }
-    }
-}
-
 pub struct BlueSkyAuthentication {
     pub host_name: String,
     pub auth_config: ApiAuthConfig,
