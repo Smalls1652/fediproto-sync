@@ -4,7 +4,7 @@ use atprotolib_rs::{
         app_bsky::{
             self,
             embed::{ExternalEmbed, ImageEmbed},
-            feed::{PostEmbedExternal, PostEmbedImage, PostEmbeds},
+            feed::{PostEmbedExternal, PostEmbedImage, PostEmbedVideo, PostEmbeds},
             richtext::{
                 ByteSlice,
                 RichTextFacet,
@@ -17,6 +17,7 @@ use atprotolib_rs::{
     }
 };
 use diesel::*;
+use rand::distributions::DistString;
 
 use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
 
@@ -149,7 +150,7 @@ pub async fn sync_post(
     // -- Generate a BlueSky post item from the Mastodon status. --
     let mut post_item = generate_post_item(
         &bsky_auth.host_name,
-        &bsky_auth.auth_config,
+        &bsky_auth,
         &mastodon_status
     )
     .await?;
@@ -276,7 +277,7 @@ pub async fn sync_post(
 /// * `mastodon_status` - The Mastodon status to generate the post item from.
 pub async fn generate_post_item(
     host_name: &str,
-    auth_config: &ApiAuthConfig,
+    bsky_auth: &BlueSkyAuthentication,
     mastodon_status: &megalodon::entities::Status
 ) -> Result<app_bsky::feed::Post, Box<dyn std::error::Error>> {
     // -- Parse the Mastodon status for post content and metadata. --
@@ -339,6 +340,7 @@ pub async fn generate_post_item(
             parsed_status.mastodon_status.media_attachments.len(),
             parsed_status.mastodon_status.id
         );
+
         let mut image_attachments = Vec::new();
 
         // Create a HTTP client for downloading the media attachments.
@@ -346,50 +348,154 @@ pub async fn generate_post_item(
 
         // Iterate over each media attachment in the Mastodon status.
         for media_attachment in parsed_status.mastodon_status.media_attachments {
-            // Skip any media attachments that aren't images.
-            if media_attachment.r#type != megalodon::entities::attachment::AttachmentType::Image {
-                tracing::warn!(
-                    "Skipping non-image media attachment '{}'",
-                    media_attachment.url
-                );
-                continue;
+            match media_attachment.r#type {
+                // Handle image attachments.
+                megalodon::entities::attachment::AttachmentType::Image => {
+                    // Download the media attachment from the Mastodon server.
+                    let media_attachment_response = media_attachment_client
+                        .get(&media_attachment.url)
+                        .send()
+                        .await?;
+                    let media_attachment_bytes = media_attachment_response.bytes().await?;
+
+                    // Upload the media attachment to Bluesky.
+                    let blob_upload_response = com_atproto::repo::upload_blob(
+                        host_name,
+                        &bsky_auth.auth_config,
+                        media_attachment_bytes.to_vec(),
+                        Some("image/jpeg")
+                    )
+                    .await?;
+
+                    // Create an image embed and add it to the list of image attachments.
+                    image_attachments.push(ImageEmbed {
+                        image: blob_upload_response.blob,
+                        alt: media_attachment
+                            .description
+                            .unwrap_or_else(|| "".to_string()),
+                        aspect_ratio: None
+                    });
+
+                    tracing::info!(
+                        "Uploaded media attachment '{}' to Bluesky",
+                        media_attachment.url
+                    );
+                }
+
+                // Handle video attachments.
+                megalodon::entities::attachment::AttachmentType::Video => {
+                    // Download the media attachment from the Mastodon server.
+                    tracing::info!(
+                        "Downloading video attachment '{}' from Mastodon",
+                        media_attachment.url
+                    );
+                    let media_attachment_response = media_attachment_client
+                        .get(&media_attachment.url)
+                        .send()
+                        .await?;
+                    let media_attachment_bytes = media_attachment_response.bytes().await?;
+
+                    
+                    let service_auth_token = com_atproto::server::get_service_auth(
+                        host_name,
+                        &bsky_auth.auth_config,
+                        format!("did:web:{}", host_name).as_str(),
+                        (Utc::now() + chrono::Duration::minutes(30)).timestamp(),
+                        Some("com.atproto.repo.uploadBlob")
+                    ).await?;
+
+
+                    let upload_auth_config = ApiAuthConfig {
+                        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken { token: service_auth_token.token.clone() })
+                    };
+
+                    // Upload the video to BlueSky.
+                    tracing::info!(
+                        "Uploading video attachment '{}' to Bluesky",
+                        media_attachment.url
+                    );
+
+                    let random_video_name = rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+
+                    let upload_video_job_response = app_bsky::video::upload_video(
+                        "video.bsky.app",
+                        &upload_auth_config,
+                        media_attachment_bytes.to_vec(),
+                        &bsky_auth.session.did,
+                        &random_video_name
+                    )
+                    .await?;
+
+                    tracing::info!(
+                        "Waiting for video upload job '{}' to complete",
+                        upload_video_job_response.job_id
+                    );
+
+                    let no_auth_config = ApiAuthConfig {
+                        data: ApiAuthConfigData::None
+                    };
+
+                    let mut job_status = upload_video_job_response.clone();
+                    while job_status.state != "JOB_STATE_FAILED"
+                    {
+                        job_status = app_bsky::video::get_job_status(
+                            "video.bsky.app",
+                            &no_auth_config,
+                            &upload_video_job_response.job_id
+                        )
+                        .await?
+                        .job_status;
+
+                        if job_status.state == "JOB_STATE_COMPLETED" {
+                            break;
+                        }
+
+                        tracing::info!("Video upload progress: {}%", job_status.progress);
+
+                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    }
+
+                    match job_status.state.as_str() {
+                        "JOB_STATE_FAILED" => {
+                            tracing::error!(
+                                "Failed to upload video attachment '{}'. Error message: '{}'",
+                                media_attachment.url,
+                                job_status.error.unwrap_or_else(|| "N/A".to_string())
+                            );
+
+                            continue;
+                        }
+
+                        _ => {
+                            tracing::info!(
+                                "Uploaded video attachment '{}' to Bluesky",
+                                media_attachment.url
+                            );
+
+                            post_item.embed = Some(PostEmbeds::Video(PostEmbedVideo {
+                                aspect_ratio: None,
+                                video: job_status.blob.unwrap()
+                            }))
+                        }
+                    }
+                }
+
+                _ => {
+                    tracing::warn!(
+                        "Unsupported media attachment type '{}' in post '{}'",
+                        media_attachment.r#type,
+                        parsed_status.mastodon_status.id
+                    );
+                }
             }
-
-            // Download the media attachment from the Mastodon server.
-            let media_attachment_response = media_attachment_client
-                .get(&media_attachment.url)
-                .send()
-                .await?;
-            let media_attachment_bytes = media_attachment_response.bytes().await?;
-
-            // Upload the media attachment to Bluesky.
-            let blob_upload_response = com_atproto::repo::upload_blob(
-                host_name,
-                auth_config,
-                media_attachment_bytes.to_vec(),
-                Some("image/jpeg")
-            )
-            .await?;
-
-            // Create an image embed and add it to the list of image attachments.
-            image_attachments.push(ImageEmbed {
-                image: blob_upload_response.blob,
-                alt: media_attachment
-                    .description
-                    .unwrap_or_else(|| "".to_string()),
-                aspect_ratio: None
-            });
-
-            tracing::info!(
-                "Uploaded media attachment '{}' to Bluesky",
-                media_attachment.url
-            );
         }
 
-        // Add the image attachments to the post item as a post embed.
-        post_item.embed = Some(PostEmbeds::Images(PostEmbedImage {
-            images: image_attachments
-        }));
+        if image_attachments.len() > 0 {
+            // Add the image attachments to the post item as a post embed.
+            post_item.embed = Some(PostEmbeds::Images(PostEmbedImage {
+                images: image_attachments
+            }));
+        }
     }
 
     // Check if the post has any tags/hashtags.
@@ -450,7 +556,7 @@ pub async fn generate_post_item(
                 true => Some(
                     com_atproto::repo::upload_blob(
                         host_name,
-                        auth_config,
+                        &bsky_auth.auth_config,
                         link_thumbnail_bytes,
                         Some("image/jpeg")
                     )
