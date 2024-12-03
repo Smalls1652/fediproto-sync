@@ -1,4 +1,4 @@
-# FediProto Sync
+# FediProto Sync [![Build status](https://github.com/Smalls1652/fediproto-sync/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Smalls1652/fediproto-sync/actions/workflows/build.yml) [![MIT license](https://badgen.net/static/License/MIT/blue)](./LICENSE)
 
 > [!WARNING]
 > This project is still in development and is **not ready for use**. It is very rough around the edges and a lot of things are rapidly changing.
