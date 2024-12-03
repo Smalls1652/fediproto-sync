@@ -61,7 +61,7 @@ impl BlueSkyAuthentication {
 /// * `config` - The environment variables for the FediProtoSync application.
 pub async fn create_session_token(
     config: &FediProtoSyncEnvVars
-) -> Result<BlueSkyAuthentication, Box<dyn std::error::Error>> {
+) -> Result<BlueSkyAuthentication, crate::error::Error> {
     let initial_auth_config = ApiAuthConfig {
         data: ApiAuthConfigData::None
     };
@@ -75,7 +75,14 @@ pub async fn create_session_token(
             auth_factor_token: None
         }
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        crate::error::Error::with_source(
+            "Failed to create Bluesky session.",
+            crate::error::ErrorKind::AuthenticationError,
+            e
+        )
+    })?;
 
     let bsky_auth_config = ApiAuthConfig {
         data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
@@ -87,6 +94,39 @@ pub async fn create_session_token(
         config.bluesky_pds_server.clone().as_str(),
         bsky_auth_config,
         bsky_create_session
+    ))
+}
+
+pub async fn refresh_session_token(
+    bsky_auth: &BlueSkyAuthentication
+) -> Result<BlueSkyAuthentication, crate::error::Error> {
+    let refresh_auth_config = ApiAuthConfig {
+        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+            token: bsky_auth.session.refresh_jwt.clone()
+        })
+    };
+
+    let bsky_refresh_session =
+        com_atproto::server::refresh_session(&bsky_auth.host_name, &refresh_auth_config)
+            .await
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to refresh Bluesky session.",
+                    crate::error::ErrorKind::AuthenticationError,
+                    e
+                )
+            })?;
+
+    let bsky_auth_config = ApiAuthConfig {
+        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+            token: bsky_refresh_session.access_jwt.clone()
+        })
+    };
+
+    Ok(BlueSkyAuthentication::new(
+        &bsky_auth.host_name,
+        bsky_auth_config,
+        bsky_refresh_session
     ))
 }
 

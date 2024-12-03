@@ -74,6 +74,9 @@ pub enum ErrorKind {
     /// An error occurred while trying to read an environment variable.
     EnvironmentVariableError,
 
+    /// An error occurred while trying to authenticate.
+    AuthenticationError,
+
     /// An error occurred while trying to connect to the database.
     DatabaseConnectionError
 }
