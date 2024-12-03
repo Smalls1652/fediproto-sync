@@ -76,7 +76,7 @@ impl FediProtoSyncEnvVars {
 
         let sync_interval = std::time::Duration::from_secs(
             std::env::var("SYNC_INTERVAL_SECONDS")
-                .unwrap_or("30".to_string())
+                .unwrap_or("300".to_string())
                 .parse::<u64>()
                 .map_err(|e| {
                     crate::error::Error::with_source(

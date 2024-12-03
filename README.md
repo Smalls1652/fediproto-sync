@@ -85,7 +85,7 @@ The following environment variables are required to run the daemon:
 | `BLUESKY_PDS_SERVER` | The hostname of your BlueSky PDS. If you don't host your own PDS, it's typically `bsky.social`. |
 | `BLUESKY_HANDLE` | Your handle on BlueSky without the `@`. |
 | `BLUESKY_APP_PASSWORD` | The app password for your account on BlueSky. [See more](#bluesky---app-password) |
-| `SYNC_INTERVAL_SECONDS` | The interval in seconds to sync posts. Defaults to `30` seconds. |
+| `SYNC_INTERVAL_SECONDS` | The interval in seconds to sync posts. Defaults to `300` seconds. |
 
 You can:
 
