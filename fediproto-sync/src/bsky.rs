@@ -191,19 +191,22 @@ pub async fn generate_post_item(
     auth_config: &ApiAuthConfig,
     mastodon_status: &megalodon::entities::Status
 ) -> Result<app_bsky::feed::Post, Box<dyn std::error::Error>> {
-    let (mastodon_status_send, mastodon_status_recv) = std::sync::mpsc::channel();
-    let (html_parse_tx, html_parse_rx) = std::sync::mpsc::channel();
+    let (mastodon_status_send, mut mastodon_status_recv) = tokio::sync::mpsc::channel(1);
+    let (parsed_send, mut parsed_recv) = tokio::sync::mpsc::channel(1);
 
-    mastodon_status_send.send(mastodon_status.clone()).unwrap();
-    std::thread::spawn(move || {
-        let recieved_status = mastodon_status_recv.recv().unwrap();
+    mastodon_status_send.send(mastodon_status.clone()).await?;
+    tokio::task::spawn_blocking(move || {
+        let recieved_status = mastodon_status_recv.blocking_recv().unwrap();
+        mastodon_status_recv.close();
 
         let parsed_status = mastodon::ParsedMastodonPost::from_mastodon_status(&recieved_status).unwrap();
 
-        html_parse_tx.send(parsed_status).unwrap();
+        parsed_send.blocking_send(parsed_status).unwrap();
     });
 
-    let mut parsed_status = html_parse_rx.recv().unwrap();
+    let mut parsed_status = parsed_recv.recv().await.unwrap();
+    parsed_recv.close();
+
     parsed_status.truncate_post_content()?;
 
     let mut post_item = app_bsky::feed::Post::new(&parsed_status.stripped_html, parsed_status.mastodon_status.created_at, None);
