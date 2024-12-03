@@ -1,9 +1,9 @@
-# FediProto-Sync
+# FediProto Sync
 
 > [!WARNING]
 > This project is still in development and is **not ready for use**. It is very rough around the edges and a lot of things are rapidly changing.
 
-FediProto-Sync is a tool to sync posts from your Mastodon account to your BlueSky account.
+FediProto Sync is a tool to sync posts from your Mastodon account to your BlueSky account.
 
 ## 🗂️ Dependencies used
 
