@@ -78,7 +78,10 @@ pub enum ErrorKind {
     AuthenticationError,
 
     /// An error occurred while trying to connect to the database.
-    DatabaseConnectionError
+    DatabaseConnectionError,
+
+    /// An error occurred while uploading a video to BlueSky.
+    VideoUploadError
 }
 
 impl std::fmt::Display for ErrorKind {
