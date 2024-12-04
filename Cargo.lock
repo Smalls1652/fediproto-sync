@@ -55,7 +55,7 @@ dependencies = [
 [[package]]
 name = "atprotolib-rs"
 version = "0.1.0"
-source = "git+https://github.com/Smalls1652/atprotolib-rs.git#07890331f19ab4fefdc0c02d9efb3c1d5278b5b7"
+source = "git+https://github.com/Smalls1652/atprotolib-rs.git#bec093f0e45df8a39772125f3a2e402142004df1"
 dependencies = [
  "chrono",
  "reqwest 0.12.9",
