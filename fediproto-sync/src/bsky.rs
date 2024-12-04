@@ -454,7 +454,7 @@ pub async fn generate_post_item(
                     };
 
                     let random_video_name =
-                        rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+                        rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14);
 
                     // Upload the video to BlueSky.
                     tracing::info!(
@@ -474,19 +474,27 @@ pub async fn generate_post_item(
 
                     tracing::info!(
                         "Waiting for video upload job '{}' to complete",
-                        upload_video_job_response.job_id
+                        upload_video_job_response["jobId"].as_str().unwrap()
                     );
 
                     let no_auth_config = ApiAuthConfig {
                         data: ApiAuthConfigData::None
                     };
 
-                    let mut job_status = upload_video_job_response.clone();
+                    let mut job_status = app_bsky::video::JobStatus {
+                        did: "".to_string(),
+                        job_id: "".to_string(),
+                        state: "JOB_STATE_PENDING".to_string(),
+                        progress: 0,
+                        error: None,
+                        blob: None
+                    };
+
                     while job_status.state != "JOB_STATE_FAILED" {
                         job_status = app_bsky::video::get_job_status(
                             "video.bsky.app",
                             &no_auth_config,
-                            &upload_video_job_response.job_id
+                            &upload_video_job_response["jobId"].as_str().unwrap()
                         )
                         .await?
                         .job_status;
