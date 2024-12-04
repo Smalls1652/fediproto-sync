@@ -396,7 +396,6 @@ pub async fn generate_post_item(
                         .await?;
                     let media_attachment_bytes = media_attachment_response.bytes().await?;
 
-                    
                     let service_auth_token = com_atproto::server::get_service_auth(
                         host_name,
                         &bsky_auth.auth_config,
@@ -405,18 +404,18 @@ pub async fn generate_post_item(
                         Some("com.atproto.repo.uploadBlob")
                     ).await?;
 
-
                     let upload_auth_config = ApiAuthConfig {
                         data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken { token: service_auth_token.token.clone() })
                     };
 
+                    let random_video_name = rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+
                     // Upload the video to BlueSky.
                     tracing::info!(
-                        "Uploading video attachment '{}' to Bluesky",
-                        media_attachment.url
+                        "Uploading video attachment '{}' to Bluesky as '{}.mp4'",
+                        media_attachment.url,
+                        random_video_name
                     );
-
-                    let random_video_name = rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
 
                     let upload_video_job_response = app_bsky::video::upload_video(
                         "video.bsky.app",
