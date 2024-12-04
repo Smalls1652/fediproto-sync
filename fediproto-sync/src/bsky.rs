@@ -387,24 +387,12 @@ pub async fn generate_post_item(
                         config,
                         &bsky_auth,
                         host_name,
-                        &mut post_item,
                         &parsed_status.mastodon_status.clone(),
                         &media_attachment
-                    ).await;
+                    )
+                    .await?;
 
-                    match video_embed {
-                        Ok(embed) => {
-                            post_item.embed = embed;
-                        }
-
-                        Err(e) => {
-                            tracing::error!(
-                                "Failed to generate video embed for post '{}': {}",
-                                parsed_status.mastodon_status.id,
-                                e
-                            );
-                        }
-                    }
+                    post_item.embed = video_embed;
                 }
 
                 _ => {
@@ -540,10 +528,10 @@ async fn generate_video_embed(
     config: &FediProtoSyncEnvVars,
     bsky_auth: &BlueSkyAuthentication,
     host_name: &str,
-    post_item: &mut app_bsky::feed::Post,
     mastodon_status: &megalodon::entities::Status,
     media_attachment: &megalodon::entities::attachment::Attachment
 ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
+    #[allow(unused_assignments)]
     let mut post_embed: Option<app_bsky::feed::PostEmbeds> = None;
 
     let media_attachment_meta = media_attachment.meta.clone().unwrap();
@@ -675,7 +663,10 @@ async fn generate_video_embed(
                         job_status.error.unwrap_or_else(|| "N/A".to_string())
                     );
 
-                    return Err(Box::new(crate::error::Error::new("The BlueSky upload job failed.", crate::error::ErrorKind::VideoUploadError)));
+                    return Err(Box::new(crate::error::Error::new(
+                        "The BlueSky upload job failed.",
+                        crate::error::ErrorKind::VideoUploadError
+                    )));
                 }
 
                 _ => {
@@ -684,7 +675,7 @@ async fn generate_video_embed(
                         media_attachment.url
                     );
 
-                    post_item.embed = Some(PostEmbeds::Video(PostEmbedVideo {
+                    post_embed = Some(PostEmbeds::Video(PostEmbedVideo {
                         aspect_ratio: None,
                         video: job_status.blob.unwrap()
                     }))
