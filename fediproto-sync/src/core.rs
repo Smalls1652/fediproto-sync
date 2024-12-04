@@ -24,16 +24,16 @@ impl AuthSessions {
         Self { bsky }
     }
 
-    pub async fn authenticate(config: &FediProtoSyncEnvVars) -> Result<Self, crate::error::Error> {
+    pub async fn authenticate(config: &FediProtoSyncEnvVars, client: reqwest::Client) -> Result<Self, crate::error::Error> {
         // Authenticate to BlueSky.
-        let bsky_auth = bsky::create_session_token(&config).await?;
+        let bsky_auth = bsky::create_session_token(&config, client).await?;
         tracing::info!("Authenticated to BlueSky as '{}'", bsky_auth.session.handle);
 
         Ok(Self::new(bsky_auth))
     }
 
-    pub async fn refresh_bsky_auth(&mut self) -> Result<(), crate::error::Error> {
-        self.bsky = bsky::refresh_session_token(&self.bsky).await?;
+    pub async fn refresh_bsky_auth(&mut self, client: reqwest::Client) -> Result<(), crate::error::Error> {
+        self.bsky = bsky::refresh_session_token(&self.bsky, client).await?;
 
         tracing::info!("Refreshed BlueSky authentication token.");
 
@@ -53,7 +53,8 @@ impl FediProtoSyncLoop {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
 
-        let db_connection = SqliteConnection::establish(&config.database_url).map_err(|e| {
+        let database_url = config.database_url.clone();
+        let db_connection = SqliteConnection::establish(&database_url).map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to connect to database.",
                 crate::error::ErrorKind::DatabaseConnectionError,
@@ -62,13 +63,16 @@ impl FediProtoSyncLoop {
         })?;
         tracing::info!("Connected to database.");
 
-        let auth_sessions = AuthSessions::authenticate(&config).await.map_err(|e| {
+        let client = create_http_client(&config)?;
+
+        let auth_sessions = AuthSessions::authenticate(&config, client).await.map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to authenticate to BlueSky.",
                 crate::error::ErrorKind::AuthenticationError,
                 Box::new(e)
             )
         })?;
+
 
         Ok(Self {
             config,
@@ -88,10 +92,7 @@ impl FediProtoSyncLoop {
     /// - `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        // TODO: Should probably add this to the `FediProtoSyncEnvVars` struct.
-
         FediProtoSyncLoop::run_migrations(&mut self.db_connection).expect("Failed to run migrations.");
-        
 
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
@@ -180,7 +181,8 @@ impl FediProtoSyncLoop {
             })?;
         tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
 
-        self.auth_sessions.refresh_bsky_auth().await?;
+        let client = create_http_client(&self.config)?;
+        self.auth_sessions.refresh_bsky_auth(client).await?;
 
         // Get the last synced post ID, if any.
         let last_synced_post_id = schema::mastodon_posts::table
@@ -247,4 +249,19 @@ impl FediProtoSyncLoop {
 
         Ok(())
     }
+}
+
+pub fn create_http_client(
+    config: &FediProtoSyncEnvVars
+) -> Result<reqwest::Client, crate::error::Error> {
+    reqwest::Client::builder()
+        .user_agent(config.user_agent.clone())
+        .build()
+        .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to create HTTP client.",
+                crate::error::ErrorKind::HttpClientCreationError,
+                Box::new(e)
+            )
+        })
 }

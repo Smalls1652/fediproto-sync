@@ -63,14 +63,16 @@ impl BlueSkyAuthentication {
 ///
 /// * `config` - The environment variables for the FediProtoSync application.
 pub async fn create_session_token(
-    config: &FediProtoSyncEnvVars
+    config: &FediProtoSyncEnvVars,
+    client: reqwest::Client
 ) -> Result<BlueSkyAuthentication, crate::error::Error> {
     let initial_auth_config = ApiAuthConfig {
         data: ApiAuthConfigData::None
     };
 
-    let bsky_create_session = atprotolib_rs::types::com_atproto::server::create_session(
+    let bsky_create_session = com_atproto::server::create_session(
         &config.bluesky_pds_server,
+        client,
         &initial_auth_config,
         CreateSessionRequest {
             identifier: config.bluesky_handle.clone(),
@@ -101,7 +103,8 @@ pub async fn create_session_token(
 }
 
 pub async fn refresh_session_token(
-    bsky_auth: &BlueSkyAuthentication
+    bsky_auth: &BlueSkyAuthentication,
+    client: reqwest::Client
 ) -> Result<BlueSkyAuthentication, crate::error::Error> {
     let refresh_auth_config = ApiAuthConfig {
         data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
@@ -110,7 +113,7 @@ pub async fn refresh_session_token(
     };
 
     let bsky_refresh_session =
-        com_atproto::server::refresh_session(&bsky_auth.host_name, &refresh_auth_config)
+        com_atproto::server::refresh_session(&bsky_auth.host_name, client, &refresh_auth_config)
             .await
             .map_err(|e| {
                 crate::error::Error::with_source(
@@ -151,9 +154,7 @@ impl BlueSkyPostSync<'_> {
     /// * `db_connection` - The SQLite database connection.
     /// * `mastodon_account` - The Mastodon account that posted the status.
     /// * `mastodon_status` - The Mastodon status to sync.
-    pub async fn sync_post(
-        &mut self
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Generate a BlueSky post item from the Mastodon status. --
         self.generate_post_item().await?;
 
@@ -164,7 +165,8 @@ impl BlueSkyPostSync<'_> {
         // field is the same as the account ID of the account that posted the status,
         // then it is potentially a reply to another post in a thread.
         if self.mastodon_status.in_reply_to_id.is_some()
-            && self.mastodon_status
+            && self
+                .mastodon_status
                 .clone()
                 .in_reply_to_account_id
                 .unwrap_or_else(|| "".to_string())
@@ -219,8 +221,11 @@ impl BlueSkyPostSync<'_> {
             swap_commit: None
         };
 
+        let apply_write_client = crate::core::create_http_client(&self.config)?;
+
         let apply_write_result = com_atproto::repo::apply_writes(
             &self.bsky_auth.host_name,
+            apply_write_client,
             &self.bsky_auth.auth_config,
             apply_write_request
         )
@@ -264,7 +269,11 @@ impl BlueSkyPostSync<'_> {
 
             Err(error) => {
                 // If an error occurred, log the error and return it.
-                tracing::error!("Error syncing post '{}': {}", &self.mastodon_status.id, error);
+                tracing::error!(
+                    "Error syncing post '{}': {}",
+                    &self.mastodon_status.id,
+                    error
+                );
                 Err(error)
             }
         }
@@ -278,9 +287,7 @@ impl BlueSkyPostSync<'_> {
     /// * `auth_config` - The API authentication configuration for the session.
     /// * `mastodon_status` - The Mastodon status to generate the post item
     ///   from.
-    pub async fn generate_post_item(
-        &mut self
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn generate_post_item(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Parse the Mastodon status for post content and metadata. --
 
         //
@@ -299,7 +306,9 @@ impl BlueSkyPostSync<'_> {
         let (parsed_send, mut parsed_recv) = tokio::sync::mpsc::channel(1);
 
         // Send the Mastodon status to the blocking thread for parsing.
-        mastodon_status_send.send(self.mastodon_status.clone()).await?;
+        mastodon_status_send
+            .send(self.mastodon_status.clone())
+            .await?;
 
         // Spawn a blocking thread to parse the Mastodon status.
         tokio::task::spawn_blocking(move || {
@@ -344,24 +353,25 @@ impl BlueSkyPostSync<'_> {
 
             let mut image_attachments = Vec::new();
 
-            // Create a HTTP client for downloading the media attachments.
-            let media_attachment_client = reqwest::Client::new();
-
             // Iterate over each media attachment in the Mastodon status.
             for media_attachment in parsed_status.mastodon_status.media_attachments.clone() {
                 match media_attachment.r#type {
                     // Handle image attachments.
                     megalodon::entities::attachment::AttachmentType::Image => {
                         // Download the media attachment from the Mastodon server.
+                        let media_attachment_client =
+                            crate::core::create_http_client(&self.config)?;
                         let media_attachment_response = media_attachment_client
                             .get(&media_attachment.url)
                             .send()
                             .await?;
                         let media_attachment_bytes = media_attachment_response.bytes().await?;
 
+                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
                         // Upload the media attachment to Bluesky.
                         let blob_upload_response = com_atproto::repo::upload_blob(
                             &self.bsky_auth.host_name,
+                            blob_upload_client,
                             &self.bsky_auth.auth_config,
                             media_attachment_bytes.to_vec(),
                             Some("image/jpeg")
@@ -445,7 +455,7 @@ impl BlueSkyPostSync<'_> {
             let first_link = parsed_status.found_links[0].clone();
 
             // Get metadata for the link.
-            let link_metadata = Self::get_link_metadata(&first_link).await?;
+            let link_metadata = self.get_link_metadata(&first_link).await?;
 
             // Check if the post has an embed and add an external embed for the link if
             // it doesn't.
@@ -459,20 +469,24 @@ impl BlueSkyPostSync<'_> {
                 let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
                 let link_thumbnail_bytes = match link_thumbnail_url == "" {
                     true => vec![],
-                    false => Self::get_link_thumbnail(link_thumbnail_url).await?
+                    false => self.get_link_thumbnail(link_thumbnail_url).await?
                 };
 
                 let blob_item = match link_thumbnail_bytes.len() > 0 {
-                    true => Some(
-                        com_atproto::repo::upload_blob(
-                            &self.bsky_auth.host_name,
-                            &self.bsky_auth.auth_config,
-                            link_thumbnail_bytes,
-                            Some("image/jpeg")
+                    true => {
+                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
+                        Some(
+                            com_atproto::repo::upload_blob(
+                                &self.bsky_auth.host_name,
+                                blob_upload_client,
+                                &self.bsky_auth.auth_config,
+                                link_thumbnail_bytes,
+                                Some("image/jpeg")
+                            )
+                            .await?
+                            .blob
                         )
-                        .await?
-                        .blob
-                    ),
+                    }
 
                     _ => None
                 };
@@ -544,21 +558,25 @@ impl BlueSkyPostSync<'_> {
 
         match self.config.bluesky_video_always_fallback || *video_duration >= 60 as f64 {
             true => {
-                let video_link_thumbnail_bytes =
-                    Self::get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
-                        .await?;
+                let video_link_thumbnail_bytes = self
+                    .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
+                    .await?;
 
                 let blob_item = match video_link_thumbnail_bytes.len() > 0 {
-                    true => Some(
-                        com_atproto::repo::upload_blob(
-                            &self.bsky_auth.host_name,
-                            &self.bsky_auth.auth_config,
-                            video_link_thumbnail_bytes,
-                            Some("image/jpeg")
+                    true => {
+                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
+                        Some(
+                            com_atproto::repo::upload_blob(
+                                &self.bsky_auth.host_name,
+                                blob_upload_client,
+                                &self.bsky_auth.auth_config,
+                                video_link_thumbnail_bytes,
+                                Some("image/jpeg")
+                            )
+                            .await?
+                            .blob
                         )
-                        .await?
-                        .blob
-                    ),
+                    }
 
                     _ => None
                 };
@@ -583,16 +601,17 @@ impl BlueSkyPostSync<'_> {
                     media_attachment.url
                 );
 
-                let media_attachment_client = reqwest::Client::new();
-
+                let media_attachment_client = crate::core::create_http_client(&self.config)?;
                 let media_attachment_response = media_attachment_client
                     .get(&media_attachment.url)
                     .send()
                     .await?;
                 let media_attachment_bytes = media_attachment_response.bytes().await?;
 
+                let service_auth_client = crate::core::create_http_client(&self.config)?;
                 let service_auth_token = com_atproto::server::get_service_auth(
                     &self.bsky_auth.host_name,
+                    service_auth_client,
                     &self.bsky_auth.auth_config,
                     format!("did:web:{}", &self.bsky_auth.host_name).as_str(),
                     (Utc::now() + chrono::Duration::minutes(30)).timestamp(),
@@ -616,8 +635,10 @@ impl BlueSkyPostSync<'_> {
                     random_video_name
                 );
 
+                let upload_video_client = crate::core::create_http_client(&self.config)?;
                 let upload_video_job_response = app_bsky::video::upload_video(
                     "video.bsky.app",
+                    upload_video_client,
                     &upload_auth_config,
                     media_attachment_bytes.to_vec(),
                     &self.bsky_auth.session.did,
@@ -644,8 +665,10 @@ impl BlueSkyPostSync<'_> {
                 };
 
                 while job_status.state != "JOB_STATE_FAILED" {
+                    let job_client = crate::core::create_http_client(&self.config)?;
                     job_status = app_bsky::video::get_job_status(
                         "video.bsky.app",
+                        job_client,
                         &no_auth_config,
                         &upload_video_job_response["jobId"].as_str().unwrap()
                     )
@@ -735,14 +758,15 @@ impl BlueSkyPostSync<'_> {
     ///
     /// * `url` - The URL to get metadata for.
     async fn get_link_metadata(
+        &mut self,
         url: &str
     ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
         tracing::info!("Getting link metadata for '{}'.", url);
-        let client = reqwest::Client::new();
-
         let query_params = vec![("url", url)];
 
-        let link_info_response = client
+        let link_info_client = crate::core::create_http_client(&self.config)?;
+
+        let link_info_response = link_info_client
             .get("https://cardyb.bsky.app/v1/extract")
             .query(&query_params)
             .send()
@@ -759,12 +783,17 @@ impl BlueSkyPostSync<'_> {
     ///
     /// * `image_url` - The URL of the image to get.
     async fn get_link_thumbnail(
+        &mut self,
         image_url: &str
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         tracing::info!("Getting link thumbnail for '{}'.", image_url);
-        let client = reqwest::Client::new();
 
-        let link_thumbnail_response = client.get(image_url).send().await?;
+        let link_thumbnail_client = crate::core::create_http_client(&self.config)?;
+
+        let link_thumbnail_response = link_thumbnail_client
+            .get(image_url)
+            .send()
+            .await?;
 
         let link_thumbnail_bytes = link_thumbnail_response.bytes().await?;
 

@@ -5,11 +5,15 @@ mod mastodon;
 mod models;
 mod schema;
 
-/// The environment variable values for configuring the FediProtoSync application.
+/// The environment variable values for configuring the FediProtoSync
+/// application.
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncEnvVars {
     /// The URL/path to the SQLite database file.
     pub database_url: String,
+
+    /// User-Agent string to use for HTTP requests.
+    pub user_agent: String,
 
     /// The Mastodon server URL to connect to.
     pub mastodon_server: String,
@@ -36,58 +40,57 @@ pub struct FediProtoSyncEnvVars {
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
-        let database_url = std::env::var("DATABASE_URL")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read DATABASE_URL environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let database_url = std::env::var("DATABASE_URL").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read DATABASE_URL environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
 
-        let mastodon_server = std::env::var("MASTODON_SERVER")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read MASTODON_SERVER environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let user_agent =
+            std::env::var("USER_AGENT").unwrap_or_else(|_| "FediProtoSync".to_string());
 
-        let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let user_agent = format!("{}/{}", user_agent, env!("CARGO_PKG_VERSION"));
 
-        let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read BLUESKY_PDS_SERVER environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read MASTODON_SERVER environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
 
-        let bluesky_handle = std::env::var("BLUESKY_HANDLE")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read BLUESKY_HANDLE environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-        let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD")
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read BLUESKY_APP_PASSWORD environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
+        let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read BLUESKY_PDS_SERVER environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
+        let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read BLUESKY_HANDLE environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+        let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read BLUESKY_APP_PASSWORD environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
 
         let sync_interval = std::time::Duration::from_secs(
             std::env::var("SYNC_INTERVAL_SECONDS")
@@ -115,6 +118,7 @@ impl FediProtoSyncEnvVars {
 
         Ok(Self {
             database_url,
+            user_agent,
             mastodon_server,
             mastodon_access_token,
             bluesky_pds_server,
@@ -147,7 +151,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .finish();
     tracing::subscriber::set_global_default(trace_subscriber)?;
 
-    // Load environment variables from the .env file for the specified environment, if it exists.
+    // Load environment variables from the .env file for the specified environment,
+    // if it exists.
     let root_app_dir = std::env::current_dir()?;
     let environment_name_result = std::env::var("FEDIPROTO_SYNC_ENVIRONMENT");
     let environment_name = match environment_name_result {
@@ -175,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn the core loop for running the syncs.
     tokio::spawn(async move {
         let mut fediprotosync_loop = core::FediProtoSyncLoop::new(&config).await.unwrap();
-        
+
         let result = fediprotosync_loop.run_loop().await;
 
         match result {
