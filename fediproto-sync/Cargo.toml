@@ -9,13 +9,16 @@ repository.workspace = true
 build = "build.rs"
 
 [dependencies]
-chrono = { version = "0.4.38", features = ["serde"] }
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.133"
-reqwest = { version = "0.12.9", features = ["json", "rustls-tls"], default-features = false }
 atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", features = [
     "apicalls",
 ] }
+chrono = { version = "0.4.38", features = ["serde"] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+reqwest = { version = "0.12.9", features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
 tokio = { version = "1.41.1", features = [
     "rt",
     "macros",
