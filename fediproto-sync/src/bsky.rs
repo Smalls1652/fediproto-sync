@@ -381,10 +381,10 @@ pub async fn generate_post_item(
 
                 // Handle video attachments.
                 megalodon::entities::attachment::AttachmentType::Video => {
-                    let media_attachment_meta = media_attachment.meta.clone().unwrap();
-                    let video_duration = &media_attachment_meta.original.unwrap().duration.unwrap();
+                    //let media_attachment_meta = media_attachment.meta.clone().unwrap();
+                    //let video_duration = &media_attachment_meta.original.unwrap().duration.unwrap();
 
-                    if *video_duration >= 60 as f64 {
+                    //if *video_duration >= 60 as f64 {
                         // Get metadata for the link.
                         //let video_link_metadata = get_link_metadata(&mastodon_status.url.clone().unwrap()).await?;
 
@@ -423,6 +423,8 @@ pub async fn generate_post_item(
                                 thumb: blob_item
                             }
                         }));
+                    
+                    /*
 
                         continue;
                     }
@@ -531,7 +533,8 @@ pub async fn generate_post_item(
                             }))
                         }
                     }
-                }
+                    */
+                },
 
                 _ => {
                     tracing::warn!(
