@@ -130,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_file(false)
         .with_line_number(false)
         .with_target(false)
-        .with_thread_ids(true)
+        .with_thread_ids(false)
         .finish();
     tracing::subscriber::set_global_default(trace_subscriber)?;
 
