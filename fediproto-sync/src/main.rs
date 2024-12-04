@@ -7,7 +7,10 @@ mod schema;
 
 /// The environment variable values for configuring the FediProtoSync application.
 #[derive(Debug, Clone)]
-struct FediProtoSyncEnvVars {
+pub struct FediProtoSyncEnvVars {
+    /// The URL/path to the SQLite database file.
+    pub database_url: String,
+
     /// The Mastodon server URL to connect to.
     pub mastodon_server: String,
 
@@ -33,6 +36,15 @@ struct FediProtoSyncEnvVars {
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
+        let database_url = std::env::var("DATABASE_URL")
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to read DATABASE_URL environment variable.",
+                    crate::error::ErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
         let mastodon_server = std::env::var("MASTODON_SERVER")
             .map_err(|e| {
                 crate::error::Error::with_source(
@@ -102,6 +114,7 @@ impl FediProtoSyncEnvVars {
             })?;
 
         Ok(Self {
+            database_url,
             mastodon_server,
             mastodon_access_token,
             bluesky_pds_server,
@@ -161,7 +174,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Spawn the core loop for running the syncs.
     tokio::spawn(async move {
-        let result = core::run(config).await;
+        let mut fediprotosync_loop = core::FediProtoSyncLoop::new(&config).await.unwrap();
+        
+        let result = fediprotosync_loop.run_loop().await;
 
         match result {
             Ok(_) => {
