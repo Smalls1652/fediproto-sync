@@ -18,12 +18,8 @@ struct AuthSessions {
 }
 
 impl AuthSessions {
-    pub fn new(
-        bsky: bsky::BlueSkyAuthentication
-    ) -> Self {
-        Self {
-            bsky
-        }
+    pub fn new(bsky: bsky::BlueSkyAuthentication) -> Self {
+        Self { bsky }
     }
 
     pub async fn authenticate(config: &FediProtoSyncEnvVars) -> Result<Self, crate::error::Error> {
@@ -213,8 +209,13 @@ async fn run_sync(
     for post_item in latest_posts.json {
         tracing::info!("Processing post '{}'", post_item.id);
 
-        let sync_result =
-            bsky::sync_post(&auth_sessions.bsky, db_connection, &account.json, &post_item).await;
+        let sync_result = bsky::sync_post(
+            &auth_sessions.bsky,
+            db_connection,
+            &account.json,
+            &post_item
+        )
+        .await;
 
         match sync_result {
             Ok(_) => {
