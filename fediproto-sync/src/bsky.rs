@@ -524,6 +524,15 @@ pub async fn generate_post_item(
     Ok(post_item)
 }
 
+/// Generates a video embed for a BlueSky post from a media attachment from a Mastodon status.
+/// 
+/// ## Arguments
+/// 
+/// * `config` - The environment variables for the FediProtoSync application.
+/// * `bsky_auth` - The Bluesky authentication information.
+/// * `host_name` - The hostname of the Bluesky/ATProto PDS.
+/// * `mastodon_status` - The Mastodon status to generate the video embed from.
+/// * `media_attachment` - The media attachment to generate the video embed from.
 async fn generate_video_embed(
     config: &FediProtoSyncEnvVars,
     bsky_auth: &BlueSkyAuthentication,
