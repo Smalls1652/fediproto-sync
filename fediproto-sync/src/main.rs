@@ -142,14 +142,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sig_quit = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::quit())?;
 
     // Set up tracing subscriber for logging.
-    let trace_subscriber = tracing_subscriber::fmt()
+    tracing_subscriber::fmt()
         .compact()
         .with_file(false)
         .with_line_number(false)
-        .with_target(false)
+        .with_target(true)
         .with_thread_ids(false)
-        .finish();
-    tracing::subscriber::set_global_default(trace_subscriber)?;
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     // Load environment variables from the .env file for the specified environment,
     // if it exists.
