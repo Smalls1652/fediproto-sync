@@ -16,8 +16,8 @@ use atprotolib_rs::{
         com_atproto::{self, server::CreateSessionRequest}
     }
 };
-use diesel::*;
 use chrono::Utc;
+use diesel::*;
 use rand::distributions::DistString;
 
 use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
@@ -149,12 +149,8 @@ pub async fn sync_post(
     let mastodon_status = mastodon_status.clone();
 
     // -- Generate a BlueSky post item from the Mastodon status. --
-    let mut post_item = generate_post_item(
-        &bsky_auth.host_name,
-        &bsky_auth,
-        &mastodon_status
-    )
-    .await?;
+    let mut post_item =
+        generate_post_item(&bsky_auth.host_name, &bsky_auth, &mastodon_status).await?;
 
     // -- Check if the post is a reply to another post in a thread. --
     let mut previous_post_id = None;
@@ -385,6 +381,52 @@ pub async fn generate_post_item(
 
                 // Handle video attachments.
                 megalodon::entities::attachment::AttachmentType::Video => {
+                    let media_attachment_meta = media_attachment.meta.clone().unwrap();
+                    let video_duration = &media_attachment_meta.original.unwrap().duration.unwrap();
+
+                    if *video_duration >= 60 as f64 {
+                        // Get metadata for the link.
+                        //let video_link_metadata = get_link_metadata(&mastodon_status.url.clone().unwrap()).await?;
+
+                        // Get the thumbnail for the link if it has one and upload it to
+                        // BlueSky.
+                        //let video_link_thumbnail_url =
+                        //    video_link_metadata["image"].as_str().unwrap_or_else(|| "");
+                        //let video_link_thumbnail_bytes = match video_link_thumbnail_url == "" {
+                        //    true => vec![],
+                        //    false => get_link_thumbnail(video_link_thumbnail_url).await?
+                        //};
+
+                        let video_link_thumbnail_bytes = get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str()).await?;
+
+                        let blob_item = match video_link_thumbnail_bytes.len() > 0 {
+                            true => Some(
+                                com_atproto::repo::upload_blob(
+                                    host_name,
+                                    &bsky_auth.auth_config,
+                                    video_link_thumbnail_bytes,
+                                    Some("image/jpeg")
+                                )
+                                .await?
+                                .blob
+                            ),
+
+                            _ => None
+                        };
+
+                        // Create an external embed for the link and add it to the post item.
+                        post_item.embed = Some(PostEmbeds::External(PostEmbedExternal {
+                            external: ExternalEmbed {
+                                uri: mastodon_status.url.clone().unwrap(),
+                                title: "View video on Mastodon".to_string(),
+                                description: format!("Check out this video posted by @{}!", mastodon_status.account.username.clone()),
+                                thumb: blob_item
+                            }
+                        }));
+
+                        continue;
+                    }
+
                     // Download the media attachment from the Mastodon server.
                     tracing::info!(
                         "Downloading video attachment '{}' from Mastodon",
@@ -402,13 +444,17 @@ pub async fn generate_post_item(
                         format!("did:web:{}", host_name).as_str(),
                         (Utc::now() + chrono::Duration::minutes(30)).timestamp(),
                         Some("com.atproto.repo.uploadBlob")
-                    ).await?;
+                    )
+                    .await?;
 
                     let upload_auth_config = ApiAuthConfig {
-                        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken { token: service_auth_token.token.clone() })
+                        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+                            token: service_auth_token.token.clone()
+                        })
                     };
 
-                    let random_video_name = rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+                    let random_video_name =
+                        rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
 
                     // Upload the video to BlueSky.
                     tracing::info!(
@@ -436,8 +482,7 @@ pub async fn generate_post_item(
                     };
 
                     let mut job_status = upload_video_job_response.clone();
-                    while job_status.state != "JOB_STATE_FAILED"
-                    {
+                    while job_status.state != "JOB_STATE_FAILED" {
                         job_status = app_bsky::video::get_job_status(
                             "video.bsky.app",
                             &no_auth_config,
