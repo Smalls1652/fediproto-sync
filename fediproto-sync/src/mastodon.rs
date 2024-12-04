@@ -3,7 +3,7 @@ use megalodon::response::Response;
 /// Extension trait for the Mastodon API.
 pub trait MastodonApiExtensions {
     async fn get_latest_posts(
-        self,
+        &self,
         account_id: &str,
         last_post_id: Option<String>
     ) -> Result<Response<Vec<megalodon::entities::Status>>, Box<dyn std::error::Error>>;
@@ -17,7 +17,7 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
     /// - `account_id` - The Mastodon account ID to get the latest posts for.
     /// - `last_post_id` - The last post ID to get posts since.
     async fn get_latest_posts(
-        self,
+        &self,
         account_id: &str,
         last_post_id: Option<String>
     ) -> Result<Response<Vec<megalodon::entities::Status>>, Box<dyn std::error::Error>> {
