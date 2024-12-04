@@ -24,7 +24,10 @@ struct FediProtoSyncEnvVars {
     pub bluesky_app_password: String,
 
     /// The interval, in seconds, to sync posts.
-    pub sync_interval: std::time::Duration
+    pub sync_interval: std::time::Duration,
+
+    /// Whether to always fallback to the video URL for BlueSky posts.
+    pub bluesky_video_always_fallback: bool
 }
 
 impl FediProtoSyncEnvVars {
@@ -87,13 +90,25 @@ impl FediProtoSyncEnvVars {
                 })?
         );
 
+        let bluesky_video_always_fallback = std::env::var("BLUESKY_VIDEO_ALWAYS_FALLBACK")
+            .unwrap_or("false".to_string())
+            .parse::<bool>()
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to parse the BLUESKY_VIDEO_ALWAYS_FALLBACK environment variable.",
+                    crate::error::ErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
         Ok(Self {
             mastodon_server,
             mastodon_access_token,
             bluesky_pds_server,
             bluesky_handle,
             bluesky_app_password,
-            sync_interval
+            sync_interval,
+            bluesky_video_always_fallback
         })
     }
 }
