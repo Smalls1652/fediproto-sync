@@ -31,7 +31,7 @@ megalodon = "0.14.1"
 dotenvy = "0.15.7"
 dom_query = "0.10.0"
 tendril = "0.4.3"
-diesel = { version = "2.2.5", features = [
+diesel = { version = "2.2.6", features = [
     "chrono",
     "returning_clauses_for_sqlite_3_35",
     "sqlite",
