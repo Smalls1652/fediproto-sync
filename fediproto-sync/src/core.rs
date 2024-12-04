@@ -84,7 +84,7 @@ pub async fn run(config: FediProtoSyncEnvVars) -> Result<(), crate::error::Error
 
         tracing::info!("Running sync...");
 
-        let sync_result = run_sync(config.clone(), db_connection, &mut auth_sessions).await;
+        let sync_result = run_sync(&config, db_connection, &mut auth_sessions).await;
 
         match sync_result {
             Ok(_) => {
@@ -134,7 +134,7 @@ fn run_migrations(
 /// - `config` - The environment variables for the FediProtoSync application.
 /// - `db_connection` - The database connection to use for the sync.
 async fn run_sync(
-    config: FediProtoSyncEnvVars,
+    config: &FediProtoSyncEnvVars,
     db_connection: &mut SqliteConnection,
     auth_sessions: &mut AuthSessions
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -210,6 +210,7 @@ async fn run_sync(
         tracing::info!("Processing post '{}'", post_item.id);
 
         let sync_result = bsky::sync_post(
+            &config,
             &auth_sessions.bsky,
             db_connection,
             &account.json,
