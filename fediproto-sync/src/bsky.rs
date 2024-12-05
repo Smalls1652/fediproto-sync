@@ -608,12 +608,15 @@ impl BlueSkyPostSync<'_> {
                     .await?;
                 let media_attachment_bytes = media_attachment_response.bytes().await?;
 
+                let service_endpoint = self.get_pds_service_endpoint()?;
+                let service_endpoint = service_endpoint.replace("https://", "");
+
                 let service_auth_client = crate::core::create_http_client(&self.config)?;
                 let service_auth_token = com_atproto::server::get_service_auth(
-                    &self.bsky_auth.host_name,
+                    &service_endpoint,
                     service_auth_client,
                     &self.bsky_auth.auth_config,
-                    format!("did:web:{}", &self.bsky_auth.host_name).as_str(),
+                    format!("did:web:{}", &service_endpoint).as_str(),
                     (Utc::now() + chrono::Duration::minutes(30)).timestamp(),
                     Some("com.atproto.repo.uploadBlob")
                 )
@@ -792,13 +795,39 @@ impl BlueSkyPostSync<'_> {
 
         let link_thumbnail_client = crate::core::create_http_client(&self.config)?;
 
-        let link_thumbnail_response = link_thumbnail_client
-            .get(image_url)
-            .send()
-            .await?;
+        let link_thumbnail_response = link_thumbnail_client.get(image_url).send().await?;
 
         let link_thumbnail_bytes = link_thumbnail_response.bytes().await?;
 
         Ok(link_thumbnail_bytes.to_vec())
+    }
+
+    /// Get the PDS service endpoint from the Bluesky session.
+    fn get_pds_service_endpoint(&mut self) -> Result<String, Box<dyn std::error::Error>> {
+        let service_endpoint = match self.bsky_auth.session.did_doc.clone() {
+            Some(did_doc) => {
+                let session_services = did_doc.service.clone();
+
+                let pds_service = session_services.iter().find_map(|service| match service {
+                    com_atproto::server::DidDocServices::AtprotoPersonalDataServer(pds_service) => {
+                        Some(pds_service.clone())
+                    }
+                });
+
+                match pds_service {
+                    Some(pds_service) => pds_service.service_endpoint.clone(),
+                    None => {
+                        return Err(Box::new(crate::error::Error::new(
+                            "No PDS service found in Bluesky session.",
+                            crate::error::ErrorKind::AuthenticationError
+                        )))
+                    }
+                }
+            }
+
+            None => self.bsky_auth.host_name.clone()
+        };
+
+        Ok(service_endpoint)
     }
 }
