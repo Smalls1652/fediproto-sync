@@ -19,6 +19,7 @@ use atprotolib_rs::{
 use chrono::Utc;
 use diesel::*;
 use rand::distributions::DistString;
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
 
@@ -602,11 +603,19 @@ impl BlueSkyPostSync<'_> {
                 );
 
                 let media_attachment_client = crate::core::create_http_client(&self.config)?;
-                let media_attachment_response = media_attachment_client
+                let mut media_attachment_response = media_attachment_client
                     .get(&media_attachment.url)
                     .send()
                     .await?;
-                let media_attachment_bytes = media_attachment_response.bytes().await?;
+
+                let temp_path = std::env::temp_dir().join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));
+                let mut temp_file = tokio::fs::File::create(&temp_path).await?;
+
+                while let Some(chunk) = media_attachment_response.chunk().await? {
+                    temp_file.write_all(&chunk).await?;
+                }
+
+                temp_file.flush().await?;
 
                 let service_endpoint = self.get_pds_service_endpoint()?;
                 let service_endpoint = service_endpoint.replace("https://", "");
@@ -640,16 +649,24 @@ impl BlueSkyPostSync<'_> {
                     random_video_name
                 );
 
+                temp_file = tokio::fs::File::open(&temp_path).await?;
+                let mut media_attachment_buffer = Vec::new();
+
+                temp_file.read_to_end(&mut media_attachment_buffer).await?;
+
                 let upload_video_client = crate::core::create_http_client(&self.config)?;
                 let upload_video_job_response = app_bsky::video::upload_video(
                     "video.bsky.app",
                     upload_video_client,
                     &upload_auth_config,
-                    media_attachment_bytes.to_vec(),
+                    media_attachment_buffer,
                     &self.bsky_auth.session.did,
                     &random_video_name
                 )
                 .await?;
+
+                temp_file.flush().await?;
+                tokio::fs::remove_file(&temp_path).await?;
 
                 tracing::info!(
                     "Waiting for video upload job '{}' to complete",
