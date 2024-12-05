@@ -625,12 +625,14 @@ impl BlueSkyPostSync<'_> {
                     })
                 };
 
-                let random_video_name =
-                    rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14);
+                let random_video_name = format!(
+                    "{}.mp4",
+                    rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14)
+                );
 
                 // Upload the video to BlueSky.
                 tracing::info!(
-                    "Uploading video attachment '{}' to Bluesky as '{}.mp4'",
+                    "Uploading video attachment '{}' to Bluesky as '{}'",
                     media_attachment.url,
                     random_video_name
                 );
