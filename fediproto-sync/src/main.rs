@@ -133,6 +133,15 @@ impl FediProtoSyncEnvVars {
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let rust_log_result = std::env::var("RUST_LOG");
+
+    match rust_log_result {
+        Ok(_) => (),
+        Err(_) => {
+            std::env::set_var("RUST_LOG", "info");
+        }
+    }
+
     // Set up unbounded channels for shutdown and error signals.
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
     let (sig_error_send, mut sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
