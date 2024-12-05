@@ -9,18 +9,34 @@
         "color": "terminal.ansiGreen"
       },
       "type": "process",
-      "command": "pwsh",
-      "args": [
-        "-NoLogo",
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/tools/Build-Package.ps1",
-        "-PackageName",
-        "${input:packageName}",
-        "-BuildProfile",
-        "${input:buildProfile}",
-        "-Verbose"
-      ],
+      "osx": {
+        "command": "/bin/bash",
+        "args": [
+          "-c",
+          "${workspaceFolder}/tools/Build-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        ]
+      },
+      "linux":{
+        "command": "/bin/bash",
+        "args": [
+          "-c",
+          "${workspaceFolder}/tools/Build-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        ]
+      },
+      "windows": {
+        "command": "pwsh",
+        "args": [
+          "-NoLogo",
+          "-NoProfile",
+          "-File",
+          "${workspaceFolder}/tools/Build-Package.ps1",
+          "-PackageName",
+          "${input:packageName}",
+          "-BuildProfile",
+          "${input:buildProfile}",
+          "-Verbose"
+        ]
+      },
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -42,18 +58,34 @@
         "color": "terminal.ansiYellow"
       },
       "type": "process",
-      "command": "pwsh",
-      "args": [
-        "-NoLogo",
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/tools/Clean-Package.ps1",
-        "-PackageName",
-        "${input:packageName}",
-        "-BuildProfile",
-        "${input:buildProfile}",
-        "-Verbose"
-      ],
+      "osx": {
+        "command": "/bin/bash",
+        "args": [
+          "-c",
+          "${workspaceFolder}/tools/Clean-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        ]
+      },
+      "linux":{
+        "command": "/bin/bash",
+        "args": [
+          "-c",
+          "${workspaceFolder}/tools/Clean-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        ]
+      },
+      "windows": {
+        "command": "pwsh",
+        "args": [
+          "-NoLogo",
+          "-NoProfile",
+          "-File",
+          "${workspaceFolder}/tools/Clean-Package.ps1",
+          "-PackageName",
+          "${input:packageName}",
+          "-BuildProfile",
+          "${input:buildProfile}",
+          "-Verbose"
+        ]
+      },
       "options": {
         "cwd": "${workspaceFolder}"
       },
