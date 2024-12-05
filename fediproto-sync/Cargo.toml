@@ -36,7 +36,7 @@ diesel = { version = "2.2.6", features = [
     "returning_clauses_for_sqlite_3_35",
     "sqlite",
 ] }
-tokio-util = { version = "0.7.12", features = ["rt", "time"] }
+tokio-util = { version = "0.7.13", features = ["rt", "time"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
