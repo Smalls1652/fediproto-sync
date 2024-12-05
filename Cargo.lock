@@ -55,7 +55,7 @@ dependencies = [
 [[package]]
 name = "atprotolib-rs"
 version = "0.1.0"
-source = "git+https://github.com/Smalls1652/atprotolib-rs.git#6207399ad0c5f4c8162a73349f6330e32f5a736e"
+source = "git+https://github.com/Smalls1652/atprotolib-rs.git#dd90995846a95689476aee94412c700c30f88055"
 dependencies = [
  "chrono",
  "reqwest 0.12.9",
@@ -1103,7 +1103,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "thiserror 2.0.4",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
