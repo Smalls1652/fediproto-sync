@@ -653,21 +653,14 @@ impl BlueSkyPostSync<'_> {
 
                 tracing::info!(
                     "Waiting for video upload job '{}' to complete",
-                    upload_video_job_response["jobId"].as_str().unwrap()
+                    upload_video_job_response.job_id
                 );
 
                 let no_auth_config = ApiAuthConfig {
                     data: ApiAuthConfigData::None
                 };
 
-                let mut job_status = app_bsky::video::JobStatus {
-                    did: "".to_string(),
-                    job_id: "".to_string(),
-                    state: "JOB_STATE_PENDING".to_string(),
-                    progress: 0,
-                    error: None,
-                    blob: None
-                };
+                let mut job_status = upload_video_job_response.clone();
 
                 while job_status.state != "JOB_STATE_FAILED" {
                     let job_client = crate::core::create_http_client(&self.config)?;
@@ -675,7 +668,7 @@ impl BlueSkyPostSync<'_> {
                         "video.bsky.app",
                         job_client,
                         &no_auth_config,
-                        &upload_video_job_response["jobId"].as_str().unwrap()
+                        &upload_video_job_response.job_id.as_str()
                     )
                     .await?
                     .job_status;
