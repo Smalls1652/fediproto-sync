@@ -243,6 +243,12 @@ impl FediProtoSyncLoop {
                 }
                 Err(e) => {
                     tracing::error!("Failed to process post '{}': {:#?}", post_item.id, e);
+
+                    let source_error = e.source();
+
+                    if let Some(source_error) = source_error {
+                        tracing::error!("Source error: {:#?}", source_error);
+                    }
                 }
             }
         }
