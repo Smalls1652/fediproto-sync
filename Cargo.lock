@@ -1103,7 +1103,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
@@ -2207,7 +2207,6 @@ dependencies = [
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
- "tracing",
  "windows-sys 0.52.0",
 ]
 
