@@ -19,14 +19,7 @@ reqwest = { version = "0.12.9", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-tokio = { version = "1.42.0", features = [
-    "rt",
-    "macros",
-    "signal",
-    "sync",
-    "time",
-    "tracing"
-] }
+tokio = { version = "1.42.0", features = ["full"] }
 megalodon = "0.14.1"
 dotenvy = "0.15.7"
 dom_query = "0.10.0"
