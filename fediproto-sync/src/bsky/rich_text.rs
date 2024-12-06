@@ -5,6 +5,8 @@ use atprotolib_rs::types::{
 
 use super::BlueSkyPostSync;
 
+use crate::bsky::utils::BlueSkyPostSyncUtils;
+
 pub trait BlueSkyPostSyncRichText {
     /// Generate rich text tags for the post item.
     ///

@@ -5,6 +5,8 @@ use atprotolib_rs::{
 use rand::distributions::DistString;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::bsky::utils::BlueSkyPostSyncUtils;
+
 use super::BlueSkyPostSync;
 
 pub const MAX_VIDEO_DURATION: f64 = 60.0;
