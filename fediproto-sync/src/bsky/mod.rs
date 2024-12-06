@@ -1,27 +1,22 @@
+mod media;
+mod rich_text;
+
 use atprotolib_rs::{
     api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
     types::{
-        app_bsky::{
-            self,
-            embed::{ExternalEmbed, ImageEmbed},
-            feed::{PostEmbedExternal, PostEmbedImage, PostEmbedVideo, PostEmbeds},
-            richtext::{
-                ByteSlice,
-                RichTextFacet,
-                RichTextFacetFeature,
-                RichTextFacetLink,
-                RichTextFacetTag
-            }
-        },
+        app_bsky,
         com_atproto::{self, server::CreateSessionRequest}
     }
 };
-use chrono::Utc;
 use diesel::*;
-use rand::distributions::DistString;
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
-use crate::{mastodon, models, schema, FediProtoSyncEnvVars};
+use crate::{
+    bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
+    mastodon,
+    models,
+    schema,
+    FediProtoSyncEnvVars
+};
 
 /// Holds the authentication information for a Bluesky session.
 #[derive(Debug, Clone)]
@@ -340,10 +335,6 @@ impl BlueSkyPostSync<'_> {
             None
         );
 
-        // Create a vector to hold the richtext facets for the post item that will be
-        // generated from any tags or links found in the post.
-        let mut richtext_facets = Vec::new();
-
         // Check if the post has any media attachments and upload them to Bluesky.
         if parsed_status.mastodon_status.media_attachments.len() > 0 {
             tracing::info!(
@@ -352,96 +343,44 @@ impl BlueSkyPostSync<'_> {
                 parsed_status.mastodon_status.id
             );
 
-            let mut image_attachments = Vec::new();
+            let first_media_attachment = parsed_status.mastodon_status.media_attachments[0].clone();
 
-            // Iterate over each media attachment in the Mastodon status.
-            for media_attachment in parsed_status.mastodon_status.media_attachments.clone() {
-                match media_attachment.r#type {
-                    // Handle image attachments.
-                    megalodon::entities::attachment::AttachmentType::Image => {
-                        // Download the media attachment from the Mastodon server.
-                        let media_attachment_client =
-                            crate::core::create_http_client(&self.config)?;
-                        let media_attachment_response = media_attachment_client
-                            .get(&media_attachment.url)
-                            .send()
-                            .await?;
-                        let media_attachment_bytes = media_attachment_response.bytes().await?;
-
-                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
-                        // Upload the media attachment to Bluesky.
-                        let blob_upload_response = com_atproto::repo::upload_blob(
-                            &self.bsky_auth.host_name,
-                            blob_upload_client,
-                            &self.bsky_auth.auth_config,
-                            media_attachment_bytes.to_vec(),
-                            Some("image/jpeg")
-                        )
-                        .await?;
-
-                        // Create an image embed and add it to the list of image attachments.
-                        image_attachments.push(ImageEmbed {
-                            image: blob_upload_response.blob,
-                            alt: media_attachment
-                                .description
-                                .unwrap_or_else(|| "".to_string()),
-                            aspect_ratio: None
-                        });
-
-                        tracing::info!(
-                            "Uploaded media attachment '{}' to Bluesky",
-                            media_attachment.url
-                        );
-                    }
-
-                    // Handle video attachments.
-                    megalodon::entities::attachment::AttachmentType::Video => {
-                        let video_embed = self.generate_video_embed(&media_attachment).await?;
-
-                        self.post_item.embed = video_embed;
-                    }
-
-                    _ => {
-                        tracing::warn!(
-                            "Unsupported media attachment type '{}' in post '{}'",
-                            media_attachment.r#type,
-                            parsed_status.mastodon_status.id
-                        );
-                    }
+            let media_embeds = match first_media_attachment.r#type {
+                // Handle image attachments.
+                megalodon::entities::attachment::AttachmentType::Image => {
+                    self.generate_image_embed(&parsed_status.mastodon_status.media_attachments)
+                        .await?
                 }
-            }
 
-            if image_attachments.len() > 0 {
-                // Add the image attachments to the post item as a post embed.
-                self.post_item.embed = Some(PostEmbeds::Images(PostEmbedImage {
-                    images: image_attachments
-                }));
-            }
+                // Handle video attachments.
+                megalodon::entities::attachment::AttachmentType::Video => {
+                    self.generate_video_embed(&first_media_attachment).await?
+                }
+
+                // All other media types are unsupported.
+                _ => {
+                    tracing::warn!(
+                        "Unsupported media type '{}' for post '{}'",
+                        first_media_attachment.r#type,
+                        parsed_status.mastodon_status.id
+                    );
+
+                    None
+                }
+            };
+
+            self.post_item.embed = media_embeds;
         }
+
+        // Create a vector to hold the richtext facets for the post item that will be
+        // generated from any tags or links found in the post.
+        let mut richtext_facets = Vec::new();
 
         // Check if the post has any tags/hashtags.
         if parsed_status.found_tags.len() > 0 {
-            // Iterate over each tag found in the post and create a richtext facet for it.
-            for tag in parsed_status.found_tags {
-                // Find the start and end index of the tag in the post content to
-                // generate a ByteSlice for the richtext facet.
-                let tag_start_index = parsed_status.stripped_html.find(tag.as_str()).unwrap();
-                let tag_end_index = tag_start_index + tag.len();
+            let rich_text_tags = self.generate_rich_text_tags(&parsed_status)?;
 
-                // Create a richtext facet for the tag and add it to the list of richtext
-                // facets.
-                let richtext_facet_tag = RichTextFacet {
-                    index: ByteSlice {
-                        byte_start: tag_start_index as i64,
-                        byte_end: tag_end_index as i64
-                    },
-                    features: vec![RichTextFacetFeature::Tag(RichTextFacetTag {
-                        tag: tag.trim_start_matches("#").to_string()
-                    })]
-                };
-
-                richtext_facets.push(richtext_facet_tag);
-            }
+            richtext_facets.extend(rich_text_tags);
         }
 
         // Check if the post has any links.
@@ -452,77 +391,9 @@ impl BlueSkyPostSync<'_> {
                 self.mastodon_status.id
             );
 
-            // Get the first link found in the post.
-            let first_link = parsed_status.found_links[0].clone();
+            let rich_text_links = self.generate_rich_text_links(&parsed_status).await?;
 
-            // Get metadata for the link.
-            let link_metadata = self.get_link_metadata(&first_link).await?;
-
-            // Check if the post has an embed and add an external embed for the link if
-            // it doesn't.
-            if self.post_item.embed.is_none() {
-                tracing::info!(
-                    "Post has no embeds, adding external embed for link '{}'",
-                    first_link
-                );
-
-                // Get the thumbnail for the link if it has one and upload it to BlueSky.
-                let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
-                let link_thumbnail_bytes = match link_thumbnail_url == "" {
-                    true => vec![],
-                    false => self.get_link_thumbnail(link_thumbnail_url).await?
-                };
-
-                let blob_item = match link_thumbnail_bytes.len() > 0 {
-                    true => {
-                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
-                        Some(
-                            com_atproto::repo::upload_blob(
-                                &self.bsky_auth.host_name,
-                                blob_upload_client,
-                                &self.bsky_auth.auth_config,
-                                link_thumbnail_bytes,
-                                Some("image/jpeg")
-                            )
-                            .await?
-                            .blob
-                        )
-                    }
-
-                    _ => None
-                };
-
-                // Create an external embed for the link and add it to the post item.
-                self.post_item.embed = Some(PostEmbeds::External(PostEmbedExternal {
-                    external: ExternalEmbed {
-                        uri: link_metadata["url"].as_str().unwrap().to_string(),
-                        title: link_metadata["title"].as_str().unwrap().to_string(),
-                        description: link_metadata["description"].as_str().unwrap().to_string(),
-                        thumb: blob_item
-                    }
-                }));
-            }
-
-            // Find the start and end index of the first link in the post content to
-            // generate a ByteSlice for the richtext facet and add it to the list of
-            // richtext facets for the post item.
-            let link_start_index = parsed_status
-                .stripped_html
-                .find(first_link.as_str())
-                .unwrap();
-            let link_end_index = link_start_index + first_link.len();
-
-            let richtext_facet_link = RichTextFacet {
-                index: ByteSlice {
-                    byte_start: link_start_index as i64,
-                    byte_end: link_end_index as i64
-                },
-                features: vec![RichTextFacetFeature::Link(RichTextFacetLink {
-                    uri: first_link
-                })]
-            };
-
-            richtext_facets.push(richtext_facet_link);
+            richtext_facets.extend(rich_text_links);
         }
 
         // Set the richtext facets for the post item if any were generated.
@@ -532,203 +403,6 @@ impl BlueSkyPostSync<'_> {
         };
 
         Ok(())
-    }
-
-    /// Generates a video embed for a BlueSky post from a media attachment from
-    /// a Mastodon status.
-    ///
-    /// ## Arguments
-    ///
-    /// * `config` - The environment variables for the FediProtoSync
-    ///   application.
-    /// * `bsky_auth` - The Bluesky authentication information.
-    /// * `host_name` - The hostname of the Bluesky/ATProto PDS.
-    /// * `mastodon_status` - The Mastodon status to generate the video embed
-    ///   from.
-    /// * `media_attachment` - The media attachment to generate the video embed
-    ///   from.
-    async fn generate_video_embed(
-        &mut self,
-        media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
-        #[allow(unused_assignments)]
-        let mut post_embed: Option<app_bsky::feed::PostEmbeds> = None;
-
-        let media_attachment_meta = media_attachment.meta.clone().unwrap();
-        let video_duration = &media_attachment_meta.original.unwrap().duration.unwrap();
-
-        match self.config.bluesky_video_always_fallback || *video_duration >= 60 as f64 {
-            true => {
-                let video_link_thumbnail_bytes = self
-                    .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
-                    .await?;
-
-                let blob_item = match video_link_thumbnail_bytes.len() > 0 {
-                    true => {
-                        let blob_upload_client = crate::core::create_http_client(&self.config)?;
-                        Some(
-                            com_atproto::repo::upload_blob(
-                                &self.bsky_auth.host_name,
-                                blob_upload_client,
-                                &self.bsky_auth.auth_config,
-                                video_link_thumbnail_bytes,
-                                Some("image/jpeg")
-                            )
-                            .await?
-                            .blob
-                        )
-                    }
-
-                    _ => None
-                };
-
-                post_embed = Some(PostEmbeds::External(PostEmbedExternal {
-                    external: ExternalEmbed {
-                        uri: self.mastodon_status.url.clone().unwrap(),
-                        title: "View video on Mastodon".to_string(),
-                        description: format!(
-                            "Check out this video posted by @{}!",
-                            self.mastodon_status.account.username.clone()
-                        ),
-                        thumb: blob_item
-                    }
-                }));
-            }
-
-            false => {
-                // Download the media attachment from the Mastodon server.
-                tracing::info!(
-                    "Downloading video attachment '{}' from Mastodon",
-                    media_attachment.url
-                );
-
-                let media_attachment_client = crate::core::create_http_client(&self.config)?;
-                let mut media_attachment_response = media_attachment_client
-                    .get(&media_attachment.url)
-                    .send()
-                    .await?;
-
-                let temp_path = std::env::temp_dir().join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));
-                let mut temp_file = tokio::fs::File::create(&temp_path).await?;
-
-                while let Some(chunk) = media_attachment_response.chunk().await? {
-                    temp_file.write_all(&chunk).await?;
-                }
-
-                temp_file.flush().await?;
-
-                let service_endpoint = self.get_pds_service_endpoint()?;
-                let service_endpoint = service_endpoint.replace("https://", "");
-
-                let service_auth_client = crate::core::create_http_client(&self.config)?;
-                let service_auth_token = com_atproto::server::get_service_auth(
-                    &service_endpoint,
-                    service_auth_client,
-                    &self.bsky_auth.auth_config,
-                    format!("did:web:{}", &service_endpoint).as_str(),
-                    (Utc::now() + chrono::Duration::minutes(30)).timestamp(),
-                    Some("com.atproto.repo.uploadBlob")
-                )
-                .await?;
-
-                let upload_auth_config = ApiAuthConfig {
-                    data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-                        token: service_auth_token.token.clone()
-                    })
-                };
-
-                let random_video_name = format!(
-                    "{}.mp4",
-                    rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14)
-                );
-
-                // Upload the video to BlueSky.
-                tracing::info!(
-                    "Uploading video attachment '{}' to Bluesky as '{}'",
-                    media_attachment.url,
-                    random_video_name
-                );
-
-                temp_file = tokio::fs::File::open(&temp_path).await?;
-                let mut media_attachment_buffer = Vec::new();
-
-                temp_file.read_to_end(&mut media_attachment_buffer).await?;
-
-                let upload_video_client = crate::core::create_http_client(&self.config)?;
-                let upload_video_job_response = app_bsky::video::upload_video(
-                    "video.bsky.app",
-                    upload_video_client,
-                    &upload_auth_config,
-                    media_attachment_buffer,
-                    &self.bsky_auth.session.did,
-                    &random_video_name
-                )
-                .await?;
-
-                temp_file.flush().await?;
-                tokio::fs::remove_file(&temp_path).await?;
-
-                tracing::info!(
-                    "Waiting for video upload job '{}' to complete",
-                    upload_video_job_response.job_id
-                );
-
-                let no_auth_config = ApiAuthConfig {
-                    data: ApiAuthConfigData::None
-                };
-
-                let mut job_status = upload_video_job_response.clone();
-
-                while job_status.state != "JOB_STATE_FAILED" {
-                    let job_client = crate::core::create_http_client(&self.config)?;
-                    job_status = app_bsky::video::get_job_status(
-                        "video.bsky.app",
-                        job_client,
-                        &no_auth_config,
-                        &upload_video_job_response.job_id.as_str()
-                    )
-                    .await?
-                    .job_status;
-
-                    if job_status.state == "JOB_STATE_COMPLETED" {
-                        break;
-                    }
-
-                    tracing::info!("Video upload progress: {}%", job_status.progress);
-
-                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                }
-
-                match job_status.state.as_str() {
-                    "JOB_STATE_FAILED" => {
-                        tracing::error!(
-                            "Failed to upload video attachment '{}'. Error message: '{}'",
-                            media_attachment.url,
-                            job_status.error.unwrap_or_else(|| "N/A".to_string())
-                        );
-
-                        return Err(Box::new(crate::error::Error::new(
-                            "The BlueSky upload job failed.",
-                            crate::error::ErrorKind::VideoUploadError
-                        )));
-                    }
-
-                    _ => {
-                        tracing::info!(
-                            "Uploaded video attachment '{}' to Bluesky",
-                            media_attachment.url
-                        );
-
-                        post_embed = Some(PostEmbeds::Video(PostEmbedVideo {
-                            aspect_ratio: None,
-                            video: job_status.blob.unwrap()
-                        }))
-                    }
-                }
-            }
-        };
-
-        Ok(post_embed)
     }
 
     /// Resolve the previous post in a thread on Mastodon based off what has
