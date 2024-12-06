@@ -31,7 +31,7 @@ I'm making this because I wanted to have a way to sync any posts I make on my Ma
   - [x] Maintain thread structure.
   - [x] Sync image attachments.
     - [x] With any alternative text.
-  - [ ] Sync video attachments. 🏗️
+  - [x] Sync video attachments.
   - [x] Truncate posts that are too long for BlueSky's 300 character limit.
     - *Truncated posts will have a link to the original post on Mastodon.*
   - [ ] Sync content warnings. 🏗️
