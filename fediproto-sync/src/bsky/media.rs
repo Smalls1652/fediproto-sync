@@ -7,15 +7,15 @@ use rand::distributions::DistString;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::BlueSkyPostSync;
-use crate::{bsky::utils::BlueSkyPostSyncUtils, models::{CachedFile, NewCachedFile}};
+use crate::{bsky::utils::BlueSkyPostSyncUtils, models::NewCachedFile};
 
 /// The maximum duration for a BlueSky video in seconds.
-/// 
+///
 /// (Currently `60` seconds)
 pub const MAX_VIDEO_DURATION: f64 = 60.0;
 
 /// The maximum size for a BlueSky video in bytes.
-/// 
+///
 /// (Currently `50 MB`)
 pub const MAX_VIDEO_SIZE: u64 = 50_000_000;
 
