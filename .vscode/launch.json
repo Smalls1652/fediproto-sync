@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "run fediproto-sync",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/target/debug/fediproto-sync",
+            "environment": [
+                {
+                    "name": "FEDIPROTO_SYNC_ENVIRONMENT",
+                    "value": "Development"
+                }
+            ],
+            "args": [],
+            "symbolLoadInfo": {
+                "loadAll": true,
+                "exceptionList": ""
+            },
+            "sourceFileMap": {},
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "preLaunchTask": "Build fediproto-sync"
+        }
+    ]
+}
