@@ -145,13 +145,6 @@ pub struct BlueSkyPostSync<'a> {
 
 impl BlueSkyPostSync<'_> {
     /// Sync a Mastodon post to Bluesky.
-    ///
-    /// ## Arguments
-    ///
-    /// * `bsky_auth` - The Bluesky authentication information.
-    /// * `db_connection` - The SQLite database connection.
-    /// * `mastodon_account` - The Mastodon account that posted the status.
-    /// * `mastodon_status` - The Mastodon status to sync.
     pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Generate a BlueSky post item from the Mastodon status. --
         self.generate_post_item().await?;
@@ -278,13 +271,6 @@ impl BlueSkyPostSync<'_> {
     }
 
     /// Generate a Bluesky post item from a Mastodon status.
-    ///
-    /// ## Arguments
-    ///
-    /// * `host_name` - The hostname of the Bluesky/ATProto PDS.
-    /// * `auth_config` - The API authentication configuration for the session.
-    /// * `mastodon_status` - The Mastodon status to generate the post item
-    ///   from.
     pub async fn generate_post_item(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Parse the Mastodon status for post content and metadata. --
 
@@ -412,7 +398,6 @@ impl BlueSkyPostSync<'_> {
     ///
     /// ## Arguments
     ///
-    /// * `db_connection` - The SQLite database connection.
     /// * `previous_post_id` - The Mastodon post ID of the previous post in the
     ///   thread.
     async fn resolve_previous_post(
@@ -430,7 +415,6 @@ impl BlueSkyPostSync<'_> {
     ///
     /// ## Arguments
     ///
-    /// * `db_connection` - The SQLite database connection.
     /// * `mastodon_post_id` - The Mastodon post ID of the post to get.
     async fn get_synced_post(
         &mut self,
