@@ -153,7 +153,7 @@ impl FediProtoSyncLoop {
             megalodon::SNS::Mastodon,
             format!("https://{}", self.config.mastodon_server.clone()),
             Some(self.config.mastodon_access_token.clone()),
-            None
+            Some(self.config.user_agent.clone())
         )
         .map_err(|e| {
             crate::error::Error::with_source(
