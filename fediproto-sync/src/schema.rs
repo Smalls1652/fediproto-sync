@@ -22,6 +22,13 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    cached_files (id) {
+        id -> Integer,
+        file_path -> Text
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     mastodon_posts,
     synced_posts,

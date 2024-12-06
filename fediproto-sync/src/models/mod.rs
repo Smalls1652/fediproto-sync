@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use diesel::prelude::{Insertable, Queryable, Selectable};
+use diesel::{prelude::{Insertable, Queryable, Selectable}, ExpressionMethods, RunQueryDsl};
 use megalodon::entities::Status;
 
 /// Represents a Mastodon post in the `mastodon_posts` table.
@@ -161,4 +161,63 @@ impl NewSyncedPost {
             bsky_post_uri: bsky_post_uri.to_string()
         }
     }
+}
+
+/// Represents a cached file in the `cached_files` table.
+#[derive(Queryable, Selectable)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::schema::cached_files)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct CachedFile {
+    pub id: i32,
+    pub file_path: String
+}
+
+impl CachedFile {
+    /// Remove the cached file from the file system.
+    pub async fn remove_file(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let file_path = std::path::Path::new(&self.file_path);
+
+        if file_path.exists() {
+            tokio::fs::remove_file(&file_path).await?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Represents a new cached file to insert into the `cached_files` table.
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::cached_files)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct NewCachedFile {
+    pub file_path: String
+}
+
+impl NewCachedFile {
+    pub fn new(file_path: &std::path::PathBuf) -> Self {
+        Self {
+            file_path: file_path.to_string_lossy().to_string()
+        }
+    }
+}
+
+/// Remove a cached file from the database and the file system.
+/// 
+/// ## Arguments
+/// 
+/// - `cached_file` - The cached file to remove.
+/// - `db_connection` - The database connection to use.
+pub async fn remove_cached_file(
+    cached_file: &CachedFile,
+    db_connection: &mut diesel::SqliteConnection
+) -> Result<(), Box<dyn std::error::Error>> {
+
+    diesel::delete(crate::schema::cached_files::table)
+        .filter(crate::schema::cached_files::id.eq(cached_file.id))
+        .execute(db_connection)?;
+
+    cached_file.remove_file().await?;
+
+    Ok(())
 }

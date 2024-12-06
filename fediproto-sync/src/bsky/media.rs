@@ -2,11 +2,12 @@ use atprotolib_rs::{
     api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
     types::{app_bsky, com_atproto}
 };
+use diesel::RunQueryDsl;
 use rand::distributions::DistString;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::BlueSkyPostSync;
-use crate::bsky::utils::BlueSkyPostSyncUtils;
+use crate::{bsky::utils::BlueSkyPostSyncUtils, models::{CachedFile, NewCachedFile}};
 
 /// The maximum duration for a BlueSky video in seconds.
 /// 
@@ -150,6 +151,10 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         #[allow(unused_assignments)]
         let temp_file_path = self.download_mastodon_video(media_attachment).await?;
 
+        diesel::insert_into(crate::schema::cached_files::table)
+            .values(NewCachedFile::new(&temp_file_path))
+            .execute(self.db_connection)?;
+
         let mut should_fallback = false;
 
         // Check if the video exceeds the maximum duration (60 seconds) for BlueSky.
@@ -176,8 +181,6 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                     .await?
             }
         };
-
-        tokio::fs::remove_file(&temp_file_path).await?;
 
         Ok(post_embed)
     }

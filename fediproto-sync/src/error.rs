@@ -84,7 +84,10 @@ pub enum ErrorKind {
     HttpClientCreationError,
 
     /// An error occurred while uploading a video to BlueSky.
-    VideoUploadError
+    VideoUploadError,
+
+    /// An error occurred while removing a temporary file.
+    TempFileRemovalError,
 }
 
 impl std::fmt::Display for ErrorKind {

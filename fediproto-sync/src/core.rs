@@ -1,12 +1,6 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{
-    sqlite::Sqlite,
-    Connection,
-    ExpressionMethods,
-    OptionalExtension,
-    QueryDsl,
-    RunQueryDsl,
-    SqliteConnection
+    sqlite::Sqlite, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
@@ -250,6 +244,19 @@ impl FediProtoSyncLoop {
                         tracing::error!("Source error: {:#?}", source_error);
                     }
                 }
+            }
+        }
+
+        let cached_files_to_delete = schema::cached_files::table
+            .select(crate::models::CachedFile::as_select())
+            .load(&mut self.db_connection)?;
+
+        if cached_files_to_delete.len() > 0 {
+            tracing::info!("Deleting cached files during sync...");
+
+            for cached_file in cached_files_to_delete {
+                tracing::info!("Deleting cached file '{}'.", cached_file.file_path);
+                crate::models::remove_cached_file(&cached_file, &mut self.db_connection).await?;
             }
         }
 
