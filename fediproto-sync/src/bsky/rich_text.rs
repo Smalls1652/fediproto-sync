@@ -80,7 +80,19 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             // Find the start and end index of the first link in the post content to
             // generate a ByteSlice for the richtext facet and add it to the list of
             // richtext facets for the post item.
-            let link_start_index = parsed_status.stripped_html.find(&link).unwrap();
+            let link_start_index_filter = parsed_status.stripped_html
+                .match_indices(&link)
+                .filter(|(index, _)| {
+                    richtext_facets.iter().any(|facet| facet.index.byte_start as usize != *index)
+                })
+                .map(|(index, _)| index)
+                .collect::<Vec<usize>>();
+
+            let link_start_index = match link_start_index_filter.len() > 0 {
+                true => link_start_index_filter[0],
+                false => parsed_status.stripped_html.find(&link).unwrap().clone()
+            };
+        
             let link_end_index = link_start_index + &link.len();
 
             let richtext_facet_link = RichTextFacet {
@@ -101,7 +113,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
         if self.post_item.embed.is_none() {
             // Get the first link found in the post.
             let first_link = parsed_status.found_links[0].clone();
-            
+
             tracing::info!(
                 "Post has no embeds, adding external embed for link '{}'",
                 first_link
