@@ -7,9 +7,9 @@ use super::BlueSkyPostSync;
 
 pub trait BlueSkyPostSyncRichText {
     /// Generate rich text tags for the post item.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `parsed_status` - The parsed Mastodon post.
     fn generate_rich_text_tags(
         &self,
@@ -17,9 +17,9 @@ pub trait BlueSkyPostSyncRichText {
     ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>>;
 
     /// Generate rich text links for the post item.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `parsed_status` - The parsed Mastodon post.
     async fn generate_rich_text_links(
         &mut self,
@@ -29,9 +29,9 @@ pub trait BlueSkyPostSyncRichText {
 
 impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     /// Generate rich text tags for the post item.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `parsed_status` - The parsed Mastodon post.
     fn generate_rich_text_tags(
         &self,
@@ -66,9 +66,9 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     }
 
     /// Generate rich text links for the post item.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `parsed_status` - The parsed Mastodon post.
     async fn generate_rich_text_links(
         &mut self,
@@ -96,19 +96,19 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             richtext_facets.push(richtext_facet_link);
         }
 
-        // Get the first link found in the post.
-        let first_link = parsed_status.found_links[0].clone();
-
-        // Get metadata for the link.
-        let link_metadata = self.get_link_metadata(&first_link).await?;
-
         // Check if the post has an embed and add an external embed for the first link
         // if it doesn't.
         if self.post_item.embed.is_none() {
+            // Get the first link found in the post.
+            let first_link = parsed_status.found_links[0].clone();
+            
             tracing::info!(
                 "Post has no embeds, adding external embed for link '{}'",
                 first_link
             );
+
+            // Get metadata for the link.
+            let link_metadata = self.get_link_metadata(&first_link).await?;
 
             // Get the thumbnail for the link if it has one and upload it to BlueSky.
             let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
