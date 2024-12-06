@@ -4,9 +4,9 @@ use atprotolib_rs::types::{
 };
 
 use super::BlueSkyPostSync;
-
 use crate::bsky::utils::BlueSkyPostSyncUtils;
 
+/// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {
     /// Generate rich text tags for the post item.
     ///
@@ -82,10 +82,13 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             // Find the start and end index of the first link in the post content to
             // generate a ByteSlice for the richtext facet and add it to the list of
             // richtext facets for the post item.
-            let link_start_index_filter = parsed_status.stripped_html
+            let link_start_index_filter = parsed_status
+                .stripped_html
                 .match_indices(&link)
                 .filter(|(index, _)| {
-                    richtext_facets.iter().any(|facet| facet.index.byte_start as usize != *index)
+                    richtext_facets
+                        .iter()
+                        .any(|facet| facet.index.byte_start as usize != *index)
                 })
                 .map(|(index, _)| index)
                 .collect::<Vec<usize>>();
@@ -94,7 +97,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
                 true => link_start_index_filter[0],
                 false => parsed_status.stripped_html.find(&link).unwrap().clone()
             };
-        
+
             let link_end_index = link_start_index + &link.len();
 
             let richtext_facet_link = RichTextFacet {

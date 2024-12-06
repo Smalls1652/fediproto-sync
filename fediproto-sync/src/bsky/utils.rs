@@ -2,6 +2,7 @@ use atprotolib_rs::types::com_atproto;
 
 use super::BlueSkyPostSync;
 
+/// Trait for utility functions used in BlueSky post synchronization.
 pub trait BlueSkyPostSyncUtils {
     /// Get link metadata from the CardyB API.
     ///

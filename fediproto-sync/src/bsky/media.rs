@@ -5,13 +5,13 @@ use atprotolib_rs::{
 use rand::distributions::DistString;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::bsky::utils::BlueSkyPostSyncUtils;
-
 use super::BlueSkyPostSync;
+use crate::bsky::utils::BlueSkyPostSyncUtils;
 
 pub const MAX_VIDEO_DURATION: f64 = 60.0;
 pub const MAX_VIDEO_SIZE: u64 = 50_000_000;
 
+/// Trait for generating media embeds for a BlueSky post.
 pub trait BlueSkyPostSyncMedia {
     /// Generate an image embed for a BlueSky post from media attachments from
     /// a Mastodon status.

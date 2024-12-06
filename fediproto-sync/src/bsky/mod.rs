@@ -133,6 +133,7 @@ pub async fn refresh_session_token(
     ))
 }
 
+/// Struct to hold the data and logic for syncing a Mastodon post to Bluesky.
 pub struct BlueSkyPostSync<'a> {
     pub config: FediProtoSyncEnvVars,
     pub bsky_auth: BlueSkyAuthentication,
