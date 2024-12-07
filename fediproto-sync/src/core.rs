@@ -1,13 +1,6 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{
-    sqlite::Sqlite,
-    Connection,
-    ExpressionMethods,
-    OptionalExtension,
-    QueryDsl,
-    RunQueryDsl,
-    SelectableHelper,
-    SqliteConnection
+    Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
@@ -21,7 +14,7 @@ pub struct FediProtoSyncLoop {
     config: FediProtoSyncEnvVars,
 
     /// The database connection for the FediProto Sync application.
-    db_connection: SqliteConnection,
+    db_connection: PgConnection,
 
     /// The BlueSky authentication session.
     bsky_auth: bsky::BlueSkyAuthentication
@@ -38,7 +31,7 @@ impl FediProtoSyncLoop {
         let config = config.clone();
 
         let database_url = config.database_url.clone();
-        let db_connection = SqliteConnection::establish(&database_url).map_err(|e| {
+        let db_connection = PgConnection::establish(&database_url).map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to connect to database.",
                 crate::error::ErrorKind::DatabaseConnectionError,
@@ -101,7 +94,7 @@ impl FediProtoSyncLoop {
     ///
     /// * `connection` - The database connection to run the migrations on.
     fn run_migrations(
-        connection: &mut impl diesel_migrations::MigrationHarness<Sqlite>
+        connection: &mut impl diesel_migrations::MigrationHarness<diesel::pg::Pg>
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         let pending_migrations = connection.pending_migrations(MIGRATIONS)?;
 

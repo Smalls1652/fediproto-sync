@@ -1,12 +1,16 @@
 use chrono::NaiveDateTime;
-use diesel::{prelude::{Insertable, Queryable, Selectable}, ExpressionMethods, RunQueryDsl};
+use diesel::{
+    prelude::*,
+    ExpressionMethods,
+    RunQueryDsl
+};
 use megalodon::entities::Status;
 
 /// Represents a Mastodon post in the `mastodon_posts` table.
 #[derive(Queryable, Selectable)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct MastodonPost {
     /// A unique identifier for the Mastodon post in the database.
     pub id: i32,
@@ -36,7 +40,7 @@ pub struct MastodonPost {
 /// Represents a new Mastodon post to insert into the `mastodon_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewMastodonPost {
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -62,12 +66,13 @@ pub struct NewMastodonPost {
 
 impl NewMastodonPost {
     /// Create a new instance of the `NewMastodonPost` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// - `post` - The Mastodon post to create a new post from.
     /// - `bsky_post_id` - The BlueSky post ID when the post was synced, if any.
-    /// - `root_mastodon_post_id` - The root Mastodon post ID in the thread, if any.
+    /// - `root_mastodon_post_id` - The root Mastodon post ID in the thread, if
+    ///   any.
     pub fn new(
         post: &Status,
         bsky_post_id: Option<String>,
@@ -112,7 +117,7 @@ impl NewMastodonPost {
 #[derive(Queryable, Selectable, Clone)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::synced_posts)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct SyncedPost {
     /// A unique identifier for the synced post in the database.
     pub id: i32,
@@ -130,7 +135,7 @@ pub struct SyncedPost {
 /// Represents a new synced post to insert into the `synced_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::synced_posts)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewSyncedPost {
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -144,9 +149,9 @@ pub struct NewSyncedPost {
 
 impl NewSyncedPost {
     /// Create a new instance of the `NewSyncedPost` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// - `mastodon_post_id` - The Mastodon post ID.
     /// - `bsky_post_cid` - The CID of the BlueSky post.
     /// - `bsky_post_uri` - The URI of the BlueSky post.
@@ -167,7 +172,7 @@ impl NewSyncedPost {
 #[derive(Queryable, Selectable)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::cached_files)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct CachedFile {
     pub id: i32,
     pub file_path: String
@@ -189,7 +194,7 @@ impl CachedFile {
 /// Represents a new cached file to insert into the `cached_files` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::cached_files)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewCachedFile {
     pub file_path: String
 }
@@ -203,16 +208,15 @@ impl NewCachedFile {
 }
 
 /// Remove a cached file from the database and the file system.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// - `cached_file` - The cached file to remove.
 /// - `db_connection` - The database connection to use.
 pub async fn remove_cached_file(
     cached_file: &CachedFile,
-    db_connection: &mut diesel::SqliteConnection
+    db_connection: &mut diesel::PgConnection
 ) -> Result<(), Box<dyn std::error::Error>> {
-
     diesel::delete(crate::schema::cached_files::table)
         .filter(crate::schema::cached_files::id.eq(cached_file.id))
         .execute(db_connection)?;

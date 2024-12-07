@@ -82,6 +82,67 @@
       "problemMatcher": "$rustc"
     },
     {
+      "label": "Database: Start local container",
+      "detail": "Run a local database container for development.",
+      "icon": {
+        "id": "database",
+        "color": "terminal.ansiYellow"
+      },
+      "type": "docker-compose",
+      "dockerCompose": {
+        "up": {
+          "detached": false,
+          "build": true
+        },
+        "files": [
+          "${workspaceFolder}/.local/postgres/docker-compose.yml"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/.local/postgres"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true,
+        "close": true
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Database: Stop local container",
+      "detail": "Run a local database container for development.",
+      "icon": {
+        "id": "database",
+        "color": "terminal.ansiRed"
+      },
+      "type": "docker-compose",
+      "dockerCompose": {
+        "down": {
+          "removeVolumes": false
+        },
+        "files": [
+          "${workspaceFolder}/.local/postgres/docker-compose.yml"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/.local/postgres"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true,
+        "close": true
+      },
+      "isBackground": false
+    },
+    {
       "label": "Build fediproto-sync",
       "hide": true,
       "type": "process",

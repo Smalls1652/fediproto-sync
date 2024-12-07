@@ -26,8 +26,7 @@ dom_query = "0.10.0"
 tendril = "0.4.3"
 diesel = { version = "2.2.6", features = [
     "chrono",
-    "returning_clauses_for_sqlite_3_35",
-    "sqlite",
+    "postgres"
 ] }
 tokio-util = { version = "0.7.12", features = ["rt", "time"] }
 tracing = "0.1.41"

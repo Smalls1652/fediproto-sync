@@ -129,7 +129,7 @@ pub struct BlueSkyPostSync<'a> {
     pub bsky_auth: BlueSkyAuthentication,
 
     /// The database connection for the FediProto Sync application.
-    pub db_connection: &'a mut diesel::SqliteConnection,
+    pub db_connection: &'a mut diesel::PgConnection,
 
     /// The Mastodon account that posted the status.
     pub mastodon_account: megalodon::entities::account::Account,
