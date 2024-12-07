@@ -9,7 +9,7 @@ mod schema;
 /// application.
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncEnvVars {
-    /// The URL/path to the SQLite database file.
+    /// The URL/path to the database.
     pub database_url: String,
 
     /// User-Agent string to use for HTTP requests.

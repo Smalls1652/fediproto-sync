@@ -26,11 +26,14 @@ dom_query = "0.10.0"
 tendril = "0.4.3"
 diesel = { version = "2.2.6", features = [
     "chrono",
-    "returning_clauses_for_sqlite_3_35",
-    "sqlite",
+    "serde_json",
+    "uuid",
+    "postgres",
+    "postgres_backend"
 ] }
 tokio-util = { version = "0.7.12", features = ["rt", "time"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
 rand = "0.8.5"
+uuid = { version = "1.11.0", features = ["v4", "v7", "fast-rng"] }

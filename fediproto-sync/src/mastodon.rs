@@ -14,8 +14,8 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
     ///
     /// ## Arguments
     ///
-    /// - `account_id` - The Mastodon account ID to get the latest posts for.
-    /// - `last_post_id` - The last post ID to get posts since.
+    /// * `account_id` - The Mastodon account ID to get the latest posts for.
+    /// * `last_post_id` - The last post ID to get posts since.
     async fn get_latest_posts(
         &self,
         account_id: &str,
@@ -60,7 +60,7 @@ impl ParsedMastodonPost {
     ///
     /// ## Arguments
     ///
-    /// - `status` - The Mastodon status to parse.
+    /// * `status` - The Mastodon status to parse.
     pub fn from_mastodon_status(
         status: &megalodon::entities::Status
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -154,8 +154,8 @@ impl ParsedMastodonPost {
     ///
     /// ## Arguments
     ///
-    /// - `content` - The content to trim.
-    /// - `max_length` - The maximum length of the content.
+    /// * `content` - The content to trim.
+    /// * `max_length` - The maximum length of the content.
     fn trim_post_string(
         content: &str,
         max_length: usize
@@ -181,7 +181,7 @@ impl ParsedMastodonPost {
     ///
     /// ## Arguments
     ///
-    /// - `document` - The HTML document to convert to a string.
+    /// * `document` - The HTML document to convert to a string.
     fn convert_html_content_to_string(
         document: &dom_query::Document
     ) -> Result<String, Box<dyn std::error::Error>> {
@@ -200,8 +200,8 @@ impl ParsedMastodonPost {
     ///
     /// ## Arguments
     ///
-    /// - `document` - The HTML document to get the links from.
-    /// - `tags` - The tags to ignore when getting links.
+    /// * `document` - The HTML document to get the links from.
+    /// * `tags` - The tags to ignore when getting links.
     fn get_links(
         document: &dom_query::Document,
         tags: &Vec<megalodon::entities::status::Tag>
@@ -229,8 +229,8 @@ impl ParsedMastodonPost {
     ///
     /// ## Arguments
     ///
-    /// - `document` - The HTML document to get the tags from.
-    /// - `tags` - The tags to get from the document.
+    /// * `document` - The HTML document to get the tags from.
+    /// * `tags` - The tags to get from the document.
     fn get_tags(
         document: &dom_query::Document,
         tags: &Vec<megalodon::entities::status::Tag>
