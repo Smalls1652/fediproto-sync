@@ -120,13 +120,24 @@ impl BlueSkyAuthentication {
     }
 }
 
-/// Struct to hold the data and logic for syncing a Mastodon post to Bluesky.
+/// Struct to hold the data and logic for syncing a Mastodon post to BlueSky.
 pub struct BlueSkyPostSync<'a> {
+    /// The environment variables for the FediProto Sync application.
     pub config: FediProtoSyncEnvVars,
+
+    /// The authentication session for BlueSky.
     pub bsky_auth: BlueSkyAuthentication,
+
+    /// The database connection for the FediProto Sync application.
     pub db_connection: &'a mut diesel::SqliteConnection,
+
+    /// The Mastodon account that posted the status.
     pub mastodon_account: megalodon::entities::account::Account,
+
+    /// The Mastodon status.
     pub mastodon_status: megalodon::entities::Status,
+
+    /// The post generated from the Mastodon status to sync to BlueSky.
     pub post_item: app_bsky::feed::Post
 }
 
