@@ -37,10 +37,8 @@ impl BlueSkyAuthentication {
     ///
     /// ## Arguments
     ///
-    /// * `host_name` - The hostname of the BlueSky/ATProto PDS.
-    /// * `auth_config` - The API authentication configuration for the session.
-    /// * `session` - The session information for the authenticated BlueSky
-    ///   session.
+    /// * `config` - The environment variables for the FediProto Sync application.
+    /// * `client` - The reqwest client to use for the API request.
     pub async fn new(
         config: &FediProtoSyncEnvVars,
         client: reqwest::Client
