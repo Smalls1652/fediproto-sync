@@ -9,4 +9,10 @@ target/
 .env
 *.env
 !sample.env
-.local/
+
+# Local files
+.local/*.db
+
+## Postgres database files
+.local/postgres/*
+!.local/postgres/docker-compose.yml
