@@ -19,8 +19,8 @@ impl Error {
     /// 
     /// ## Arguments
     /// 
-    /// - `message` - A message describing the error.
-    /// - `kind` - The kind of error that occurred.
+    /// * `message` - A message describing the error.
+    /// * `kind` - The kind of error that occurred.
     pub fn new(
         message: &str,
         kind: ErrorKind
@@ -36,9 +36,9 @@ impl Error {
     /// 
     /// ## Arguments
     /// 
-    /// - `message` - A message describing the error.
-    /// - `kind` - The kind of error that occurred.
-    /// - `source` - The source of the error.
+    /// * `message` - A message describing the error.
+    /// * `kind` - The kind of error that occurred.
+    /// * `source` - The source of the error.
     pub fn with_source(
         message: &str,
         kind: ErrorKind,

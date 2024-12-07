@@ -2,34 +2,29 @@
 
 diesel::table! {
     mastodon_posts (id) {
-        id -> Integer,
-        account_id -> Text,
-        post_id -> Text,
+        id -> Uuid,
+        account_id -> VarChar,
+        post_id -> VarChar,
         created_at -> Timestamp,
         is_thread_post -> Bool,
-        previous_post_id -> Nullable<Text>,
-        bsky_post_id -> Nullable<Text>,
-        root_mastodon_post_id -> Nullable<Text>,
+        previous_post_id -> Nullable<VarChar>,
+        bsky_post_id -> Nullable<VarChar>,
+        root_mastodon_post_id -> Nullable<VarChar>,
     }
 }
 
 diesel::table! {
     synced_posts (id) {
-        id -> Integer,
-        mastodon_post_id -> Text,
-        bsky_post_cid -> Text,
-        bsky_post_uri -> Text,
+        id -> Uuid,
+        mastodon_post_id -> VarChar,
+        bsky_post_cid -> VarChar,
+        bsky_post_uri -> VarChar,
     }
 }
 
 diesel::table! {
     cached_files (id) {
-        id -> Integer,
-        file_path -> Text
+        id -> Uuid,
+        file_path -> VarChar
     }
 }
-
-diesel::allow_tables_to_appear_in_same_query!(
-    mastodon_posts,
-    synced_posts,
-);

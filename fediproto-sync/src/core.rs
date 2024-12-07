@@ -158,6 +158,7 @@ impl FediProtoSyncLoop {
         tracing::info!("Refreshed BlueSky session token.");
 
         // Get the last synced post ID, if any.
+        tracing::info!("Getting last synced post...");
         let last_synced_post_id = schema::mastodon_posts::table
             .order(schema::mastodon_posts::created_at.desc())
             .select(schema::mastodon_posts::post_id)
@@ -167,6 +168,7 @@ impl FediProtoSyncLoop {
         // Get the latest posts from Mastodon.
         // If there is no last synced post ID, we will only get the latest post.
         // Otherwise, we will get all posts since the last synced post.
+        tracing::info!("Getting latest posts from Mastodon...");
         let mut latest_posts = mastodon_client
             .get_latest_posts(&account.json.id, last_synced_post_id.clone())
             .await?;
@@ -181,8 +183,9 @@ impl FediProtoSyncLoop {
         if last_synced_post_id.clone().is_none() && latest_posts.json.len() > 0 {
             let initial_post = latest_posts.json[0].clone();
 
-            diesel::insert_into(schema::mastodon_posts::table)
-                .values(models::NewMastodonPost::new(&initial_post, None, None))
+            let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
+            diesel::insert_into(schema::mastodon_posts::dsl::mastodon_posts)
+                .values(&new_mastodon_post)
                 .execute(&mut self.db_connection)?;
 
             tracing::info!("Added initial post to database for future syncs.");
