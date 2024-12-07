@@ -41,96 +41,85 @@ impl BlueSkyAuthentication {
     /// * `auth_config` - The API authentication configuration for the session.
     /// * `session` - The session information for the authenticated BlueSky
     ///   session.
-    pub fn new(
-        host_name: &str,
-        auth_config: ApiAuthConfig,
-        session: com_atproto::server::CreateSessionResponse
-    ) -> Self {
-        Self {
-            host_name: host_name.to_string(),
-            auth_config,
-            session
-        }
-    }
-}
+    pub async fn new(
+        config: &FediProtoSyncEnvVars,
+        client: reqwest::Client
+    ) -> Result<Self, crate::error::Error> {
+        let config = config.clone();
 
-/// Create a new Bluesky session token.
-///
-/// ## Arguments
-///
-/// * `config` - The environment variables for the FediProtoSync application.
-pub async fn create_session_token(
-    config: &FediProtoSyncEnvVars,
-    client: reqwest::Client
-) -> Result<BlueSkyAuthentication, crate::error::Error> {
-    let initial_auth_config = ApiAuthConfig {
-        data: ApiAuthConfigData::None
-    };
+        let initial_auth_config = ApiAuthConfig {
+            data: ApiAuthConfigData::None
+        };
 
-    let bsky_create_session = com_atproto::server::create_session(
-        &config.bluesky_pds_server,
-        client,
-        &initial_auth_config,
-        CreateSessionRequest {
-            identifier: config.bluesky_handle.clone(),
-            password: config.bluesky_app_password.clone(),
-            auth_factor_token: None
-        }
-    )
-    .await
-    .map_err(|e| {
-        crate::error::Error::with_source(
-            "Failed to create Bluesky session.",
-            crate::error::ErrorKind::AuthenticationError,
-            e
+        let bsky_create_session = com_atproto::server::create_session(
+            &config.bluesky_pds_server,
+            client,
+            &initial_auth_config,
+            CreateSessionRequest {
+                identifier: config.bluesky_handle.clone(),
+                password: config.bluesky_app_password.clone(),
+                auth_factor_token: None
+            }
         )
-    })?;
+        .await
+        .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to create Bluesky session.",
+                crate::error::ErrorKind::AuthenticationError,
+                e
+            )
+        })?;
 
-    let bsky_auth_config = ApiAuthConfig {
-        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-            token: bsky_create_session.access_jwt.clone()
+        let bsky_auth_config = ApiAuthConfig {
+            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+                token: bsky_create_session.access_jwt.clone()
+            })
+        };
+
+        Ok(Self {
+            host_name: config.bluesky_pds_server.clone(),
+            auth_config: bsky_auth_config,
+            session: bsky_create_session
         })
-    };
+    }
 
-    Ok(BlueSkyAuthentication::new(
-        config.bluesky_pds_server.clone().as_str(),
-        bsky_auth_config,
-        bsky_create_session
-    ))
-}
+    /// Refresh the Bluesky session token.
+    ///
+    /// ## Arguments
+    ///
+    /// * `client` - The reqwest client to use for the API request.
+    pub async fn refresh_session_token(
+        &mut self,
+        client: reqwest::Client
+    ) -> Result<(), crate::error::Error> {
+        let refresh_auth_config = ApiAuthConfig {
+            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+                token: self.session.refresh_jwt.clone()
+            })
+        };
 
-pub async fn refresh_session_token(
-    bsky_auth: &BlueSkyAuthentication,
-    client: reqwest::Client
-) -> Result<BlueSkyAuthentication, crate::error::Error> {
-    let refresh_auth_config = ApiAuthConfig {
-        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-            token: bsky_auth.session.refresh_jwt.clone()
-        })
-    };
+        let bsky_refresh_session =
+            com_atproto::server::refresh_session(&self.host_name, client, &refresh_auth_config)
+                .await
+                .map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to refresh Bluesky session.",
+                        crate::error::ErrorKind::AuthenticationError,
+                        e
+                    )
+                })?;
 
-    let bsky_refresh_session =
-        com_atproto::server::refresh_session(&bsky_auth.host_name, client, &refresh_auth_config)
-            .await
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to refresh Bluesky session.",
-                    crate::error::ErrorKind::AuthenticationError,
-                    e
-                )
-            })?;
+        let bsky_auth_config = ApiAuthConfig {
+            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
+                token: bsky_refresh_session.access_jwt.clone()
+            })
+        };
 
-    let bsky_auth_config = ApiAuthConfig {
-        data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-            token: bsky_refresh_session.access_jwt.clone()
-        })
-    };
+        self.auth_config = bsky_auth_config;
+        self.session = bsky_refresh_session;
 
-    Ok(BlueSkyAuthentication::new(
-        &bsky_auth.host_name,
-        bsky_auth_config,
-        bsky_refresh_session
-    ))
+        Ok(())
+    }
 }
 
 /// Struct to hold the data and logic for syncing a Mastodon post to Bluesky.

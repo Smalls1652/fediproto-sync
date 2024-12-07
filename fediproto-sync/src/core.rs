@@ -1,6 +1,13 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{
-    sqlite::Sqlite, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
+    sqlite::Sqlite,
+    Connection,
+    ExpressionMethods,
+    OptionalExtension,
+    QueryDsl,
+    RunQueryDsl,
+    SelectableHelper,
+    SqliteConnection
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
@@ -8,43 +15,26 @@ use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSync
 pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations =
     diesel_migrations::embed_migrations!("./migrations");
 
-#[derive(Debug, Clone)]
-struct AuthSessions {
-    bsky: bsky::BlueSkyAuthentication
-}
-
-impl AuthSessions {
-    pub fn new(bsky: bsky::BlueSkyAuthentication) -> Self {
-        Self { bsky }
-    }
-
-    pub async fn authenticate(config: &FediProtoSyncEnvVars, client: reqwest::Client) -> Result<Self, crate::error::Error> {
-        // Authenticate to BlueSky.
-        let bsky_auth = bsky::create_session_token(&config, client).await?;
-        tracing::info!("Authenticated to BlueSky as '{}'", bsky_auth.session.handle);
-
-        Ok(Self::new(bsky_auth))
-    }
-
-    pub async fn refresh_bsky_auth(&mut self, client: reqwest::Client) -> Result<(), crate::error::Error> {
-        self.bsky = bsky::refresh_session_token(&self.bsky, client).await?;
-
-        tracing::info!("Refreshed BlueSky authentication token.");
-
-        Ok(())
-    }
-}
-
+/// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
+    /// The environment variables for the FediProto Sync application.
     config: FediProtoSyncEnvVars,
+
+    /// The database connection for the FediProto Sync application.
     db_connection: SqliteConnection,
-    auth_sessions: AuthSessions
+
+    /// The BlueSky authentication session.
+    bsky_auth: bsky::BlueSkyAuthentication
 }
 
 impl FediProtoSyncLoop {
-    pub async fn new(
-        config: &FediProtoSyncEnvVars
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    /// Create a new instance of the FediProtoSyncLoop.
+    ///
+    /// ## Arguments
+    ///
+    /// * `config` - The environment variables for the FediProtoSync
+    ///   application.
+    pub async fn new(config: &FediProtoSyncEnvVars) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
 
         let database_url = config.database_url.clone();
@@ -58,20 +48,16 @@ impl FediProtoSyncLoop {
         tracing::info!("Connected to database.");
 
         let client = create_http_client(&config)?;
-
-        let auth_sessions = AuthSessions::authenticate(&config, client).await.map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to authenticate to BlueSky.",
-                crate::error::ErrorKind::AuthenticationError,
-                Box::new(e)
-            )
-        })?;
-
+        let bsky_auth = bsky::BlueSkyAuthentication::new(&config, client).await?;
+        tracing::info!(
+            "Authenticated to BlueSky as '{}'.",
+            &bsky_auth.session.handle
+        );
 
         Ok(Self {
             config,
             db_connection,
-            auth_sessions
+            bsky_auth
         })
     }
 
@@ -83,10 +69,11 @@ impl FediProtoSyncLoop {
     ///
     /// ## Arguments
     ///
-    /// - `config` - The environment variables for the FediProtoSync
+    /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        FediProtoSyncLoop::run_migrations(&mut self.db_connection).expect("Failed to run migrations.");
+        FediProtoSyncLoop::run_migrations(&mut self.db_connection)
+            .expect("Failed to run migrations.");
 
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
@@ -112,7 +99,7 @@ impl FediProtoSyncLoop {
     ///
     /// ## Arguments
     ///
-    /// - `connection` - The database connection to run the migrations on.
+    /// * `connection` - The database connection to run the migrations on.
     fn run_migrations(
         connection: &mut impl diesel_migrations::MigrationHarness<Sqlite>
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -142,12 +129,10 @@ impl FediProtoSyncLoop {
     ///
     /// ## Arguments
     ///
-    /// - `config` - The environment variables for the FediProtoSync
+    /// * `config` - The environment variables for the FediProtoSync
     ///   application.
-    /// - `db_connection` - The database connection to use for the sync.
-    async fn start_sync(
-        &mut self
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    /// * `db_connection` - The database connection to use for the sync.
+    async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Create the Mastodon client and authenticate.
         let mastodon_client = megalodon::generator(
             megalodon::SNS::Mastodon,
@@ -176,7 +161,8 @@ impl FediProtoSyncLoop {
         tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
 
         let client = create_http_client(&self.config)?;
-        self.auth_sessions.refresh_bsky_auth(client).await?;
+        self.bsky_auth.refresh_session_token(client).await?;
+        tracing::info!("Refreshed BlueSky session token.");
 
         // Get the last synced post ID, if any.
         let last_synced_post_id = schema::mastodon_posts::table
@@ -223,7 +209,7 @@ impl FediProtoSyncLoop {
             let mut post_sync = bsky::BlueSkyPostSync {
                 config: self.config.clone(),
                 db_connection: &mut self.db_connection,
-                bsky_auth: self.auth_sessions.bsky.clone(),
+                bsky_auth: self.bsky_auth.clone(),
                 mastodon_account: account.json.clone(),
                 mastodon_status: post_item.clone(),
                 post_item: app_bsky::feed::Post::new("", post_item.created_at.clone(), None)
@@ -264,6 +250,11 @@ impl FediProtoSyncLoop {
     }
 }
 
+/// Create a new HTTP client for the FediProto Sync application.
+///
+/// ## Arguments
+///
+/// * `config` - The environment variables for the FediProto Sync application.
 pub fn create_http_client(
     config: &FediProtoSyncEnvVars
 ) -> Result<reqwest::Client, crate::error::Error> {
