@@ -81,7 +81,7 @@ The following environment variables are required to run the daemon:
 
 | Name | Description |
 | --- | --- |
-| `DATABASE_URL` | The file path to the SQLite database. |
+| `DATABASE_URL` | The URL to the PostgreSQL database to use. |
 | `MASTODON_SERVER` | The hostname of your Mastodon server. |
 | `MASTODON_ACCESS_TOKEN` | The access token for the application on Mastodon. [See more](#mastodon---access-token) |
 | `BLUESKY_PDS_SERVER` | The hostname of your BlueSky PDS. If you don't host your own PDS, it's typically `bsky.social`. |
