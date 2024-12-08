@@ -5,7 +5,7 @@ ARG TARGETARCH
 
 WORKDIR /app
 
-COPY . .
+ADD --keep-git-dir . .
 
 RUN apt-get update \
     && apt-get install -y \
@@ -13,6 +13,7 @@ RUN apt-get update \
         libc6-dev-amd64-cross \
         g++-aarch64-linux-gnu \
         libc6-dev-arm64-cross \
+        git \
         pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
