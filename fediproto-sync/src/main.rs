@@ -5,6 +5,8 @@ mod mastodon;
 mod models;
 mod schema;
 
+const GIT_VERSION: &str = std::env!("GIT_VERSION");
+
 /// The environment variable values for configuring the FediProtoSync
 /// application.
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ impl FediProtoSyncEnvVars {
         let user_agent =
             std::env::var("USER_AGENT").unwrap_or_else(|_| "FediProtoSync".to_string());
 
-        let user_agent = format!("{}/{}", user_agent, env!("CARGO_PKG_VERSION"));
+        let user_agent = format!("{}/v{}", user_agent, GIT_VERSION);
 
         let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
             crate::error::Error::with_source(
@@ -159,6 +161,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_thread_ids(false)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
+
+    tracing::info!("FediProto Sync - v{}", GIT_VERSION);
 
     // Load environment variables from the .env file for the specified environment,
     // if it exists.
