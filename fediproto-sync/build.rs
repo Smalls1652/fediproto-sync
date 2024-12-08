@@ -11,13 +11,26 @@ fn set_version() {
 
     let build_profile = build_profile_env_var.as_str();
 
-    let current_git_version: String = match build_profile {
-        "release" => git_version!(args = ["--tags", "--abbrev=0"], fallback = CARGO_PKG_VERSION.to_string()).to_string(),
+    let include_commit_hash = std::env::var("FEDIPROTOSYNC_INCLUDE_COMMIT_HASH")
+        .unwrap_or("false".to_string())
+        .parse::<bool>()
+        .unwrap();
 
-        _ => {
-            let git_version_tag_output = git_version!(args = ["--tags"], fallback = CARGO_PKG_VERSION).trim_start_matches('v');
+    let current_git_version: String = match build_profile == "release" && !include_commit_hash {
+        true => git_version!(
+            args = ["--tags", "--abbrev=0"],
+            fallback = CARGO_PKG_VERSION.to_string()
+        )
+        .trim_start_matches('v')
+        .to_string(),
 
-            let git_version_output = git_version!(args = ["--always"], fallback = git_version_tag_output).to_string();
+        false => {
+            let git_version_tag_output =
+                git_version!(args = ["--tags", "--abbrev=0"], fallback = CARGO_PKG_VERSION)
+                    .trim_start_matches('v');
+
+            let git_version_output =
+                git_version!(args = ["--always"], fallback = git_version_tag_output).to_string();
 
             match &git_version_output == CARGO_PKG_VERSION {
                 true => CARGO_PKG_VERSION.to_string(),
