@@ -1,5 +1,5 @@
 pub const POSTGRES_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
-    diesel_migrations::embed_migrations!("./migrations");
+    diesel_migrations::embed_migrations!("./migrations/postgres");
 
 /// Run any pending database migrations.
 ///
