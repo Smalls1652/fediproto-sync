@@ -15,12 +15,14 @@ fn set_version() {
         "release" => git_version!(args = ["--tags", "--abbrev=0"], fallback = CARGO_PKG_VERSION.to_string()).to_string(),
 
         _ => {
-            let git_version_output = git_version!(args = ["--tags", "--always"], fallback = CARGO_PKG_VERSION).to_string();
+            let git_version_tag_output = git_version!(args = ["--tags"], fallback = CARGO_PKG_VERSION).trim_start_matches('v');
+
+            let git_version_output = git_version!(args = ["--always"], fallback = git_version_tag_output).to_string();
 
             match &git_version_output == CARGO_PKG_VERSION {
                 true => CARGO_PKG_VERSION.to_string(),
 
-                false => format!("{}-{}", CARGO_PKG_VERSION, git_version_output)
+                false => format!("{}-{}", git_version_tag_output, git_version_output)
             }
         }
     };
