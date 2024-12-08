@@ -80,6 +80,9 @@ pub enum ErrorKind {
     /// An error occurred while trying to connect to the database.
     DatabaseConnectionError,
 
+    /// An error occurred while trying to run a database migration.
+    DatabaseMigrationError,
+
     /// An error occurred while creating a HTTP client.
     HttpClientCreationError,
 

@@ -62,7 +62,7 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        db::run_postgres_migrations(&mut self.db_connection);
+        db::run_postgres_migrations(&mut self.db_connection)?;
 
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);

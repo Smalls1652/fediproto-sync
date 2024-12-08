@@ -8,8 +8,13 @@ pub const POSTGRES_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
 /// * `connection` - The database connection to run the migrations on.
 pub fn run_postgres_migrations(
     connection: &mut impl diesel_migrations::MigrationHarness<diesel::pg::Pg>
-) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-    let pending_migrations = connection.pending_migrations(POSTGRES_MIGRATIONS)?;
+) -> Result<(), crate::error::Error> {
+    let pending_migrations = connection.pending_migrations(POSTGRES_MIGRATIONS)
+        .map_err(|e| crate::error::Error::with_source(
+            "Failed to get pending database migrations.",
+            crate::error::ErrorKind::DatabaseMigrationError,
+            e
+        ))?;
 
     if pending_migrations.is_empty() {
         tracing::info!("No pending database migrations.");
@@ -22,7 +27,13 @@ pub fn run_postgres_migrations(
     );
 
     for migration_item in pending_migrations {
-        connection.run_migration(&migration_item)?;
+        connection.run_migration(&migration_item)
+            .map_err(|e| crate::error::Error::with_source(
+                "Failed to run database migration.",
+                crate::error::ErrorKind::DatabaseMigrationError,
+                e
+            ))?;
+
         tracing::info!("Applied migration '{}'", migration_item.name());
     }
 
