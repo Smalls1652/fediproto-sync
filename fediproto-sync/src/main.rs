@@ -1,5 +1,6 @@
 mod bsky;
 mod core;
+mod db;
 mod error;
 mod mastodon;
 mod models;

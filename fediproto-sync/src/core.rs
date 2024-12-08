@@ -3,10 +3,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper
 };
 
-use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
-
-pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations =
-    diesel_migrations::embed_migrations!("./migrations");
+use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars, db};
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -65,8 +62,7 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        FediProtoSyncLoop::run_migrations(&mut self.db_connection)
-            .expect("Failed to run migrations.");
+        db::run_postgres_migrations(&mut self.db_connection);
 
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
@@ -86,36 +82,6 @@ impl FediProtoSyncLoop {
                 }
             }
         }
-    }
-
-    /// Run any pending database migrations.
-    ///
-    /// ## Arguments
-    ///
-    /// * `connection` - The database connection to run the migrations on.
-    fn run_migrations(
-        connection: &mut impl diesel_migrations::MigrationHarness<diesel::pg::Pg>
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        let pending_migrations = connection.pending_migrations(MIGRATIONS)?;
-
-        if pending_migrations.is_empty() {
-            tracing::info!("No pending database migrations.");
-            return Ok(());
-        }
-
-        tracing::info!(
-            "Applying '{}' pending database migrations...",
-            pending_migrations.len()
-        );
-
-        for migration_item in pending_migrations {
-            connection.run_migration(&migration_item)?;
-            tracing::info!("Applied migration '{}'", migration_item.name());
-        }
-
-        tracing::info!("Applied all pending database migrations.");
-
-        Ok(())
     }
 
     /// Run the Mastodon to BlueSky sync.
