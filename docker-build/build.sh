@@ -10,7 +10,7 @@ case "${TARGETPLATFORM}" in
 
         dpkg --add-architecture amd64
         apt-get update
-        apt-get install -y libpq-dev:amd64 libpq5:amd64
+        apt-get install -y libpq-dev:amd64 libpq5:amd64 libsqlite3-dev:amd64 libsqlite3-0:amd64
         apt-get clean
         rm -rf /var/lib/apt/lists/*
         ;;
@@ -22,7 +22,7 @@ case "${TARGETPLATFORM}" in
 
         dpkg --add-architecture arm64
         apt-get update
-        apt-get install -y libpq-dev:arm64 libpq5:arm64
+        apt-get install -y libpq-dev:arm64 libpq5:arm64 libsqlite3-dev:arm64 libsqlite3-0:arm64
         apt-get clean
         rm -rf /var/lib/apt/lists/*
         ;;
