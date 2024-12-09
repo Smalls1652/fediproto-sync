@@ -3,7 +3,7 @@ use diesel::{
 };
 
 #[derive(Copy, Clone, Debug, SqlType, QueryId)]
-#[diesel(postgres_type(name = "Uuid"))]
+#[diesel(postgres_type(name = "uuid"))]
 #[diesel(sqlite_type(name = "Text"))]
 pub struct MultiBackendUuid;
 
