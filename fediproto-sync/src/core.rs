@@ -201,16 +201,14 @@ impl FediProtoSyncLoop {
             }
         }
 
-        let cached_files_to_delete = crate::schema::cached_files::table
-            .select(crate::db::models::CachedFile::as_select())
-            .load(&mut self.db_connection)?;
+        let cached_files_to_delete = db::operations::get_cached_file_records(&mut self.db_connection)?;
 
         if cached_files_to_delete.len() > 0 {
             tracing::info!("Deleting cached files during sync...");
 
             for cached_file in cached_files_to_delete {
                 tracing::info!("Deleting cached file '{}'.", cached_file.file_path);
-                crate::db::models::remove_cached_file(&cached_file, &mut self.db_connection).await?;
+                cached_file.remove_file(&mut self.db_connection).await?;
             }
         }
 

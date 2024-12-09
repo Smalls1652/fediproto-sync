@@ -92,6 +92,9 @@ pub enum ErrorKind {
     /// An error occurred while trying to insert a new record into the database.
     DatabaseInsertError,
 
+    /// An error occurred while trying to delete a database record.
+    DatabaseDeleteError,
+
     /// An error occurred while creating a HTTP client.
     HttpClientCreationError,
 

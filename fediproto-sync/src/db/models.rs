@@ -193,12 +193,22 @@ pub struct CachedFile {
 }
 
 impl CachedFile {
-    /// Remove the cached file from the file system.
-    pub async fn remove_file(&self) -> Result<(), Box<dyn std::error::Error>> {
+    /// Remove a cached file from the database and the file system.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `db_connection` - The database connection to use.
+    pub async fn remove_file(&self, db_connection: &mut crate::db::AnyConnection) -> Result<(), crate::error::Error> {
+        crate::db::operations::delete_cached_file_record(db_connection, self)?;
+
         let file_path = std::path::Path::new(&self.file_path);
 
         if file_path.exists() {
-            tokio::fs::remove_file(&file_path).await?;
+            tokio::fs::remove_file(&file_path).await.map_err(|e| crate::error::Error::with_source(
+                "Failed to remove cached file.",
+                crate::error::ErrorKind::TempFileRemovalError,
+                Box::new(e)
+            ))?;
         }
 
         Ok(())
@@ -231,23 +241,4 @@ impl NewCachedFile {
             file_path: file_path.to_string_lossy().to_string()
         }
     }
-}
-
-/// Remove a cached file from the database and the file system.
-///
-/// ## Arguments
-///
-/// * `cached_file` - The cached file to remove.
-/// * `db_connection` - The database connection to use.
-pub async fn remove_cached_file(
-    cached_file: &CachedFile,
-    db_connection: &mut crate::db::AnyConnection
-) -> Result<(), Box<dyn std::error::Error>> {
-    diesel::delete(crate::schema::cached_files::table)
-        .filter(crate::schema::cached_files::id.eq(cached_file.id))
-        .execute(db_connection)?;
-
-    cached_file.remove_file().await?;
-
-    Ok(())
 }
