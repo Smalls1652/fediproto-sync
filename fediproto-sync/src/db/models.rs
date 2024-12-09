@@ -116,10 +116,10 @@ impl NewMastodonPost {
     }
 }
 
-/// Represents a synced post in the `synced_posts` table.
+/// Represents a synced post in the `synced_posts_bluesky_data` table.
 #[derive(Queryable, Selectable, Clone, PartialEq, Debug)]
 #[allow(dead_code)]
-#[diesel(table_name = crate::schema::synced_posts)]
+#[diesel(table_name = crate::schema::synced_posts_bluesky_data)]
 pub struct SyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
     pub id: crate::db::type_impls::UuidProxy,
@@ -134,9 +134,9 @@ pub struct SyncedPostBlueSkyData {
     pub bsky_post_uri: String
 }
 
-/// Represents a new synced post to insert into the `synced_posts` table.
+/// Represents a new synced post to insert into the `synced_posts_bluesky_data` table.
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::synced_posts)]
+#[diesel(table_name = crate::schema::synced_posts_bluesky_data)]
 pub struct NewSyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
     pub id: crate::db::type_impls::UuidProxy,

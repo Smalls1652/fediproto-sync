@@ -82,8 +82,8 @@ pub fn get_bluesky_data_by_mastodon_post_id(
     db_connection: &mut crate::db::AnyConnection,
     mastodon_post_id: &str
 ) -> Result<crate::db::models::SyncedPostBlueSkyData, crate::error::Error> {
-    let synced_post = crate::schema::synced_posts::table
-        .filter(crate::schema::synced_posts::mastodon_post_id.eq(mastodon_post_id))
+    let synced_post = crate::schema::synced_posts_bluesky_data::table
+        .filter(crate::schema::synced_posts_bluesky_data::mastodon_post_id.eq(mastodon_post_id))
         .first::<crate::db::models::SyncedPostBlueSkyData>(db_connection)
         .map_err(|e| {
             crate::error::Error::with_source(
@@ -106,7 +106,7 @@ pub fn insert_new_bluesky_data_for_synced_mastodon_post(
     db_connection: &mut crate::db::AnyConnection,
     synced_post_data: &crate::db::models::NewSyncedPostBlueSkyData
 ) -> Result<(), crate::error::Error> {
-    diesel::insert_into(crate::schema::synced_posts::table)
+    diesel::insert_into(crate::schema::synced_posts_bluesky_data::table)
         .values(synced_post_data)
         .execute(db_connection)
         .map_err(|e| {
