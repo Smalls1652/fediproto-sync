@@ -28,7 +28,7 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
             limit: limit_value,
             max_id: None,
             since_id: last_post_id,
-            pinned: Some(true),
+            pinned: Some(false),
             exclude_replies: Some(true),
             exclude_reblogs: Some(true),
             only_media: Some(false),
