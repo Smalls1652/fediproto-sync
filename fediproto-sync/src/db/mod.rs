@@ -1,6 +1,6 @@
 pub mod core;
 pub mod models;
-pub mod trait_impls;
+pub mod type_impls;
 
 use diesel::{
     backend::Backend,
@@ -9,7 +9,7 @@ use diesel::{
     sql_types::HasSqlType,
     QueryResult
 };
-use trait_impls::{MultiBackendUuid, UuidProxy};
+use type_impls::{MultiBackendUuid, UuidProxy};
 
 #[derive(diesel::MultiConnection)]
 pub enum AnyConnection {

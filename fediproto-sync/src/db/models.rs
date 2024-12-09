@@ -6,7 +6,7 @@ use diesel::{
 };
 use megalodon::entities::Status;
 
-use super::trait_impls::UuidProxy;
+use super::type_impls::UuidProxy;
 
 /// Represents a Mastodon post in the `mastodon_posts` table.
 #[derive(Queryable, Selectable, PartialEq, Debug)]
@@ -14,7 +14,7 @@ use super::trait_impls::UuidProxy;
 #[diesel(table_name = crate::schema::mastodon_posts)]
 pub struct MastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -43,7 +43,7 @@ pub struct MastodonPost {
 #[diesel(table_name = crate::schema::mastodon_posts)]
 pub struct NewMastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -126,7 +126,7 @@ impl NewMastodonPost {
 #[diesel(table_name = crate::schema::synced_posts)]
 pub struct SyncedPost {
     /// A unique identifier for the synced post in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -143,7 +143,7 @@ pub struct SyncedPost {
 #[diesel(table_name = crate::schema::synced_posts)]
 pub struct NewSyncedPost {
     /// A unique identifier for the synced post in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -186,7 +186,7 @@ impl NewSyncedPost {
 #[diesel(table_name = crate::schema::cached_files)]
 pub struct CachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
@@ -210,7 +210,7 @@ impl CachedFile {
 #[diesel(table_name = crate::schema::cached_files)]
 pub struct NewCachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: crate::db::trait_impls::UuidProxy,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
