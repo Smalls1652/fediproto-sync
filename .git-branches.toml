@@ -103,7 +103,7 @@ perennial-regex = ""
 # the main branch and shipped back into the main branch.
 # Typically you develop features and bug fixes on them,
 # hence their name.
-feature-branches = "merge"
+feature-branches = "rebase"
 
 # How should Git Town synchronize perennial branches?
 # Perennial branches have no parent branch.
