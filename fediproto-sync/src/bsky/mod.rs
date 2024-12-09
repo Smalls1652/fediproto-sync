@@ -14,8 +14,6 @@ use diesel::*;
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
     mastodon,
-    models,
-    schema,
     FediProtoSyncEnvVars
 };
 
@@ -129,7 +127,7 @@ pub struct BlueSkyPostSync<'a> {
     pub bsky_auth: BlueSkyAuthentication,
 
     /// The database connection for the FediProto Sync application.
-    pub db_connection: &'a mut diesel::PgConnection,
+    pub db_connection: &'a mut crate::db::AnyConnection,
 
     /// The Mastodon account that posted the status.
     pub mastodon_account: megalodon::entities::account::Account,
@@ -234,8 +232,8 @@ impl BlueSkyPostSync<'_> {
                 };
 
                 // Insert the synced Mastodon post into the database for future tracking.
-                diesel::insert_into(schema::mastodon_posts::table)
-                    .values(models::NewMastodonPost::new(
+                diesel::insert_into(crate::schema::mastodon_posts::table)
+                    .values(crate::db::models::NewMastodonPost::new(
                         &self.mastodon_status,
                         Some(post_result.cid.clone()),
                         previous_post_id
@@ -243,8 +241,8 @@ impl BlueSkyPostSync<'_> {
                     .execute(self.db_connection)?;
 
                 // Insert the synced BlueSky post into the database for future tracking.
-                diesel::insert_into(schema::synced_posts::table)
-                    .values(models::NewSyncedPost::new(
+                diesel::insert_into(crate::schema::synced_posts::table)
+                    .values(crate::db::models::NewSyncedPost::new(
                         &self.mastodon_status.id,
                         &post_result.cid,
                         &post_result.uri
@@ -401,10 +399,10 @@ impl BlueSkyPostSync<'_> {
     async fn resolve_previous_post(
         &mut self,
         previous_post_id: &str
-    ) -> Result<models::MastodonPost, Box<dyn std::error::Error>> {
-        let previous_post = schema::mastodon_posts::table
-            .filter(schema::mastodon_posts::post_id.eq(previous_post_id))
-            .first::<models::MastodonPost>(self.db_connection)?;
+    ) -> Result<crate::db::models::MastodonPost, Box<dyn std::error::Error>> {
+        let previous_post = crate::schema::mastodon_posts::table
+            .filter(crate::schema::mastodon_posts::post_id.eq(previous_post_id))
+            .first::<crate::db::models::MastodonPost>(self.db_connection)?;
 
         Ok(previous_post)
     }
@@ -417,10 +415,10 @@ impl BlueSkyPostSync<'_> {
     async fn get_synced_post(
         &mut self,
         mastodon_post_id: &str
-    ) -> Result<models::SyncedPost, Box<dyn std::error::Error>> {
-        let synced_post = schema::synced_posts::table
-            .filter(schema::synced_posts::mastodon_post_id.eq(mastodon_post_id))
-            .first::<models::SyncedPost>(self.db_connection)?;
+    ) -> Result<crate::db::models::SyncedPost, Box<dyn std::error::Error>> {
+        let synced_post = crate::schema::synced_posts::table
+            .filter(crate::schema::synced_posts::mastodon_post_id.eq(mastodon_post_id))
+            .first::<crate::db::models::SyncedPost>(self.db_connection)?;
 
         Ok(synced_post)
     }

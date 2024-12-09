@@ -7,7 +7,7 @@ use rand::distributions::DistString;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::BlueSkyPostSync;
-use crate::{bsky::utils::BlueSkyPostSyncUtils, models::NewCachedFile};
+use crate::{bsky::utils::BlueSkyPostSyncUtils};
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -152,7 +152,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         let temp_file_path = self.download_mastodon_video(media_attachment).await?;
 
         diesel::insert_into(crate::schema::cached_files::table)
-            .values(NewCachedFile::new(&temp_file_path))
+            .values(crate::db::models::NewCachedFile::new(&temp_file_path))
             .execute(self.db_connection)?;
 
         let mut should_fallback = false;

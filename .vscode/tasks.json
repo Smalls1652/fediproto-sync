@@ -113,6 +113,39 @@
       "isBackground": true
     },
     {
+      "label": "Database: New migration",
+      "detail": "Create a new migration for the database",
+      "icon": {
+        "id": "new-file",
+        "color": "terminal.ansiBlue"
+      },
+      "type": "process",
+      "command": "diesel",
+      "args": [
+        "migration",
+        "generate",
+        "--config-file",
+        "${workspaceFolder}/diesel.${input:dbType}.toml",
+        "--diff-schema",
+        "${input:dbMigrationName}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "DATABASE_URL": "${input:dbUrl}"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Database: Start local container",
       "detail": "Run a local database container for development.",
       "icon": {
@@ -238,6 +271,32 @@
           "value": "Release"
         }
       ]
+    },
+    {
+      "id": "dbType",
+      "description": "Select the database type",
+      "type": "pickString",
+      "default": "postgres",
+      "options": [
+        {
+          "label": "PostgreSQL",
+          "value": "postgres"
+        },
+        {
+          "label": "SQLite",
+          "value": "sqlite"
+        }
+      ],
+    },
+    {
+      "id": "dbMigrationName",
+      "description": "Enter the name of the migration",
+      "type": "promptString"
+    },
+    {
+      "id": "dbUrl",
+      "description": "Enter the database URL",
+      "type": "promptString"
     }
   ]
 }

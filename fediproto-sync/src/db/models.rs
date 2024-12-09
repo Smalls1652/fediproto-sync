@@ -6,14 +6,15 @@ use diesel::{
 };
 use megalodon::entities::Status;
 
+use super::type_impls::UuidProxy;
+
 /// Represents a Mastodon post in the `mastodon_posts` table.
 #[derive(Queryable, Selectable, PartialEq, Debug)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct MastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -40,10 +41,9 @@ pub struct MastodonPost {
 /// Represents a new Mastodon post to insert into the `mastodon_posts` table.
 #[derive(Insertable, Debug)]
 #[diesel(table_name = crate::schema::mastodon_posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewMastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -108,7 +108,7 @@ impl NewMastodonPost {
         };
 
         Self {
-            id,
+            id: UuidProxy(id),
             account_id,
             post_id,
             created_at,
@@ -124,10 +124,9 @@ impl NewMastodonPost {
 #[derive(Queryable, Selectable, Clone, PartialEq, Debug)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::synced_posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct SyncedPost {
     /// A unique identifier for the synced post in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -142,10 +141,9 @@ pub struct SyncedPost {
 /// Represents a new synced post to insert into the `synced_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::synced_posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewSyncedPost {
     /// A unique identifier for the synced post in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -174,7 +172,7 @@ impl NewSyncedPost {
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
 
         Self {
-            id,
+            id: UuidProxy(id),
             mastodon_post_id: mastodon_post_id.to_string(),
             bsky_post_cid: bsky_post_cid.to_string(),
             bsky_post_uri: bsky_post_uri.to_string()
@@ -186,10 +184,9 @@ impl NewSyncedPost {
 #[derive(Queryable, Selectable, PartialEq, Debug)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::cached_files)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct CachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
@@ -211,10 +208,9 @@ impl CachedFile {
 /// Represents a new cached file to insert into the `cached_files` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::cached_files)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewCachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: uuid::Uuid,
+    pub id: crate::db::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
@@ -231,7 +227,7 @@ impl NewCachedFile {
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
 
         Self {
-            id,
+            id: UuidProxy(id),
             file_path: file_path.to_string_lossy().to_string()
         }
     }
@@ -245,7 +241,7 @@ impl NewCachedFile {
 /// * `db_connection` - The database connection to use.
 pub async fn remove_cached_file(
     cached_file: &CachedFile,
-    db_connection: &mut diesel::PgConnection
+    db_connection: &mut crate::db::AnyConnection
 ) -> Result<(), Box<dyn std::error::Error>> {
     diesel::delete(crate::schema::cached_files::table)
         .filter(crate::schema::cached_files::id.eq(cached_file.id))

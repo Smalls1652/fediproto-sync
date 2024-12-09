@@ -2,8 +2,8 @@
 # see https://diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "fediproto-sync/src/schema.rs"
+file = "fediproto-sync/src/schema_sqlite.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 
 [migrations_directory]
-dir = "fediproto-sync/migrations"
+dir = "fediproto-sync/migrations/sqlite"

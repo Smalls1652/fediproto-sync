@@ -1,12 +1,9 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper
+    Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
 };
 
-use crate::{bsky, mastodon::MastodonApiExtensions, models, schema, FediProtoSyncEnvVars};
-
-pub const MIGRATIONS: diesel_migrations::EmbeddedMigrations =
-    diesel_migrations::embed_migrations!("./migrations");
+use crate::{bsky, mastodon::MastodonApiExtensions, FediProtoSyncEnvVars, db::{self, models}};
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -14,7 +11,7 @@ pub struct FediProtoSyncLoop {
     config: FediProtoSyncEnvVars,
 
     /// The database connection for the FediProto Sync application.
-    db_connection: PgConnection,
+    db_connection: crate::db::AnyConnection,
 
     /// The BlueSky authentication session.
     bsky_auth: bsky::BlueSkyAuthentication
@@ -30,14 +27,26 @@ impl FediProtoSyncLoop {
     pub async fn new(config: &FediProtoSyncEnvVars) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
 
+        let database_type = config.database_type.clone();
         let database_url = config.database_url.clone();
-        let db_connection = PgConnection::establish(&database_url).map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to connect to database.",
-                crate::error::ErrorKind::DatabaseConnectionError,
-                Box::new(e)
-            )
-        })?;
+
+        let db_connection = match database_type {
+            crate::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(PgConnection::establish(&database_url).map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to connect to database.",
+                    crate::error::ErrorKind::DatabaseConnectionError,
+                    Box::new(e)
+                )
+            })?),
+
+            crate::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(SqliteConnection::establish(&database_url).map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to connect to database.",
+                    crate::error::ErrorKind::DatabaseConnectionError,
+                    Box::new(e)
+                )
+            })?)
+        };
         tracing::info!("Connected to database.");
 
         let client = create_http_client(&config)?;
@@ -65,8 +74,7 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        FediProtoSyncLoop::run_migrations(&mut self.db_connection)
-            .expect("Failed to run migrations.");
+        db::core::run_migrations(&mut self.db_connection)?;
 
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
@@ -86,36 +94,6 @@ impl FediProtoSyncLoop {
                 }
             }
         }
-    }
-
-    /// Run any pending database migrations.
-    ///
-    /// ## Arguments
-    ///
-    /// * `connection` - The database connection to run the migrations on.
-    fn run_migrations(
-        connection: &mut impl diesel_migrations::MigrationHarness<diesel::pg::Pg>
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        let pending_migrations = connection.pending_migrations(MIGRATIONS)?;
-
-        if pending_migrations.is_empty() {
-            tracing::info!("No pending database migrations.");
-            return Ok(());
-        }
-
-        tracing::info!(
-            "Applying '{}' pending database migrations...",
-            pending_migrations.len()
-        );
-
-        for migration_item in pending_migrations {
-            connection.run_migration(&migration_item)?;
-            tracing::info!("Applied migration '{}'", migration_item.name());
-        }
-
-        tracing::info!("Applied all pending database migrations.");
-
-        Ok(())
     }
 
     /// Run the Mastodon to BlueSky sync.
@@ -159,9 +137,9 @@ impl FediProtoSyncLoop {
 
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
-        let last_synced_post_id = schema::mastodon_posts::table
-            .order(schema::mastodon_posts::created_at.desc())
-            .select(schema::mastodon_posts::post_id)
+        let last_synced_post_id = crate::schema::mastodon_posts::table
+            .order(crate::schema::mastodon_posts::created_at.desc())
+            .select(crate::schema::mastodon_posts::post_id)
             .first::<String>(&mut self.db_connection)
             .optional()?;
 
@@ -184,7 +162,7 @@ impl FediProtoSyncLoop {
             let initial_post = latest_posts.json[0].clone();
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
-            diesel::insert_into(schema::mastodon_posts::dsl::mastodon_posts)
+            diesel::insert_into(crate::schema::mastodon_posts::dsl::mastodon_posts)
                 .values(&new_mastodon_post)
                 .execute(&mut self.db_connection)?;
 
@@ -229,8 +207,8 @@ impl FediProtoSyncLoop {
             }
         }
 
-        let cached_files_to_delete = schema::cached_files::table
-            .select(crate::models::CachedFile::as_select())
+        let cached_files_to_delete = crate::schema::cached_files::table
+            .select(crate::db::models::CachedFile::as_select())
             .load(&mut self.db_connection)?;
 
         if cached_files_to_delete.len() > 0 {
@@ -238,7 +216,7 @@ impl FediProtoSyncLoop {
 
             for cached_file in cached_files_to_delete {
                 tracing::info!("Deleting cached file '{}'.", cached_file.file_path);
-                crate::models::remove_cached_file(&cached_file, &mut self.db_connection).await?;
+                crate::db::models::remove_cached_file(&cached_file, &mut self.db_connection).await?;
             }
         }
 
