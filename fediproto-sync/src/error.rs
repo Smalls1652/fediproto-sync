@@ -86,6 +86,12 @@ pub enum ErrorKind {
     /// An invalid database type was specified.
     InvalidDatabaseType,
 
+    /// An error occurred while querying the database.
+    DatabaseQueryError,
+
+    /// An error occurred while trying to insert a new record into the database.
+    DatabaseInsertError,
+
     /// An error occurred while creating a HTTP client.
     HttpClientCreationError,
 
