@@ -19,10 +19,10 @@ pub fn run_migrations(
 ) -> Result<(), crate::error::Error> {
     match connection {
         crate::db::AnyConnection::Postgres(connection) => {
-            run_migrations_backend(connection, POSTGRES_MIGRATIONS)
+            apply_migrations(connection, POSTGRES_MIGRATIONS)
         }
         crate::db::AnyConnection::SQLite(connection) => {
-            run_migrations_backend(connection, SQLITE_MIGRATIONS)
+            apply_migrations(connection, SQLITE_MIGRATIONS)
         }
     }
 }
@@ -39,7 +39,7 @@ pub fn run_migrations(
 /// 
 /// This function is a helper for `run_migrations` and should not be called
 /// directly.
-fn run_migrations_backend<T: diesel::backend::Backend + 'static>(
+fn apply_migrations<T: diesel::backend::Backend + 'static>(
     connection: &mut impl diesel_migrations::MigrationHarness<T>,
     migrations: diesel_migrations::EmbeddedMigrations
 ) -> Result<(), crate::error::Error> {
