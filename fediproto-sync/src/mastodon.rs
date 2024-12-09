@@ -1,5 +1,3 @@
-use megalodon::response::Response;
-
 /// Extension trait for the Mastodon API.
 pub trait MastodonApiExtensions {
     async fn get_latest_posts(
