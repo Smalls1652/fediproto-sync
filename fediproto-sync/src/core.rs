@@ -1,6 +1,6 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
+    Connection, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
 };
 
 use crate::{bsky, mastodon::MastodonApiExtensions, FediProtoSyncEnvVars, db::{self, models}};
