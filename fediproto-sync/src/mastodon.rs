@@ -39,17 +39,15 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
             .get_account_statuses(account_id.to_string(), Some(&latest_statuses_options))
             .await?;
 
-        let mut filtered_latest_posts = Vec::new();
-
-        for post in latest_posts.json {
-            match post.visibility {
-                megalodon::entities::status::StatusVisibility::Public => filtered_latest_posts.push(post),
-
-                megalodon::entities::StatusVisibility::Unlisted => filtered_latest_posts.push(post),
-
-                _ => continue
-            }
-        }
+        let filtered_latest_posts = latest_posts
+            .json
+            .iter()
+            .filter(|&item| {
+                item.visibility == megalodon::entities::status::StatusVisibility::Public
+                    || item.visibility == megalodon::entities::status::StatusVisibility::Unlisted
+            })
+            .cloned()
+            .collect();
 
         Ok(filtered_latest_posts)
     }
