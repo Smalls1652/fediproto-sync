@@ -6,7 +6,7 @@ pub trait MastodonApiExtensions {
         &self,
         account_id: &str,
         last_post_id: Option<String>
-    ) -> Result<Response<Vec<megalodon::entities::Status>>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<megalodon::entities::Status>, Box<dyn std::error::Error>>;
 }
 
 impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
@@ -20,7 +20,7 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
         &self,
         account_id: &str,
         last_post_id: Option<String>
-    ) -> Result<Response<Vec<megalodon::entities::Status>>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<megalodon::entities::Status>, Box<dyn std::error::Error>> {
         let limit_value = match last_post_id {
             Some(_) => None,
             None => Some(1)

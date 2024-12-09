@@ -156,14 +156,14 @@ impl FediProtoSyncLoop {
             .await?;
 
         // Reverse the posts so we process them in ascending order.
-        latest_posts.json.reverse();
+        latest_posts.reverse();
 
         // If there is no last synced post ID, we need to add the initial post to the
         // database. This is so we have a starting point for future syncs.
         //
         // Note: The initial post **is not synced** to BlueSky.
-        if last_synced_post_id.clone().is_none() && latest_posts.json.len() > 0 {
-            let initial_post = latest_posts.json[0].clone();
+        if last_synced_post_id.clone().is_none() && latest_posts.len() > 0 {
+            let initial_post = latest_posts[0].clone();
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
             db::operations::insert_new_synced_mastodon_post(
@@ -178,11 +178,11 @@ impl FediProtoSyncLoop {
 
         tracing::info!(
             "Retrieved '{}' new posts from Mastodon.",
-            latest_posts.json.len()
+            latest_posts.len()
         );
 
         // Process each new post and sync it to BlueSky.
-        for post_item in latest_posts.json {
+        for post_item in latest_posts {
             tracing::info!("Processing post '{}'", post_item.id);
 
             let mut post_sync = bsky::BlueSkyPostSync {
