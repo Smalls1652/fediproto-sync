@@ -124,7 +124,7 @@ impl NewMastodonPost {
 #[derive(Queryable, Selectable, Clone, PartialEq, Debug)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::schema::synced_posts)]
-pub struct SyncedPost {
+pub struct SyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
     pub id: crate::db::type_impls::UuidProxy,
 
@@ -141,7 +141,7 @@ pub struct SyncedPost {
 /// Represents a new synced post to insert into the `synced_posts` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::synced_posts)]
-pub struct NewSyncedPost {
+pub struct NewSyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
     pub id: crate::db::type_impls::UuidProxy,
 
@@ -155,8 +155,8 @@ pub struct NewSyncedPost {
     pub bsky_post_uri: String
 }
 
-impl NewSyncedPost {
-    /// Create a new instance of the `NewSyncedPost` struct.
+impl NewSyncedPostBlueSkyData {
+    /// Create a new instance of the `NewSyncedPostBlueSkyData` struct.
     ///
     /// ## Arguments
     ///
