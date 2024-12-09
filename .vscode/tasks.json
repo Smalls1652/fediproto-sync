@@ -98,7 +98,7 @@
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
-          "FEDIPROTO_SYNC_ENVIRONMENT": "Development"
+          "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}",
         }
       },
       "presentation": {

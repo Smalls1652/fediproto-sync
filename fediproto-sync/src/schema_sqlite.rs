@@ -14,7 +14,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    synced_posts (id) {
+    synced_posts_bluesky_data (id) {
         id -> Text,
         mastodon_post_id -> Text,
         bsky_post_cid -> Text,
