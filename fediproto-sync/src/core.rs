@@ -137,11 +137,7 @@ impl FediProtoSyncLoop {
 
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
-        let last_synced_post_id = crate::schema::mastodon_posts::table
-            .order(crate::schema::mastodon_posts::created_at.desc())
-            .select(crate::schema::mastodon_posts::post_id)
-            .first::<String>(&mut self.db_connection)
-            .optional()?;
+        let last_synced_post_id = db::operations::get_last_synced_mastodon_post_id(&mut self.db_connection)?;
 
         // Get the latest posts from Mastodon.
         // If there is no last synced post ID, we will only get the latest post.
@@ -162,9 +158,7 @@ impl FediProtoSyncLoop {
             let initial_post = latest_posts.json[0].clone();
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
-            diesel::insert_into(crate::schema::mastodon_posts::dsl::mastodon_posts)
-                .values(&new_mastodon_post)
-                .execute(&mut self.db_connection)?;
+            db::operations::insert_new_synced_mastodon_post(&mut self.db_connection, &new_mastodon_post)?;
 
             tracing::info!("Added initial post to database for future syncs.");
 
