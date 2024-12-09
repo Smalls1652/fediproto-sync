@@ -1,5 +1,6 @@
 pub mod core;
 pub mod models;
+pub mod operations;
 pub mod type_impls;
 
 use diesel::{

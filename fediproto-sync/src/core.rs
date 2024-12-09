@@ -1,9 +1,12 @@
 use atprotolib_rs::types::app_bsky;
-use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection
-};
+use diesel::{Connection, PgConnection, SqliteConnection};
 
-use crate::{bsky, mastodon::MastodonApiExtensions, FediProtoSyncEnvVars, db::{self, models}};
+use crate::{
+    bsky,
+    db::{self, models},
+    mastodon::MastodonApiExtensions,
+    FediProtoSyncEnvVars
+};
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -31,21 +34,25 @@ impl FediProtoSyncLoop {
         let database_url = config.database_url.clone();
 
         let db_connection = match database_type {
-            crate::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(PgConnection::establish(&database_url).map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to connect to database.",
-                    crate::error::ErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?),
+            crate::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
+                PgConnection::establish(&database_url).map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to connect to database.",
+                        crate::error::ErrorKind::DatabaseConnectionError,
+                        Box::new(e)
+                    )
+                })?
+            ),
 
-            crate::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(SqliteConnection::establish(&database_url).map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to connect to database.",
-                    crate::error::ErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?)
+            crate::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
+                SqliteConnection::establish(&database_url).map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to connect to database.",
+                        crate::error::ErrorKind::DatabaseConnectionError,
+                        Box::new(e)
+                    )
+                })?
+            )
         };
         tracing::info!("Connected to database.");
 
@@ -137,11 +144,8 @@ impl FediProtoSyncLoop {
 
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
-        let last_synced_post_id = crate::schema::mastodon_posts::table
-            .order(crate::schema::mastodon_posts::created_at.desc())
-            .select(crate::schema::mastodon_posts::post_id)
-            .first::<String>(&mut self.db_connection)
-            .optional()?;
+        let last_synced_post_id =
+            db::operations::get_last_synced_mastodon_post_id(&mut self.db_connection)?;
 
         // Get the latest posts from Mastodon.
         // If there is no last synced post ID, we will only get the latest post.
@@ -162,9 +166,10 @@ impl FediProtoSyncLoop {
             let initial_post = latest_posts.json[0].clone();
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
-            diesel::insert_into(crate::schema::mastodon_posts::dsl::mastodon_posts)
-                .values(&new_mastodon_post)
-                .execute(&mut self.db_connection)?;
+            db::operations::insert_new_synced_mastodon_post(
+                &mut self.db_connection,
+                &new_mastodon_post
+            )?;
 
             tracing::info!("Added initial post to database for future syncs.");
 
@@ -207,16 +212,15 @@ impl FediProtoSyncLoop {
             }
         }
 
-        let cached_files_to_delete = crate::schema::cached_files::table
-            .select(crate::db::models::CachedFile::as_select())
-            .load(&mut self.db_connection)?;
+        let cached_files_to_delete =
+            db::operations::get_cached_file_records(&mut self.db_connection)?;
 
         if cached_files_to_delete.len() > 0 {
             tracing::info!("Deleting cached files during sync...");
 
             for cached_file in cached_files_to_delete {
                 tracing::info!("Deleting cached file '{}'.", cached_file.file_path);
-                crate::db::models::remove_cached_file(&cached_file, &mut self.db_connection).await?;
+                cached_file.remove_file(&mut self.db_connection).await?;
             }
         }
 

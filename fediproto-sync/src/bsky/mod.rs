@@ -9,10 +9,10 @@ use atprotolib_rs::{
         com_atproto::{self, server::CreateSessionRequest}
     }
 };
-use diesel::*;
 
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
+    db,
     mastodon,
     FediProtoSyncEnvVars
 };
@@ -162,8 +162,8 @@ impl BlueSkyPostSync<'_> {
             let in_reply_to_id = self.mastodon_status.in_reply_to_id.clone().unwrap();
 
             // Resolve the previous post in the thread and resolve it's synced post data.
-            let previous_mastodon_post = self.resolve_previous_post(&in_reply_to_id).await?;
-            let previous_synced_post = self.get_synced_post(&in_reply_to_id).await?;
+            let previous_mastodon_post = db::operations::get_synced_mastodon_post_by_id(self.db_connection, &in_reply_to_id)?;
+            let previous_synced_post = db::operations::get_bluesky_data_by_mastodon_post_id(self.db_connection, &in_reply_to_id)?;
 
             // If the previous post has a root post, resolve it's synced post data.
             let previous_synced_post_root = match previous_mastodon_post.root_mastodon_post_id {
@@ -171,8 +171,8 @@ impl BlueSkyPostSync<'_> {
                     // Set the previous post ID to the root post ID retrieved.
                     previous_post_id = Some(root_mastodon_post_id.clone());
 
-                    self.get_synced_post(&root_mastodon_post_id).await?
-                }
+                    db::operations::get_bluesky_data_by_mastodon_post_id(self.db_connection, &root_mastodon_post_id)?
+                },
                 None => {
                     // Set the previous post ID to the previous post ID.
                     previous_post_id = Some(in_reply_to_id.clone());
@@ -231,23 +231,23 @@ impl BlueSkyPostSync<'_> {
                     _ => panic!("Unexpected response from Bluesky")
                 };
 
+                let new_mastodon_post = crate::db::models::NewMastodonPost::new(
+                    &self.mastodon_status,
+                    Some(post_result.cid.clone()),
+                    previous_post_id
+                );
+
+                let new_synced_post = crate::db::models::NewSyncedPostBlueSkyData::new(
+                    &self.mastodon_status.id,
+                    &post_result.cid,
+                    &post_result.uri
+                );
+
                 // Insert the synced Mastodon post into the database for future tracking.
-                diesel::insert_into(crate::schema::mastodon_posts::table)
-                    .values(crate::db::models::NewMastodonPost::new(
-                        &self.mastodon_status,
-                        Some(post_result.cid.clone()),
-                        previous_post_id
-                    ))
-                    .execute(self.db_connection)?;
+                db::operations::insert_new_synced_mastodon_post(self.db_connection, &new_mastodon_post)?;
 
                 // Insert the synced BlueSky post into the database for future tracking.
-                diesel::insert_into(crate::schema::synced_posts::table)
-                    .values(crate::db::models::NewSyncedPost::new(
-                        &self.mastodon_status.id,
-                        &post_result.cid,
-                        &post_result.uri
-                    ))
-                    .execute(self.db_connection)?;
+                db::operations::insert_new_bluesky_data_for_synced_mastodon_post(self.db_connection, &new_synced_post)?;
 
                 tracing::info!("Synced post '{}' to BlueSky.", &self.mastodon_status.id);
 
@@ -387,39 +387,5 @@ impl BlueSkyPostSync<'_> {
         };
 
         Ok(())
-    }
-
-    /// Resolve the previous post in a thread on Mastodon based off what has
-    /// been previously synced.
-    ///
-    /// ## Arguments
-    ///
-    /// * `previous_post_id` - The Mastodon post ID of the previous post in the
-    ///   thread.
-    async fn resolve_previous_post(
-        &mut self,
-        previous_post_id: &str
-    ) -> Result<crate::db::models::MastodonPost, Box<dyn std::error::Error>> {
-        let previous_post = crate::schema::mastodon_posts::table
-            .filter(crate::schema::mastodon_posts::post_id.eq(previous_post_id))
-            .first::<crate::db::models::MastodonPost>(self.db_connection)?;
-
-        Ok(previous_post)
-    }
-
-    /// Get a synced post from the database.
-    ///
-    /// ## Arguments
-    ///
-    /// * `mastodon_post_id` - The Mastodon post ID of the post to get.
-    async fn get_synced_post(
-        &mut self,
-        mastodon_post_id: &str
-    ) -> Result<crate::db::models::SyncedPost, Box<dyn std::error::Error>> {
-        let synced_post = crate::schema::synced_posts::table
-            .filter(crate::schema::synced_posts::mastodon_post_id.eq(mastodon_post_id))
-            .first::<crate::db::models::SyncedPost>(self.db_connection)?;
-
-        Ok(synced_post)
     }
 }
