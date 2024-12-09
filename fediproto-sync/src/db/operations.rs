@@ -119,3 +119,67 @@ pub fn insert_new_bluesky_data_for_synced_mastodon_post(
 
     Ok(())
 }
+
+/// Get records of cached files from the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+pub fn get_cached_file_records(
+    db_connection: &mut crate::db::AnyConnection
+) -> Result<Vec<crate::db::models::CachedFile>, crate::error::Error> {
+    let cached_files = crate::schema::cached_files::table
+            .select(crate::db::models::CachedFile::as_select())
+            .load(db_connection)
+            .map_err(|e| crate::error::Error::with_source(
+                "Failed to get cached files.",
+                crate::error::ErrorKind::DatabaseQueryError,
+                Box::new(e)
+            ))?;
+
+    Ok(cached_files)
+}
+
+/// Insert a new cached file record into the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `new_cached_file` - The new cached file record to insert.
+pub fn insert_cached_file_record(
+    db_connection: &mut crate::db::AnyConnection,
+    new_cached_file: &crate::db::models::NewCachedFile
+) -> Result<(), crate::error::Error> {
+    diesel::insert_into(crate::schema::cached_files::table)
+        .values(new_cached_file)
+        .execute(db_connection)
+        .map_err(|e| crate::error::Error::with_source(
+            "Failed to insert new cached file.",
+            crate::error::ErrorKind::DatabaseInsertError,
+            Box::new(e)
+        ))?;
+
+    Ok(())
+}
+
+/// Delete a cached file record from the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `cached_file` - The cached file record to delete.
+pub fn delete_cached_file_record(
+    db_connection: &mut crate::db::AnyConnection,
+    cached_file: &crate::db::models::CachedFile
+) -> Result<(), crate::error::Error> {
+    diesel::delete(crate::schema::cached_files::table)
+        .filter(crate::schema::cached_files::id.eq(cached_file.id))
+        .execute(db_connection)
+        .map_err(|e| crate::error::Error::with_source(
+            "Failed to delete cached file record.",
+            crate::error::ErrorKind::DatabaseDeleteError,
+            Box::new(e)
+        ))?;
+
+    Ok(())
+}
