@@ -1,6 +1,5 @@
 pub mod core;
 pub mod models;
-pub mod postgres;
 pub mod trait_impls;
 
 use diesel::{
