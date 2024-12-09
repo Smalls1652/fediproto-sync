@@ -83,6 +83,9 @@ pub enum ErrorKind {
     /// An error occurred while trying to run a database migration.
     DatabaseMigrationError,
 
+    /// An invalid database type was specified.
+    InvalidDatabaseType,
+
     /// An error occurred while creating a HTTP client.
     HttpClientCreationError,
 

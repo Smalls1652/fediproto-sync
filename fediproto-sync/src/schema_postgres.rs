@@ -2,7 +2,7 @@
 
 diesel::table! {
     mastodon_posts (id) {
-        id -> crate::db::trait_impls::MultiBackendUuid,
+        id -> Uuid,
         account_id -> VarChar,
         post_id -> VarChar,
         created_at -> Timestamp,
@@ -15,7 +15,7 @@ diesel::table! {
 
 diesel::table! {
     synced_posts (id) {
-        id -> crate::db::trait_impls::MultiBackendUuid,
+        id -> Uuid,
         mastodon_post_id -> VarChar,
         bsky_post_cid -> VarChar,
         bsky_post_uri -> VarChar,
@@ -24,7 +24,7 @@ diesel::table! {
 
 diesel::table! {
     cached_files (id) {
-        id -> crate::db::trait_impls::MultiBackendUuid,
+        id -> Uuid,
         file_path -> VarChar
     }
 }

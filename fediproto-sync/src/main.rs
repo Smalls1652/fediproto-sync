@@ -3,8 +3,9 @@ mod core;
 mod db;
 mod error;
 mod mastodon;
-mod models;
 mod schema;
+mod schema_postgres;
+mod schema_sqlite;
 
 const GIT_VERSION: &str = std::env!("GIT_VERSION");
 
@@ -12,6 +13,9 @@ const GIT_VERSION: &str = std::env!("GIT_VERSION");
 /// application.
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncEnvVars {
+    /// The type of database to use.
+    pub database_type: DatabaseType,
+
     /// The URL/path to the database.
     pub database_url: String,
 
@@ -43,6 +47,17 @@ pub struct FediProtoSyncEnvVars {
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
+        let database_type = std::env::var("DATABASE_TYPE")
+            .unwrap_or("Postgres".to_string())
+            .parse::<DatabaseType>()
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to parse the DATABASE_TYPE environment variable.",
+                    crate::error::ErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
         let database_url = std::env::var("DATABASE_URL").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read DATABASE_URL environment variable.",
@@ -120,6 +135,7 @@ impl FediProtoSyncEnvVars {
             })?;
 
         Ok(Self {
+            database_type,
             database_url,
             user_agent,
             mastodon_server,
@@ -130,6 +146,37 @@ impl FediProtoSyncEnvVars {
             sync_interval,
             bluesky_video_always_fallback
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DatabaseType {
+    Postgres,
+    SQLite
+}
+
+impl From<&str> for DatabaseType {
+    fn from(s: &str) -> Self {
+        match s {
+            "Postgres" => DatabaseType::Postgres,
+            "SQLite" => DatabaseType::SQLite,
+            _ => DatabaseType::Postgres
+        }
+    }
+}
+
+impl std::str::FromStr for DatabaseType {
+    type Err = crate::error::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Postgres" => Ok(DatabaseType::Postgres),
+            "SQLite" => Ok(DatabaseType::SQLite),
+            _ => Err(crate::error::Error::new(
+                "Invalid database type.",
+                crate::error::ErrorKind::EnvironmentVariableError
+            ))
+        }
     }
 }
 

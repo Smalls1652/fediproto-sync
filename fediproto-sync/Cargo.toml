@@ -29,7 +29,9 @@ diesel = { version = "2.2.6", features = [
     "serde_json",
     "uuid",
     "postgres",
-    "postgres_backend"
+    "postgres_backend",
+    "sqlite",
+    "returning_clauses_for_sqlite_3_35"
 ] }
 tokio-util = { version = "0.7.12", features = ["rt", "time"] }
 tracing = "0.1.41"
