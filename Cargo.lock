@@ -460,6 +460,7 @@ dependencies = [
  "dotenvy",
  "git-version",
  "megalodon",
+ "oauth2",
  "rand",
  "reqwest 0.12.9",
  "serde",
@@ -470,6 +471,7 @@ dependencies = [
  "toml_edit",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
 ]
 
