@@ -18,7 +18,7 @@ jobs:
       fail-fast: true
       matrix:
         package_name: ["fediproto-sync"]
-        runs-on: ["ubuntu-latest", "ubuntu-latest-arm64"]
+        runs-on: ["ubuntu-latest"]
     env:
       CARGO_TERM_COLOR: always
 
