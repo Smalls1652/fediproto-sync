@@ -183,3 +183,51 @@ pub fn delete_cached_file_record(
 
     Ok(())
 }
+
+/// Get a cached service token by its service name from the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `service_name` - The service name to get.
+pub fn get_cached_service_token_by_service_name(
+    db_connection: &mut crate::db::AnyConnection,
+    service_name: &str
+) -> Result<crate::db::models::CachedServiceToken, crate::error::Error> {
+    let token = crate::schema::cached_service_tokens::table
+        .filter(crate::schema::cached_service_tokens::service_name.eq(service_name))
+        .first::<crate::db::models::CachedServiceToken>(db_connection)
+        .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to get cached service token by service name.",
+                crate::error::ErrorKind::DatabaseQueryError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(token)
+}
+
+/// Insert a new cached service token into the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `new_token` - The new token to insert.
+pub fn insert_cached_service_token(
+    db_connection: &mut crate::db::AnyConnection,
+    new_token: &crate::db::models::NewCachedServiceToken
+) -> Result<(), crate::error::Error> {
+    diesel::insert_into(crate::schema::cached_service_tokens::table)
+        .values(new_token)
+        .execute(db_connection)
+        .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to insert new cached service token.",
+                crate::error::ErrorKind::DatabaseInsertError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(())
+}
