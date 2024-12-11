@@ -249,9 +249,13 @@ impl FediProtoSyncEnvVars {
     }
 }
 
+/// The type of database to use.
 #[derive(Debug, Clone)]
 pub enum DatabaseType {
+    /// PostgreSQL database
     Postgres,
+
+    /// SQLite database
     SQLite
 }
 
