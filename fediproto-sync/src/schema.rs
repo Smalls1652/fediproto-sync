@@ -23,6 +23,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    cached_service_tokens(id) {
+        id -> crate::db::type_impls::MultiBackendUuid,
+        service_name -> VarChar,
+        access_token -> VarChar,
+        refresh_token -> Nullable<VarChar>,
+        expires_in -> Nullable<Integer>,
+        scopes -> Nullable<VarChar>,
+    }
+}
+
+diesel::table! {
     cached_files (id) {
         id -> crate::db::type_impls::MultiBackendUuid,
         file_path -> VarChar
