@@ -207,6 +207,43 @@
       "isBackground": false
     },
     {
+      "label": "Run git-town",
+      "detail": "Run a git-town command",
+      "icon": {
+        "id": "git-compare",
+        "color": "terminal.ansiBlack"
+      },
+      "type": "process",
+      "command": "/bin/bash",
+      "args": [
+        "-c",
+        "${workspaceFolder}/tools/Run-GitTown.sh ${input:gitTownAction}"
+      ],
+      "windows": {
+        "command": "pwsh",
+        "args": [
+          "-NoLogo",
+          "-File",
+          "${workspaceFolder}/tools/Run-GitTown.ps1",
+          "-Action",
+          "${input:gitTownAction}"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true,
+        "close": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Build fediproto-sync",
       "hide": true,
       "type": "process",
@@ -297,6 +334,34 @@
       "id": "dbUrl",
       "description": "Enter the database URL",
       "type": "promptString"
+    },
+    {
+      "id": "gitTownAction",
+      "description": "Select the action to perform with git-town",
+      "type": "pickString",
+      "default": "switch",
+      "options": [
+        {
+          "label": "Switch branches",
+          "value": "switch"
+        },
+        {
+          "label": "Sync branches",
+          "value": "sync"
+        },
+        {
+          "label": "Sync branches (All)",
+          "value": "sync-all"
+        },
+        {
+          "label": "Create a feature branch",
+          "value": "hack"
+        },
+        {
+          "label": "Create a prototype branch",
+          "value": "hack-prototype"
+        }
+      ]
     }
   ]
 }
