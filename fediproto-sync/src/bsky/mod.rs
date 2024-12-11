@@ -13,7 +13,6 @@ use atprotolib_rs::{
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
     db,
-    mastodon,
     FediProtoSyncEnvVars
 };
 
@@ -269,43 +268,7 @@ impl BlueSkyPostSync<'_> {
     /// Generate a Bluesky post item from a Mastodon status.
     pub async fn generate_post_item(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Parse the Mastodon status for post content and metadata. --
-
-        //
-        // Note:
-        //
-        // The following code block is a workaround for the HTML parsing library we're
-        // using. The `dom_query` crate has an underlying crate, `tendril`, that isn't
-        // thread safe. In order to use it, we have to spawn a blocking thread to parse
-        // it. In this context, it's not a big deal. We're only parsing one post at a
-        // time and we don't intend to parse multiple at once in the future (A queued up
-        // post may require another post to be processed before it can).
-
-        // Create channels for sending and receiving the Mastodon status and parsed post
-        // to/from the blocking thread.
-        let (mastodon_status_send, mut mastodon_status_recv) = tokio::sync::mpsc::channel(1);
-        let (parsed_send, mut parsed_recv) = tokio::sync::mpsc::channel(1);
-
-        // Send the Mastodon status to the blocking thread for parsing.
-        mastodon_status_send
-            .send(self.mastodon_status.clone())
-            .await?;
-
-        // Spawn a blocking thread to parse the Mastodon status.
-        tokio::task::spawn_blocking(move || {
-            // Receive the Mastodon status from the non-blocking thread and close the
-            // channel.
-            let recieved_status = mastodon_status_recv.blocking_recv().unwrap();
-            mastodon_status_recv.close();
-
-            let parsed_status =
-                mastodon::ParsedMastodonPost::from_mastodon_status(&recieved_status).unwrap();
-
-            parsed_send.blocking_send(parsed_status).unwrap();
-        });
-
-        // Receive the parsed post from the blocking thread and close the channel.
-        let mut parsed_status = parsed_recv.recv().await.unwrap();
-        parsed_recv.close();
+        let mut parsed_status = crate::mastodon::ParsedMastodonPost::from_mastodon_status(&self.mastodon_status)?;
 
         // -- Create a Bluesky post item from the parsed Mastodon status. --
 
