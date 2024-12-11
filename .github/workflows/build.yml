@@ -29,6 +29,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install dev libraries
+        run: |
+          apt-get install -y libpq-dev:amd64 libpq5:amd64 libsqlite3-dev:amd64 libsqlite3-0:amd64
+
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
