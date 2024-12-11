@@ -1,5 +1,7 @@
+mod auth;
 mod bsky;
 mod core;
+mod crypto;
 mod db;
 mod error;
 mod mastodon;
@@ -13,11 +15,20 @@ const GIT_VERSION: &str = std::env!("GIT_VERSION");
 /// application.
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncEnvVars {
+    /// The mode to run the application in.
+    pub mode: String,
+
     /// The type of database to use.
     pub database_type: DatabaseType,
 
     /// The URL/path to the database.
     pub database_url: String,
+
+    /// The encryption key to use for token encryption.
+    pub token_encryption_private_key: openssl::rsa::Rsa<openssl::pkey::Private>,
+
+    /// The encryption IV to use for token encryption.
+    pub token_encryption_public_key: openssl::rsa::Rsa<openssl::pkey::Public>,
 
     /// User-Agent string to use for HTTP requests.
     pub user_agent: String,
@@ -25,8 +36,11 @@ pub struct FediProtoSyncEnvVars {
     /// The Mastodon server URL to connect to.
     pub mastodon_server: String,
 
-    /// The Mastodon access token to use for authentication.
-    pub mastodon_access_token: String,
+    /// The client ID for the Mastodon application.
+    pub mastodon_client_id: String,
+
+    /// The client secret for the Mastodon application.
+    pub mastodon_client_secret: String,
 
     /// The BlueSky PDS URL to connect to.
     pub bluesky_pds_server: String,
@@ -47,6 +61,8 @@ pub struct FediProtoSyncEnvVars {
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
+        let mode = std::env::var("FEDIPROTO_SYNC_MODE").unwrap_or("normal".to_string());
+
         let database_type = std::env::var("DATABASE_TYPE")
             .unwrap_or("Postgres".to_string())
             .parse::<DatabaseType>()
@@ -66,6 +82,56 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        let token_encryption_private_key = std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY")
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+        let token_encryption_private_key = openssl::base64::decode_block(&token_encryption_private_key)
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+        let token_encryption_private_key = openssl::rsa::Rsa::private_key_from_pem(&token_encryption_private_key)
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
+        let token_encryption_public_key = std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY")
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+        let token_encryption_public_key = openssl::base64::decode_block(&token_encryption_public_key)
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+        let token_encryption_public_key = openssl::rsa::Rsa::public_key_from_pem(&token_encryption_public_key)
+            .map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
         let user_agent =
             std::env::var("USER_AGENT").unwrap_or_else(|_| "FediProtoSync".to_string());
 
@@ -79,9 +145,17 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
-        let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
+        let mastodon_client_id = std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
             crate::error::Error::with_source(
-                "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
+                "Failed to read MASTODON_CLIENT_ID environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
+        let mastodon_client_secret = std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read MASTODON_CLIENT_SECRET environment variable.",
                 crate::error::ErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
@@ -135,11 +209,15 @@ impl FediProtoSyncEnvVars {
             })?;
 
         Ok(Self {
+            mode,
             database_type,
             database_url,
+            token_encryption_private_key,
+            token_encryption_public_key,
             user_agent,
             mastodon_server,
-            mastodon_access_token,
+            mastodon_client_id,
+            mastodon_client_secret,
             bluesky_pds_server,
             bluesky_handle,
             bluesky_app_password,
