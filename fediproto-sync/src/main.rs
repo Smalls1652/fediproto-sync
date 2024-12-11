@@ -42,6 +42,14 @@ pub struct FediProtoSyncEnvVars {
     /// The client secret for the Mastodon application.
     pub mastodon_client_secret: String,
 
+    /// The Mastodon access token to use for authentication.
+    /// 
+    /// ### ⚠️ Warning
+    /// 
+    /// **This property will be deprecated soon.**
+    #[deprecated = "This property will be removed when OAuth2 is fully implemented."]
+    pub mastodon_access_token: String,
+
     /// The BlueSky PDS URL to connect to.
     pub bluesky_pds_server: String,
 
@@ -161,6 +169,14 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
+            crate::error::Error::with_source(
+                "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
+                crate::error::ErrorKind::EnvironmentVariableError,
+                Box::new(e)
+            )
+        })?;
+
         let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read BLUESKY_PDS_SERVER environment variable.",
@@ -218,6 +234,7 @@ impl FediProtoSyncEnvVars {
             mastodon_server,
             mastodon_client_id,
             mastodon_client_secret,
+            mastodon_access_token,
             bluesky_pds_server,
             bluesky_handle,
             bluesky_app_password,
