@@ -3,10 +3,12 @@ use diesel::{Connection, PgConnection, SqliteConnection};
 
 use crate::{
     bsky,
-    db::{self, models},
+    db::{self, models::{self, CachedServiceTokenDecrypt}},
     mastodon::MastodonApiExtensions,
     FediProtoSyncEnvVars
 };
+
+use oauth2::TokenResponse;
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -83,6 +85,21 @@ impl FediProtoSyncLoop {
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
         db::core::run_migrations(&mut self.db_connection)?;
 
+        if &self.config.mode == "auth" {
+            let auth_result = self.run_auth().await;
+
+            match auth_result {
+                Ok(_) => {
+                    tracing::info!("Authentication setup completed successfully.");
+                }
+                Err(e) => {
+                    tracing::error!("Authentication setup failed: {:#?}", e);
+                }
+            }
+    
+            return Ok(());
+        }
+
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
         loop {
@@ -103,6 +120,24 @@ impl FediProtoSyncLoop {
         }
     }
 
+    async fn run_auth(&mut self) -> Result<(), crate::error::Error> {
+        let mastodon_token_response = crate::auth::get_mastodon_oauth_token(&self.config).await?;
+
+        let new_mastodon_token = models::NewCachedServiceToken::new(
+            &self.config.token_encryption_public_key,
+            "mastodon",
+            mastodon_token_response.access_token().secret(),
+            None,
+            None,
+            None
+        )?;
+
+        db::operations::insert_cached_service_token(&mut self.db_connection, &new_mastodon_token)?;
+
+        tracing::info!("Inserted new Mastodon token into database.");
+        Ok(())
+    }
+
     /// Run the Mastodon to BlueSky sync.
     ///
     /// ## Arguments
@@ -111,11 +146,20 @@ impl FediProtoSyncLoop {
     ///   application.
     /// * `db_connection` - The database connection to use for the sync.
     async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mastodon_access_token = db::operations::get_cached_service_token_by_service_name(
+            &mut self.db_connection,
+            "mastodon"
+        )?;
+
+        let decrypted_mastodon_access_token = mastodon_access_token.decrypt_access_token(
+            &self.config.token_encryption_private_key
+        )?;
+
         // Create the Mastodon client and authenticate.
         let mastodon_client = megalodon::generator(
             megalodon::SNS::Mastodon,
             format!("https://{}", self.config.mastodon_server.clone()),
-            Some(self.config.mastodon_access_token.clone()),
+            Some(decrypted_mastodon_access_token),
             Some(self.config.user_agent.clone())
         )
         .map_err(|e| {

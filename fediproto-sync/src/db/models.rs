@@ -243,3 +243,168 @@ impl NewCachedFile {
         }
     }
 }
+
+/// Represents a cached service token in the `cached_service_tokens` table.
+#[derive(Queryable, Selectable, Clone, PartialEq, Debug)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::schema::cached_service_tokens)]
+pub struct CachedServiceToken {
+    /// A unique identifier for the cached service token in the database.
+    pub id: crate::db::type_impls::UuidProxy,
+
+    /// The name of the service the token is for.
+    pub service_name: String,
+
+    /// The encrypted access token for the service.
+    pub access_token: String,
+
+    /// The encrypted refresh token for the service, if any.
+    pub refresh_token: Option<String>,
+
+    /// The time in seconds until the access token expires, if any.
+    pub expires_in: Option<i32>,
+
+    /// The scopes the access token has, if any.
+    pub scopes: Option<String>
+}
+
+/// Trait for decrypting a cached service token's access and refresh tokens.
+pub trait CachedServiceTokenDecrypt {
+    /// Decrypt the access token.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `encryption_private_key` - The private key to use for decryption.
+     fn decrypt_access_token(
+        &self,
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+    ) -> Result<String, crate::error::Error>;
+
+    /// Decrypt the refresh token.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `encryption_private_key` - The private key to use for decryption.
+    /// 
+    /// ## Note
+    /// 
+    /// If there is no refresh token, this method will return `None`.
+    #[allow(dead_code)]
+     fn decrypt_refresh_token(
+        &self,
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+    ) -> Result<Option<String>, crate::error::Error>;
+}
+
+impl CachedServiceTokenDecrypt for CachedServiceToken {
+    /// Decrypt the access token.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `encryption_private_key` - The private key to use for decryption.
+     fn decrypt_access_token(
+        &self,
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+    ) -> Result<String, crate::error::Error> {
+        let decrypted_access_token = crate::crypto::decrypt_string(encryption_private_key, &self.access_token)?;
+
+        Ok(decrypted_access_token)
+    }
+
+    /// Decrypt the refresh token.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `encryption_private_key` - The private key to use for decryption.
+    ///
+    /// ## Note
+    /// 
+    /// If there is no refresh token, this method will return `None`.
+    #[allow(dead_code)]
+     fn decrypt_refresh_token(
+        &self,
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+    ) -> Result<Option<String>, crate::error::Error> {
+        let decrypted_refresh_token = match &self.refresh_token {
+            Some(refresh_token) => {
+                let decrypted_refresh_token = crate::crypto::decrypt_string(encryption_private_key, refresh_token)?;
+
+                Some(decrypted_refresh_token)
+            }
+
+            None => None
+        };
+
+        Ok(decrypted_refresh_token)
+    }
+}
+
+/// Represents a new cached service token to insert into the `cached_service_tokens` table.
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::cached_service_tokens)]
+pub struct NewCachedServiceToken {
+    /// A unique identifier for the cached service token in the database.
+    pub id: crate::db::type_impls::UuidProxy,
+
+    /// The name of the service the token is for.
+    pub service_name: String,
+
+    /// The encrypted access token for the service.
+    pub access_token: String,
+
+    /// The encrypted refresh token for the service, if any.
+    pub refresh_token: Option<String>,
+
+    /// The time in seconds until the access token expires, if any.
+    pub expires_in: Option<i32>,
+
+    /// The scopes the access token has, if any.
+    pub scopes: Option<String>
+}
+
+impl NewCachedServiceToken {
+    /// Create a new instance of the `NewCachedServiceToken` struct.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `encryption_public_key` - The public key to use for encryption.
+    /// * `service_name` - The name of the service the token is for.
+    /// * `access_token` - The access token to encrypt.
+    /// * `refresh_token` - The refresh token to encrypt, if any.
+    /// * `expires_in` - The time in seconds until the access token expires, if any.
+    /// * `scopes` - The scopes the access token has, if any.
+    pub fn new(
+        encryption_public_key: &openssl::rsa::Rsa<openssl::pkey::Public>,
+        service_name: &str,
+        access_token: &str,
+        refresh_token: Option<String>,
+        expires_in: Option<i32>,
+        scopes: Option<String>
+    ) -> Result<Self, crate::error::Error> {
+        let time_context = uuid::ContextV7::new();
+        let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
+
+        let service_name = service_name.to_string();
+
+        let encrypted_access_token = crate::crypto::encrypt_string(encryption_public_key, access_token)?;
+
+        let encrypted_refresh_token = match refresh_token {
+            Some(refresh_token) => {
+                let encrypted_refresh_token = crate::crypto::encrypt_string(encryption_public_key, &refresh_token)?;
+
+                Some(encrypted_refresh_token)
+            }
+
+            None => None
+        };
+
+        Ok(Self {
+            id: UuidProxy(id),
+            service_name,
+            access_token: encrypted_access_token,
+            refresh_token: encrypted_refresh_token,
+            expires_in,
+            scopes
+        })
+    }
+}
