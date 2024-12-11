@@ -28,3 +28,14 @@ diesel::table! {
         file_path -> VarChar
     }
 }
+
+diesel::table! {
+    cached_service_tokens(id) {
+        id -> Uuid,
+        service_name -> VarChar,
+        access_token -> VarChar,
+        refresh_token -> Nullable<VarChar>,
+        expires_in -> Nullable<Integer>,
+        scopes -> Nullable<VarChar>,
+    }
+}

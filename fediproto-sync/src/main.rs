@@ -1,5 +1,8 @@
+mod auth;
 mod bsky;
+mod config;
 mod core;
+mod crypto;
 mod db;
 mod error;
 mod mastodon;
@@ -7,178 +10,7 @@ mod schema;
 mod schema_postgres;
 mod schema_sqlite;
 
-const GIT_VERSION: &str = std::env!("GIT_VERSION");
-
-/// The environment variable values for configuring the FediProtoSync
-/// application.
-#[derive(Debug, Clone)]
-pub struct FediProtoSyncEnvVars {
-    /// The type of database to use.
-    pub database_type: DatabaseType,
-
-    /// The URL/path to the database.
-    pub database_url: String,
-
-    /// User-Agent string to use for HTTP requests.
-    pub user_agent: String,
-
-    /// The Mastodon server URL to connect to.
-    pub mastodon_server: String,
-
-    /// The Mastodon access token to use for authentication.
-    pub mastodon_access_token: String,
-
-    /// The BlueSky PDS URL to connect to.
-    pub bluesky_pds_server: String,
-
-    /// The BlueSky handle to use for authentication.
-    pub bluesky_handle: String,
-
-    /// The BlueSky app password to use for authentication.
-    pub bluesky_app_password: String,
-
-    /// The interval, in seconds, to sync posts.
-    pub sync_interval: std::time::Duration,
-
-    /// Whether to always fallback to the video URL for BlueSky posts.
-    pub bluesky_video_always_fallback: bool
-}
-
-impl FediProtoSyncEnvVars {
-    /// Create a new instance of the `FediProtoSyncEnvVars` struct.
-    pub fn new() -> Result<Self, crate::error::Error> {
-        let database_type = std::env::var("DATABASE_TYPE")
-            .unwrap_or("Postgres".to_string())
-            .parse::<DatabaseType>()
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to parse the DATABASE_TYPE environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-
-        let database_url = std::env::var("DATABASE_URL").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read DATABASE_URL environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-
-        let user_agent =
-            std::env::var("USER_AGENT").unwrap_or_else(|_| "FediProtoSync".to_string());
-
-        let user_agent = format!("{}/v{}", user_agent, GIT_VERSION);
-
-        let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read MASTODON_SERVER environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-
-        let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-
-        let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read BLUESKY_PDS_SERVER environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-
-        let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read BLUESKY_HANDLE environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-        let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to read BLUESKY_APP_PASSWORD environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
-
-        let sync_interval = std::time::Duration::from_secs(
-            std::env::var("SYNC_INTERVAL_SECONDS")
-                .unwrap_or("300".to_string())
-                .parse::<u64>()
-                .map_err(|e| {
-                    crate::error::Error::with_source(
-                        "Failed to parse the SYNC_INTERVAL_SECONDS environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
-                        Box::new(e)
-                    )
-                })?
-        );
-
-        let bluesky_video_always_fallback = std::env::var("BLUESKY_VIDEO_ALWAYS_FALLBACK")
-            .unwrap_or("false".to_string())
-            .parse::<bool>()
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to parse the BLUESKY_VIDEO_ALWAYS_FALLBACK environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-
-        Ok(Self {
-            database_type,
-            database_url,
-            user_agent,
-            mastodon_server,
-            mastodon_access_token,
-            bluesky_pds_server,
-            bluesky_handle,
-            bluesky_app_password,
-            sync_interval,
-            bluesky_video_always_fallback
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum DatabaseType {
-    Postgres,
-    SQLite
-}
-
-impl From<&str> for DatabaseType {
-    fn from(s: &str) -> Self {
-        match s {
-            "Postgres" => DatabaseType::Postgres,
-            "SQLite" => DatabaseType::SQLite,
-            _ => DatabaseType::Postgres
-        }
-    }
-}
-
-impl std::str::FromStr for DatabaseType {
-    type Err = crate::error::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Postgres" => Ok(DatabaseType::Postgres),
-            "SQLite" => Ok(DatabaseType::SQLite),
-            _ => Err(crate::error::Error::new(
-                "Invalid database type.",
-                crate::error::ErrorKind::EnvironmentVariableError
-            ))
-        }
-    }
-}
+pub const GIT_VERSION: &str = std::env!("GIT_VERSION");
 
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
@@ -227,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = dotenvy::from_path(env_vars_path)?;
     }
 
-    let config_result = FediProtoSyncEnvVars::new();
+    let config_result = config::FediProtoSyncEnvVars::new();
 
     let config = match config_result {
         Ok(config) => config,

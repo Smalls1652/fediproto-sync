@@ -1,11 +1,15 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{Connection, PgConnection, SqliteConnection};
+use oauth2::TokenResponse;
 
 use crate::{
     bsky,
-    db::{self, models},
-    mastodon::MastodonApiExtensions,
-    FediProtoSyncEnvVars
+    config::{self, FediProtoSyncEnvVars},
+    db::{
+        self,
+        models::{self, CachedServiceTokenDecrypt}
+    },
+    mastodon::MastodonApiExtensions
 };
 
 /// The main sync loop for the FediProto Sync application.
@@ -34,7 +38,7 @@ impl FediProtoSyncLoop {
         let database_url = config.database_url.clone();
 
         let db_connection = match database_type {
-            crate::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
+            config::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
                 PgConnection::establish(&database_url).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to connect to database.",
@@ -44,7 +48,7 @@ impl FediProtoSyncLoop {
                 })?
             ),
 
-            crate::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
+            config::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
                 SqliteConnection::establish(&database_url).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to connect to database.",
@@ -83,6 +87,21 @@ impl FediProtoSyncLoop {
     pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
         db::core::run_migrations(&mut self.db_connection)?;
 
+        if &self.config.mode == "auth" {
+            let auth_result = self.run_auth().await;
+
+            match auth_result {
+                Ok(_) => {
+                    tracing::info!("Authentication setup completed successfully.");
+                }
+                Err(e) => {
+                    tracing::error!("Authentication setup failed: {:#?}", e);
+                }
+            }
+
+            std::process::exit(0);
+        }
+
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
         loop {
@@ -103,6 +122,44 @@ impl FediProtoSyncLoop {
         }
     }
 
+    /// Run the authentication setup for the FediProto Sync application.
+    async fn run_auth(&mut self) -> Result<(), crate::error::Error> {
+        let mastodon_token_exists = db::operations::get_cached_service_token_by_service_name(
+            &mut self.db_connection,
+            "mastodon"
+        )?
+        .is_some();
+
+        match mastodon_token_exists {
+            false => {
+                let mastodon_token_response =
+                    crate::auth::get_mastodon_oauth_token(&self.config).await?;
+
+                let new_mastodon_token = models::NewCachedServiceToken::new(
+                    &self.config.token_encryption_public_key.as_ref().unwrap(),
+                    "mastodon",
+                    mastodon_token_response.access_token().secret(),
+                    None,
+                    None,
+                    None
+                )?;
+
+                db::operations::insert_cached_service_token(
+                    &mut self.db_connection,
+                    &new_mastodon_token
+                )?;
+
+                tracing::info!("Inserted new Mastodon token into database.");
+            }
+
+            true => {
+                tracing::info!("Mastodon token already exists in database.");
+            }
+        }
+
+        Ok(())
+    }
+
     /// Run the Mastodon to BlueSky sync.
     ///
     /// ## Arguments
@@ -111,11 +168,41 @@ impl FediProtoSyncLoop {
     ///   application.
     /// * `db_connection` - The database connection to use for the sync.
     async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mastodon_token = match self.config.mastodon_auth_type {
+            config::MastodonAuthType::AccessToken => {
+                tracing::info!("Using Mastodon access token for authentication.");
+                self.config.mastodon_access_token.clone().unwrap()
+            }
+
+            config::MastodonAuthType::OAuth2 => {
+                tracing::info!("Using OAuth2 for Mastodon authentication.");
+                let cached_token = db::operations::get_cached_service_token_by_service_name(
+                    &mut self.db_connection,
+                    "mastodon"
+                )?;
+
+                let cached_token = match cached_token {
+                    Some(token) => token,
+                    None => {
+                        return Err(Box::new(crate::error::Error::new(
+                            "Mastodon token not found in database.",
+                            crate::error::ErrorKind::AuthenticationError
+                        )));
+                    }
+                };
+
+                let decrypted_token =
+                    cached_token.decrypt_access_token(&self.config.token_encryption_private_key.as_ref().unwrap())?;
+
+                decrypted_token
+            }
+        };
+
         // Create the Mastodon client and authenticate.
         let mastodon_client = megalodon::generator(
             megalodon::SNS::Mastodon,
             format!("https://{}", self.config.mastodon_server.clone()),
-            Some(self.config.mastodon_access_token.clone()),
+            Some(mastodon_token),
             Some(self.config.user_agent.clone())
         )
         .map_err(|e| {
