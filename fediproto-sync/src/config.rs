@@ -14,10 +14,10 @@ pub struct FediProtoSyncEnvVars {
     pub database_url: String,
 
     /// The encryption key to use for token encryption.
-    pub token_encryption_private_key: openssl::rsa::Rsa<openssl::pkey::Private>,
+    pub token_encryption_private_key: Option<openssl::rsa::Rsa<openssl::pkey::Private>>,
 
     /// The encryption IV to use for token encryption.
-    pub token_encryption_public_key: openssl::rsa::Rsa<openssl::pkey::Public>,
+    pub token_encryption_public_key: Option<openssl::rsa::Rsa<openssl::pkey::Public>>,
 
     /// User-Agent string to use for HTTP requests.
     pub user_agent: String,
@@ -85,59 +85,81 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'MASTODON_AUTH_TYPE' environment variable.
+        let mastodon_auth_type = std::env::var("MASTODON_AUTH_TYPE")
+            .unwrap_or("AccessToken".to_string())
+            .parse::<MastodonAuthType>()
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to parse the MASTODON_AUTH_TYPE environment variable.",
+                    crate::error::ErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
         // Read 'TOKEN_ENCRYPTION_PRIVATE_KEY' environment variable.
-        let token_encryption_private_key =
-            std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY").map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-        let token_encryption_private_key =
-            openssl::base64::decode_block(&token_encryption_private_key).map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-        let token_encryption_private_key = openssl::rsa::Rsa::private_key_from_pem(
-            &token_encryption_private_key
-        )
-        .map_err(|e| {
-            crate::error::Error::with_source(
-                "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
-                Box::new(e)
-            )
-        })?;
+        let token_encryption_private_key = match mastodon_auth_type {
+            MastodonAuthType::OAuth2 => {
+                let private_key = std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY").map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to read TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                        crate::error::ErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?;
+                let private_key = openssl::base64::decode_block(&private_key).map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                        crate::error::ErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?;
+                let private_key =
+                    openssl::rsa::Rsa::private_key_from_pem(&private_key).map_err(|e| {
+                        crate::error::Error::with_source(
+                            "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
+                            crate::error::ErrorKind::EnvironmentVariableError,
+                            Box::new(e)
+                        )
+                    })?;
+
+                Some(private_key)
+            }
+
+            MastodonAuthType::AccessToken => None
+        };
 
         // Read 'TOKEN_ENCRYPTION_PUBLIC_KEY' environment variable.
-        let token_encryption_public_key =
-            std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY").map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-        let token_encryption_public_key =
-            openssl::base64::decode_block(&token_encryption_public_key).map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-        let token_encryption_public_key =
-            openssl::rsa::Rsa::public_key_from_pem(&token_encryption_public_key).map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
+        let token_encryption_public_key = match mastodon_auth_type {
+            MastodonAuthType::OAuth2 => {
+                let public_key = std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY").map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to read TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                        crate::error::ErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?;
+                let public_key = openssl::base64::decode_block(&public_key).map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                        crate::error::ErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?;
+                let public_key =
+                    openssl::rsa::Rsa::public_key_from_pem(&public_key).map_err(|e| {
+                        crate::error::Error::with_source(
+                            "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
+                            crate::error::ErrorKind::EnvironmentVariableError,
+                            Box::new(e)
+                        )
+                    })?;
+
+                Some(public_key)
+            }
+
+            MastodonAuthType::AccessToken => None
+        };
 
         // Read 'USER_AGENT' environment variable.
         let user_agent =
@@ -154,18 +176,6 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
-        // Read 'MASTODON_AUTH_TYPE' environment variable.
-        let mastodon_auth_type = std::env::var("MASTODON_AUTH_TYPE")
-            .unwrap_or("AccessToken".to_string())
-            .parse::<MastodonAuthType>()
-            .map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to parse the MASTODON_AUTH_TYPE environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?;
-
         // Read 'MASTODON_CLIENT_ID' environment variable.
         let mastodon_client_id = match mastodon_auth_type {
             MastodonAuthType::OAuth2 => Some(std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
@@ -181,28 +191,30 @@ impl FediProtoSyncEnvVars {
 
         // Read 'MASTODON_CLIENT_SECRET' environment variable.
         let mastodon_client_secret = match mastodon_auth_type {
-            MastodonAuthType::OAuth2 => Some(std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
-                crate::error::Error::with_source(
-                    "Failed to read MASTODON_CLIENT_SECRET environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
-                    Box::new(e)
-                )
-            })?),
+            MastodonAuthType::OAuth2 => {
+                Some(std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
+                    crate::error::Error::with_source(
+                        "Failed to read MASTODON_CLIENT_SECRET environment variable.",
+                        crate::error::ErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?)
+            }
 
             MastodonAuthType::AccessToken => None
         };
 
         // Read 'MASTODON_ACCESS_TOKEN' environment variable.
         let mastodon_access_token = match mastodon_auth_type {
-            MastodonAuthType::AccessToken => Some(std::env::var("MASTODON_ACCESS_TOKEN").map_err(
-                |e| {
+            MastodonAuthType::AccessToken => {
+                Some(std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
                         crate::error::ErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
-                }
-            )?),
+                })?)
+            }
 
             MastodonAuthType::OAuth2 => None
         };

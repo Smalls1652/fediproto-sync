@@ -136,7 +136,7 @@ impl FediProtoSyncLoop {
                     crate::auth::get_mastodon_oauth_token(&self.config).await?;
 
                 let new_mastodon_token = models::NewCachedServiceToken::new(
-                    &self.config.token_encryption_public_key,
+                    &self.config.token_encryption_public_key.as_ref().unwrap(),
                     "mastodon",
                     mastodon_token_response.access_token().secret(),
                     None,
@@ -192,7 +192,7 @@ impl FediProtoSyncLoop {
                 };
 
                 let decrypted_token =
-                    cached_token.decrypt_access_token(&self.config.token_encryption_private_key)?;
+                    cached_token.decrypt_access_token(&self.config.token_encryption_private_key.as_ref().unwrap())?;
 
                 decrypted_token
             }
