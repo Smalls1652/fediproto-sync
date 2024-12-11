@@ -99,7 +99,7 @@ impl FediProtoSyncLoop {
                 }
             }
 
-            return Ok(());
+            std::process::exit(0);
         }
 
         // Run the sync loop.
@@ -122,21 +122,41 @@ impl FediProtoSyncLoop {
         }
     }
 
+    /// Run the authentication setup for the FediProto Sync application.
     async fn run_auth(&mut self) -> Result<(), crate::error::Error> {
-        let mastodon_token_response = crate::auth::get_mastodon_oauth_token(&self.config).await?;
+        let mastodon_token_exists = db::operations::get_cached_service_token_by_service_name(
+            &mut self.db_connection,
+            "mastodon"
+        )?
+        .is_some();
 
-        let new_mastodon_token = models::NewCachedServiceToken::new(
-            &self.config.token_encryption_public_key,
-            "mastodon",
-            mastodon_token_response.access_token().secret(),
-            None,
-            None,
-            None
-        )?;
+        match mastodon_token_exists {
+            false => {
+                let mastodon_token_response =
+                    crate::auth::get_mastodon_oauth_token(&self.config).await?;
 
-        db::operations::insert_cached_service_token(&mut self.db_connection, &new_mastodon_token)?;
+                let new_mastodon_token = models::NewCachedServiceToken::new(
+                    &self.config.token_encryption_public_key,
+                    "mastodon",
+                    mastodon_token_response.access_token().secret(),
+                    None,
+                    None,
+                    None
+                )?;
 
-        tracing::info!("Inserted new Mastodon token into database.");
+                db::operations::insert_cached_service_token(
+                    &mut self.db_connection,
+                    &new_mastodon_token
+                )?;
+
+                tracing::info!("Inserted new Mastodon token into database.");
+            }
+
+            true => {
+                tracing::info!("Mastodon token already exists in database.");
+            }
+        }
+
         Ok(())
     }
 
@@ -152,7 +172,7 @@ impl FediProtoSyncLoop {
             config::MastodonAuthType::AccessToken => {
                 tracing::info!("Using Mastodon access token for authentication.");
                 self.config.mastodon_access_token.clone().unwrap()
-            },
+            }
 
             config::MastodonAuthType::OAuth2 => {
                 tracing::info!("Using OAuth2 for Mastodon authentication.");
@@ -161,9 +181,18 @@ impl FediProtoSyncLoop {
                     "mastodon"
                 )?;
 
-                let decrypted_token = cached_token.decrypt_access_token(
-                    &self.config.token_encryption_private_key
-                )?;
+                let cached_token = match cached_token {
+                    Some(token) => token,
+                    None => {
+                        return Err(Box::new(crate::error::Error::new(
+                            "Mastodon token not found in database.",
+                            crate::error::ErrorKind::AuthenticationError
+                        )));
+                    }
+                };
+
+                let decrypted_token =
+                    cached_token.decrypt_access_token(&self.config.token_encryption_private_key)?;
 
                 decrypted_token
             }

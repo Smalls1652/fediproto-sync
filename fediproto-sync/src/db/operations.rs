@@ -193,10 +193,11 @@ pub fn delete_cached_file_record(
 pub fn get_cached_service_token_by_service_name(
     db_connection: &mut crate::db::AnyConnection,
     service_name: &str
-) -> Result<crate::db::models::CachedServiceToken, crate::error::Error> {
+) -> Result<Option<crate::db::models::CachedServiceToken>, crate::error::Error> {
     let token = crate::schema::cached_service_tokens::table
         .filter(crate::schema::cached_service_tokens::service_name.eq(service_name))
         .first::<crate::db::models::CachedServiceToken>(db_connection)
+        .optional()
         .map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to get cached service token by service name.",
