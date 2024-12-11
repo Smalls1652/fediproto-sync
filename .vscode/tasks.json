@@ -207,7 +207,7 @@
       "isBackground": false
     },
     {
-      "label": "Run git-town",
+      "label": "git-town",
       "detail": "Run a git-town command",
       "icon": {
         "id": "git-compare",
