@@ -58,8 +58,10 @@ pub struct FediProtoSyncEnvVars {
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
     pub fn new() -> Result<Self, crate::error::Error> {
+        // Read 'FEDIPROTO_SYNC_MODE' environment variable.
         let mode = std::env::var("FEDIPROTO_SYNC_MODE").unwrap_or("normal".to_string());
 
+        // Read 'DATABASE_TYPE' environment variable.
         let database_type = std::env::var("DATABASE_TYPE")
             .unwrap_or("Postgres".to_string())
             .parse::<DatabaseType>()
@@ -71,6 +73,7 @@ impl FediProtoSyncEnvVars {
                 )
             })?;
 
+        // Read 'DATABASE_URL' environment variable.
         let database_url = std::env::var("DATABASE_URL").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read DATABASE_URL environment variable.",
@@ -79,6 +82,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'TOKEN_ENCRYPTION_PRIVATE_KEY' environment variable.
         let token_encryption_private_key = std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY")
             .map_err(|e| {
             crate::error::Error::with_source(
@@ -104,6 +108,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'TOKEN_ENCRYPTION_PUBLIC_KEY' environment variable.
         let token_encryption_public_key = std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY")
             .map_err(|e| {
             crate::error::Error::with_source(
@@ -129,11 +134,13 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'USER_AGENT' environment variable.
         let user_agent =
             std::env::var("USER_AGENT").unwrap_or_else(|_| "FediProtoSync".to_string());
 
         let user_agent = format!("{}/v{}", user_agent, GIT_VERSION);
 
+        // Read 'MASTODON_SERVER' environment variable.
         let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read MASTODON_SERVER environment variable.",
@@ -142,6 +149,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'MASTODON_CLIENT_ID' environment variable.
         let mastodon_client_id = std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read MASTODON_CLIENT_ID environment variable.",
@@ -150,6 +158,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'MASTODON_CLIENT_SECRET' environment variable.
         let mastodon_client_secret = std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read MASTODON_CLIENT_SECRET environment variable.",
@@ -158,6 +167,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'MASTODON_ACCESS_TOKEN' environment variable.
         let mastodon_access_token = std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
@@ -166,6 +176,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'BLUESKY_PDS_SERVER' environment variable.
         let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read BLUESKY_PDS_SERVER environment variable.",
@@ -174,6 +185,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'BLUESKY_HANDLE' environment variable.
         let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read BLUESKY_HANDLE environment variable.",
@@ -181,6 +193,8 @@ impl FediProtoSyncEnvVars {
                 Box::new(e)
             )
         })?;
+
+        // Read 'BLUESKY_APP_PASSWORD' environment variable.
         let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|e| {
             crate::error::Error::with_source(
                 "Failed to read BLUESKY_APP_PASSWORD environment variable.",
@@ -189,6 +203,7 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'SYNC_INTERVAL_SECONDS' environment variable.
         let sync_interval = std::time::Duration::from_secs(
             std::env::var("SYNC_INTERVAL_SECONDS")
                 .unwrap_or("300".to_string())
@@ -202,6 +217,7 @@ impl FediProtoSyncEnvVars {
                 })?
         );
 
+        // Read 'BLUESKY_VIDEO_ALWAYS_FALLBACK' environment variable.
         let bluesky_video_always_fallback = std::env::var("BLUESKY_VIDEO_ALWAYS_FALLBACK")
             .unwrap_or("false".to_string())
             .parse::<bool>()
