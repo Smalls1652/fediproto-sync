@@ -95,6 +95,12 @@ pub enum ErrorKind {
     /// An error occurred while trying to delete a database record.
     DatabaseDeleteError,
 
+    /// An error occurred while encrypting a value.
+    EncryptionError,
+
+    /// An error occurred while decrypting a value.
+    DecryptionError,
+
     /// An error occurred while creating a HTTP client.
     HttpClientCreationError,
 
