@@ -5,9 +5,9 @@ use crate::config::FediProtoSyncEnvVars;
 pub async fn get_mastodon_oauth_token(
     config: &FediProtoSyncEnvVars
 ) -> Result<oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>, crate::error::Error> {
-    let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone());
+    let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone().unwrap());
     let client_secret = Some(oauth2::ClientSecret::new(
-        config.mastodon_client_secret.clone()
+        config.mastodon_client_secret.clone().unwrap()
     ));
 
     let auth_url = oauth2::AuthUrl::new(format!(

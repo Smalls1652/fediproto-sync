@@ -1,14 +1,16 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::{Connection, PgConnection, SqliteConnection};
+use oauth2::TokenResponse;
 
 use crate::{
     bsky,
-    db::{self, models::{self, CachedServiceTokenDecrypt}},
-    mastodon::MastodonApiExtensions,
-    config::{self, FediProtoSyncEnvVars}
+    config::{self, FediProtoSyncEnvVars},
+    db::{
+        self,
+        models::{self, CachedServiceTokenDecrypt}
+    },
+    mastodon::MastodonApiExtensions
 };
-
-use oauth2::TokenResponse;
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -96,7 +98,7 @@ impl FediProtoSyncLoop {
                     tracing::error!("Authentication setup failed: {:#?}", e);
                 }
             }
-    
+
             return Ok(());
         }
 
@@ -146,20 +148,32 @@ impl FediProtoSyncLoop {
     ///   application.
     /// * `db_connection` - The database connection to use for the sync.
     async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let mastodon_access_token = db::operations::get_cached_service_token_by_service_name(
-            &mut self.db_connection,
-            "mastodon"
-        )?;
+        let mastodon_token = match self.config.mastodon_auth_type {
+            config::MastodonAuthType::AccessToken => {
+                tracing::info!("Using Mastodon access token for authentication.");
+                self.config.mastodon_access_token.clone().unwrap()
+            },
 
-        let decrypted_mastodon_access_token = mastodon_access_token.decrypt_access_token(
-            &self.config.token_encryption_private_key
-        )?;
+            config::MastodonAuthType::OAuth2 => {
+                tracing::info!("Using OAuth2 for Mastodon authentication.");
+                let cached_token = db::operations::get_cached_service_token_by_service_name(
+                    &mut self.db_connection,
+                    "mastodon"
+                )?;
+
+                let decrypted_token = cached_token.decrypt_access_token(
+                    &self.config.token_encryption_private_key
+                )?;
+
+                decrypted_token
+            }
+        };
 
         // Create the Mastodon client and authenticate.
         let mastodon_client = megalodon::generator(
             megalodon::SNS::Mastodon,
             format!("https://{}", self.config.mastodon_server.clone()),
-            Some(decrypted_mastodon_access_token),
+            Some(mastodon_token),
             Some(self.config.user_agent.clone())
         )
         .map_err(|e| {
