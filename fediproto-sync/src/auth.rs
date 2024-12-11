@@ -1,6 +1,6 @@
 use oauth2::{basic::BasicClient, reqwest::async_http_client};
 
-use crate::FediProtoSyncEnvVars;
+use crate::config::FediProtoSyncEnvVars;
 
 pub async fn get_mastodon_oauth_token(
     config: &FediProtoSyncEnvVars

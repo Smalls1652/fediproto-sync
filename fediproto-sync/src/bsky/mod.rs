@@ -13,7 +13,7 @@ use atprotolib_rs::{
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
     db,
-    FediProtoSyncEnvVars
+    config::FediProtoSyncEnvVars
 };
 
 /// Holds the authentication information for a Bluesky session.

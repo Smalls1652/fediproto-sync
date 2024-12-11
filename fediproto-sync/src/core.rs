@@ -5,7 +5,7 @@ use crate::{
     bsky,
     db::{self, models::{self, CachedServiceTokenDecrypt}},
     mastodon::MastodonApiExtensions,
-    FediProtoSyncEnvVars
+    config::{self, FediProtoSyncEnvVars}
 };
 
 use oauth2::TokenResponse;
@@ -36,7 +36,7 @@ impl FediProtoSyncLoop {
         let database_url = config.database_url.clone();
 
         let db_connection = match database_type {
-            crate::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
+            config::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
                 PgConnection::establish(&database_url).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to connect to database.",
@@ -46,7 +46,7 @@ impl FediProtoSyncLoop {
                 })?
             ),
 
-            crate::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
+            config::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
                 SqliteConnection::establish(&database_url).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to connect to database.",
