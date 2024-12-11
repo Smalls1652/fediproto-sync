@@ -25,6 +25,9 @@ pub struct FediProtoSyncEnvVars {
     /// The Mastodon server URL to connect to.
     pub mastodon_server: String,
 
+    /// The type of authentication to use for Mastodon.
+    pub mastodon_auth_type: MastodonAuthType,
+
     /// The client ID for the Mastodon application.
     pub mastodon_client_id: String,
 
@@ -149,6 +152,18 @@ impl FediProtoSyncEnvVars {
             )
         })?;
 
+        // Read 'MASTODON_AUTH_TYPE' environment variable.
+        let mastodon_auth_type = std::env::var("MASTODON_AUTH_TYPE")
+            .unwrap_or("AccessToken".to_string())
+            .parse::<MastodonAuthType>()
+            .map_err(|e| {
+                crate::error::Error::with_source(
+                    "Failed to parse the MASTODON_AUTH_TYPE environment variable.",
+                    crate::error::ErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
         // Read 'MASTODON_CLIENT_ID' environment variable.
         let mastodon_client_id = std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
             crate::error::Error::with_source(
@@ -237,6 +252,7 @@ impl FediProtoSyncEnvVars {
             token_encryption_public_key,
             user_agent,
             mastodon_server,
+            mastodon_auth_type,
             mastodon_client_id,
             mastodon_client_secret,
             mastodon_access_token,
@@ -278,6 +294,41 @@ impl std::str::FromStr for DatabaseType {
             "SQLite" => Ok(DatabaseType::SQLite),
             _ => Err(crate::error::Error::new(
                 "Invalid database type.",
+                crate::error::ErrorKind::EnvironmentVariableError
+            ))
+        }
+    }
+}
+
+/// The type of authentication to use for Mastodon.
+#[derive(Debug, Clone)]
+pub enum MastodonAuthType {
+    /// Authenticate using an access token.
+    AccessToken,
+
+    /// Authenticate using OAuth2.
+    OAuth2
+}
+
+impl From<&str> for MastodonAuthType {
+    fn from(s: &str) -> Self {
+        match s {
+            "AccessToken" => MastodonAuthType::AccessToken,
+            "OAuth2" => MastodonAuthType::OAuth2,
+            _ => MastodonAuthType::AccessToken
+        }
+    }
+}
+
+impl std::str::FromStr for MastodonAuthType {
+    type Err = crate::error::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "AccessToken" => Ok(MastodonAuthType::AccessToken),
+            "OAuth2" => Ok(MastodonAuthType::OAuth2),
+            _ => Err(crate::error::Error::new(
+                "Invalid Mastodon authentication type.",
                 crate::error::ErrorKind::EnvironmentVariableError
             ))
         }
