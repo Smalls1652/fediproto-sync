@@ -453,6 +453,7 @@ name = "fediproto-sync"
 version = "0.1.0"
 dependencies = [
  "atprotolib-rs",
+ "bytes",
  "chrono",
  "diesel",
  "diesel_migrations",
