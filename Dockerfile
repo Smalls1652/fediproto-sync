@@ -26,7 +26,7 @@ RUN apt-get update \
 RUN chmod +x ./docker-build/build.sh \
     && ./docker-build/build.sh
 
-FROM --platform=${TARGETPLATFORM} docker.io/library/debian:bullseye-slim
+FROM --platform=${TARGETPLATFORM} docker.io/library/debian:bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y libsqlite3-0 libpq5 ca-certificates \
