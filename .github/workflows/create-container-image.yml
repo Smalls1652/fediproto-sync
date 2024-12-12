@@ -19,7 +19,7 @@ permissions:
 jobs:
   create-image:
     name: Create container image
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'fediproto-selfhosted-arm64' || 'ubuntu-latest' }}
 
     strategy:
       fail-fast: false
