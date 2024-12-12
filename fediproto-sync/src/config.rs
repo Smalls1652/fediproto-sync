@@ -14,10 +14,10 @@ pub struct FediProtoSyncEnvVars {
     pub database_url: String,
 
     /// The encryption key to use for token encryption.
-    pub token_encryption_private_key: Option<openssl::rsa::Rsa<openssl::pkey::Private>>,
+    pub token_encryption_private_key: Option<boring::rsa::Rsa<boring::pkey::Private>>,
 
     /// The encryption IV to use for token encryption.
-    pub token_encryption_public_key: Option<openssl::rsa::Rsa<openssl::pkey::Public>>,
+    pub token_encryption_public_key: Option<boring::rsa::Rsa<boring::pkey::Public>>,
 
     /// User-Agent string to use for HTTP requests.
     pub user_agent: String,
@@ -107,7 +107,7 @@ impl FediProtoSyncEnvVars {
                         Box::new(e)
                     )
                 })?;
-                let private_key = openssl::base64::decode_block(&private_key).map_err(|e| {
+                let private_key = boring::base64::decode_block(&private_key).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
                         crate::error::ErrorKind::EnvironmentVariableError,
@@ -115,7 +115,7 @@ impl FediProtoSyncEnvVars {
                     )
                 })?;
                 let private_key =
-                    openssl::rsa::Rsa::private_key_from_pem(&private_key).map_err(|e| {
+                    boring::rsa::Rsa::private_key_from_pem(&private_key).map_err(|e| {
                         crate::error::Error::with_source(
                             "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
                             crate::error::ErrorKind::EnvironmentVariableError,
@@ -139,7 +139,7 @@ impl FediProtoSyncEnvVars {
                         Box::new(e)
                     )
                 })?;
-                let public_key = openssl::base64::decode_block(&public_key).map_err(|e| {
+                let public_key = boring::base64::decode_block(&public_key).map_err(|e| {
                     crate::error::Error::with_source(
                         "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
                         crate::error::ErrorKind::EnvironmentVariableError,
@@ -147,7 +147,7 @@ impl FediProtoSyncEnvVars {
                     )
                 })?;
                 let public_key =
-                    openssl::rsa::Rsa::public_key_from_pem(&public_key).map_err(|e| {
+                    boring::rsa::Rsa::public_key_from_pem(&public_key).map_err(|e| {
                         crate::error::Error::with_source(
                             "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
                             crate::error::ErrorKind::EnvironmentVariableError,

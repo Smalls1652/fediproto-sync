@@ -24,7 +24,7 @@ RUN chmod +x ./docker-build/build.sh \
 FROM --platform=${TARGETARCH:-$BUILDPLATFORM} docker.io/library/debian:bullseye-slim
 
 RUN apt-get update \
-    && apt-get install -y libsqlite3-0 libpq5 openssl ca-certificates \
+    && apt-get install -y libsqlite3-0 libpq5 ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
