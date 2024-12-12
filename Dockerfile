@@ -13,8 +13,12 @@ RUN apt-get update \
         libc6-dev-amd64-cross \
         g++-aarch64-linux-gnu \
         libc6-dev-arm64-cross \
+        crossbuild-essential-arm64 \
+        crossbuild-essential-amd64 \
+        clang \
         git \
         pkg-config \
+        cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
     
