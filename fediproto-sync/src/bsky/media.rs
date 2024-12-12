@@ -3,7 +3,7 @@ use atprotolib_rs::{
     types::{app_bsky, com_atproto}
 };
 use rand::distributions::DistString;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 
 use super::BlueSkyPostSync;
 use crate::{bsky::utils::BlueSkyPostSyncUtils, db};
@@ -273,23 +273,18 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             random_video_name
         );
 
-        let mut temp_file = tokio::fs::File::open(&temp_path).await?;
-        let mut media_attachment_buffer = Vec::new();
-
-        temp_file.read_to_end(&mut media_attachment_buffer).await?;
+        let temp_file = tokio::fs::File::open(&temp_path).await?;
 
         let upload_video_client = crate::core::create_http_client(&self.config)?;
         let upload_video_job_response = app_bsky::video::upload_video(
             "video.bsky.app",
             upload_video_client,
             &upload_auth_config,
-            media_attachment_buffer,
+            temp_file,
             &self.bsky_auth.session.did,
             &random_video_name
         )
         .await?;
-
-        temp_file.flush().await?;
 
         tracing::info!(
             "Waiting for video upload job '{}' to complete",
