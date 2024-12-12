@@ -2,5 +2,17 @@
     "debug.internalConsoleOptions": "neverOpen",
     "git.detectSubmodules": false,
     "task.quickOpen.history": 0,
-    "task.autoDetect": "off"
+    "task.autoDetect": "off",
+    "cSpell.ignorePaths": [
+        "package-lock.json",
+        "node_modules",
+        "vscode-extension",
+        ".git/{info,lfs,logs,refs,objects}/**",
+        ".git/{index,*refs,*HEAD}",
+        ".vscode",
+        ".vscode-insiders",
+        "**.rs",
+        "Cargo.toml",
+        "Cargo.lock"
+    ]
 }
