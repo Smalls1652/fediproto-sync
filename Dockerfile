@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1-bullseye AS build
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1-bookworm AS build
 
 ARG TARGETPLATFORM
 ARG TARGETARCH
