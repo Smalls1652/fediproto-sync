@@ -58,7 +58,7 @@ jobs:
           context: ./
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          outputs: type=image,name=ghcr.io/${{ github.actor }}/fediproto-sync,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/smalls1652/fediproto-sync,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
@@ -114,8 +114,8 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.actor }}/fediproto-sync@sha256:%s ' *)
+            $(printf 'ghcr.io/smalls1652/fediproto-sync@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ github.actor }}/fediproto-sync:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ghcr.io/smalls1652/fediproto-sync:${{ steps.meta.outputs.version }}
