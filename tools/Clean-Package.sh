@@ -23,7 +23,7 @@ if ! [[ "${PROFILE_NAME}" =~ ^(Debug|Release)$ ]]; then
     exit 1
 fi
 
-if [[ "${PROFILE_NAME}" == "release" ]]; then
+if [[ "${PROFILE_NAME}" == "Release" ]]; then
     cargo clean --package ${PACKAGE_NAME} --release
 else
     cargo clean --package ${PACKAGE_NAME}
