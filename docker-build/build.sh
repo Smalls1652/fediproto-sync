@@ -35,14 +35,11 @@ case "${TARGETPLATFORM}" in
         ;;
 esac
 
-echo "${RUST_TARGET}"
-
 export FEDIPROTOSYNC_INCLUDE_COMMIT_HASH="true"
 export FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION="true"
 export PKG_CONFIG_SYSROOT_DIR=/
 
 rustup default nightly
 rustup target add --toolchain "nightly" "${RUST_TARGET}"
-cargo fetch --target "${RUST_TARGET}"
 cargo build --package "fediproto-sync" --release --target "${RUST_TARGET}"
 cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync"
