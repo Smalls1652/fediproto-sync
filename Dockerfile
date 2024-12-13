@@ -1,4 +1,4 @@
-FROM --platform=${TARGETPLATFORM} docker.io/library/rust:1-bookworm AS build
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1-bookworm AS build
 
 ARG TARGETPLATFORM
 ARG TARGETARCH
@@ -18,18 +18,16 @@ RUN apt-get update \
         crossbuild-essential-amd64 \
         git \
         pkg-config \
-        cmake \
-        clang \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
     
 RUN chmod +x ./docker-build/build.sh \
     && ./docker-build/build.sh
 
-FROM --platform=${TARGETPLATFORM} docker.io/library/debian:bookworm-slim
+FROM --platform=${TARGETARCH:-$BUILDPLATFORM} docker.io/library/debian:bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y libsqlite3-0 libpq5 ca-certificates \
+    && apt-get install -y libsqlite3-0 libpq5 openssl ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

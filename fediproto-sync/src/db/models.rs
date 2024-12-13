@@ -277,7 +277,7 @@ pub trait CachedServiceTokenDecrypt {
     /// * `encryption_private_key` - The private key to use for decryption.
      fn decrypt_access_token(
         &self,
-        encryption_private_key: &boring::rsa::Rsa<boring::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
     ) -> Result<String, crate::error::Error>;
 
     /// Decrypt the refresh token.
@@ -292,7 +292,7 @@ pub trait CachedServiceTokenDecrypt {
     #[allow(dead_code)]
      fn decrypt_refresh_token(
         &self,
-        encryption_private_key: &boring::rsa::Rsa<boring::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
     ) -> Result<Option<String>, crate::error::Error>;
 }
 
@@ -304,7 +304,7 @@ impl CachedServiceTokenDecrypt for CachedServiceToken {
     /// * `encryption_private_key` - The private key to use for decryption.
      fn decrypt_access_token(
         &self,
-        encryption_private_key: &boring::rsa::Rsa<boring::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
     ) -> Result<String, crate::error::Error> {
         let decrypted_access_token = crate::crypto::decrypt_string(encryption_private_key, &self.access_token)?;
 
@@ -323,7 +323,7 @@ impl CachedServiceTokenDecrypt for CachedServiceToken {
     #[allow(dead_code)]
      fn decrypt_refresh_token(
         &self,
-        encryption_private_key: &boring::rsa::Rsa<boring::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
     ) -> Result<Option<String>, crate::error::Error> {
         let decrypted_refresh_token = match &self.refresh_token {
             Some(refresh_token) => {
@@ -374,7 +374,7 @@ impl NewCachedServiceToken {
     /// * `expires_in` - The time in seconds until the access token expires, if any.
     /// * `scopes` - The scopes the access token has, if any.
     pub fn new(
-        encryption_public_key: &boring::rsa::Rsa<boring::pkey::Public>,
+        encryption_public_key: &openssl::rsa::Rsa<openssl::pkey::Public>,
         service_name: &str,
         access_token: &str,
         refresh_token: Option<String>,
