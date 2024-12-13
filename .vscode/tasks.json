@@ -98,7 +98,7 @@
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
-          "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}",
+          "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}"
         }
       },
       "presentation": {
@@ -290,6 +290,14 @@
         {
           "label": "fediproto-sync",
           "value": "fediproto-sync"
+        },
+        {
+          "label": "fediproto-sync-db",
+          "value": "fediproto-sync-db"
+        },
+        {
+          "label": "fediproto-sync-lib",
+          "value": "fediproto-sync-lib"
         }
       ]
     },
@@ -323,7 +331,7 @@
           "label": "SQLite",
           "value": "sqlite"
         }
-      ],
+      ]
     },
     {
       "id": "dbMigrationName",
