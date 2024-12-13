@@ -2,7 +2,7 @@
 
 diesel::table! {
     mastodon_posts (id) {
-        id -> crate::db::type_impls::MultiBackendUuid,
+        id -> crate::type_impls::MultiBackendUuid,
         account_id -> VarChar,
         post_id -> VarChar,
         created_at -> Timestamp,
@@ -15,7 +15,7 @@ diesel::table! {
 
 diesel::table! {
     synced_posts_bluesky_data (id) {
-        id -> crate::db::type_impls::MultiBackendUuid,
+        id -> crate::type_impls::MultiBackendUuid,
         mastodon_post_id -> VarChar,
         bsky_post_cid -> VarChar,
         bsky_post_uri -> VarChar,
@@ -24,7 +24,7 @@ diesel::table! {
 
 diesel::table! {
     cached_service_tokens(id) {
-        id -> crate::db::type_impls::MultiBackendUuid,
+        id -> crate::type_impls::MultiBackendUuid,
         service_name -> VarChar,
         access_token -> VarChar,
         refresh_token -> Nullable<VarChar>,
@@ -35,7 +35,7 @@ diesel::table! {
 
 diesel::table! {
     cached_files (id) {
-        id -> crate::db::type_impls::MultiBackendUuid,
+        id -> crate::type_impls::MultiBackendUuid,
         file_path -> VarChar
     }
 }

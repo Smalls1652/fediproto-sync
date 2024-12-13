@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use megalodon::entities::Status;
 
 use super::type_impls::UuidProxy;
@@ -10,7 +11,7 @@ use super::type_impls::UuidProxy;
 #[diesel(table_name = crate::schema::mastodon_posts)]
 pub struct MastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -39,7 +40,7 @@ pub struct MastodonPost {
 #[diesel(table_name = crate::schema::mastodon_posts)]
 pub struct NewMastodonPost {
     /// A unique identifier for the Mastodon post in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The Mastodon account ID that created the post.
     pub account_id: String,
@@ -122,7 +123,7 @@ impl NewMastodonPost {
 #[diesel(table_name = crate::schema::synced_posts_bluesky_data)]
 pub struct SyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -134,12 +135,13 @@ pub struct SyncedPostBlueSkyData {
     pub bsky_post_uri: String
 }
 
-/// Represents a new synced post to insert into the `synced_posts_bluesky_data` table.
+/// Represents a new synced post to insert into the `synced_posts_bluesky_data`
+/// table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::synced_posts_bluesky_data)]
 pub struct NewSyncedPostBlueSkyData {
     /// A unique identifier for the synced post in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The Mastodon post ID.
     pub mastodon_post_id: String,
@@ -182,7 +184,7 @@ impl NewSyncedPostBlueSkyData {
 #[diesel(table_name = crate::schema::cached_files)]
 pub struct CachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
@@ -196,17 +198,17 @@ impl CachedFile {
     /// * `db_connection` - The database connection to use.
     pub async fn remove_file(
         &self,
-        db_connection: &mut crate::db::AnyConnection
-    ) -> Result<(), crate::error::Error> {
-        crate::db::operations::delete_cached_file_record(db_connection, self)?;
+        db_connection: &mut crate::AnyConnection
+    ) -> Result<(), FediProtoSyncError> {
+        crate::operations::delete_cached_file_record(db_connection, self)?;
 
         let file_path = std::path::Path::new(&self.file_path);
 
         if file_path.exists() {
             tokio::fs::remove_file(&file_path).await.map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to remove cached file.",
-                    crate::error::ErrorKind::TempFileRemovalError,
+                    FediProtoSyncErrorKind::TempFileRemovalError,
                     Box::new(e)
                 )
             })?;
@@ -221,7 +223,7 @@ impl CachedFile {
 #[diesel(table_name = crate::schema::cached_files)]
 pub struct NewCachedFile {
     /// A unique identifier for the cached file in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The path to the cached file.
     pub file_path: String
@@ -250,7 +252,7 @@ impl NewCachedFile {
 #[diesel(table_name = crate::schema::cached_service_tokens)]
 pub struct CachedServiceToken {
     /// A unique identifier for the cached service token in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The name of the service the token is for.
     pub service_name: String,
@@ -271,63 +273,67 @@ pub struct CachedServiceToken {
 /// Trait for decrypting a cached service token's access and refresh tokens.
 pub trait CachedServiceTokenDecrypt {
     /// Decrypt the access token.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `encryption_private_key` - The private key to use for decryption.
-     fn decrypt_access_token(
+    fn decrypt_access_token(
         &self,
         encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
-    ) -> Result<String, crate::error::Error>;
+    ) -> Result<String, FediProtoSyncError>;
 
     /// Decrypt the refresh token.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `encryption_private_key` - The private key to use for decryption.
-    /// 
+    ///
     /// ## Note
-    /// 
+    ///
     /// If there is no refresh token, this method will return `None`.
     #[allow(dead_code)]
-     fn decrypt_refresh_token(
+    fn decrypt_refresh_token(
         &self,
         encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
-    ) -> Result<Option<String>, crate::error::Error>;
+    ) -> Result<Option<String>, FediProtoSyncError>;
 }
 
 impl CachedServiceTokenDecrypt for CachedServiceToken {
     /// Decrypt the access token.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `encryption_private_key` - The private key to use for decryption.
-     fn decrypt_access_token(
+    fn decrypt_access_token(
         &self,
         encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
-    ) -> Result<String, crate::error::Error> {
-        let decrypted_access_token = crate::crypto::decrypt_string(encryption_private_key, &self.access_token)?;
+    ) -> Result<String, FediProtoSyncError> {
+        let decrypted_access_token =
+            fediproto_sync_lib::crypto::decrypt_string(encryption_private_key, &self.access_token)?;
 
         Ok(decrypted_access_token)
     }
 
     /// Decrypt the refresh token.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `encryption_private_key` - The private key to use for decryption.
     ///
     /// ## Note
-    /// 
+    ///
     /// If there is no refresh token, this method will return `None`.
     #[allow(dead_code)]
-     fn decrypt_refresh_token(
+    fn decrypt_refresh_token(
         &self,
         encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
-    ) -> Result<Option<String>, crate::error::Error> {
+    ) -> Result<Option<String>, FediProtoSyncError> {
         let decrypted_refresh_token = match &self.refresh_token {
             Some(refresh_token) => {
-                let decrypted_refresh_token = crate::crypto::decrypt_string(encryption_private_key, refresh_token)?;
+                let decrypted_refresh_token = fediproto_sync_lib::crypto::decrypt_string(
+                    encryption_private_key,
+                    refresh_token
+                )?;
 
                 Some(decrypted_refresh_token)
             }
@@ -339,12 +345,13 @@ impl CachedServiceTokenDecrypt for CachedServiceToken {
     }
 }
 
-/// Represents a new cached service token to insert into the `cached_service_tokens` table.
+/// Represents a new cached service token to insert into the
+/// `cached_service_tokens` table.
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::cached_service_tokens)]
 pub struct NewCachedServiceToken {
     /// A unique identifier for the cached service token in the database.
-    pub id: crate::db::type_impls::UuidProxy,
+    pub id: crate::type_impls::UuidProxy,
 
     /// The name of the service the token is for.
     pub service_name: String,
@@ -364,14 +371,15 @@ pub struct NewCachedServiceToken {
 
 impl NewCachedServiceToken {
     /// Create a new instance of the `NewCachedServiceToken` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `encryption_public_key` - The public key to use for encryption.
     /// * `service_name` - The name of the service the token is for.
     /// * `access_token` - The access token to encrypt.
     /// * `refresh_token` - The refresh token to encrypt, if any.
-    /// * `expires_in` - The time in seconds until the access token expires, if any.
+    /// * `expires_in` - The time in seconds until the access token expires, if
+    ///   any.
     /// * `scopes` - The scopes the access token has, if any.
     pub fn new(
         encryption_public_key: &openssl::rsa::Rsa<openssl::pkey::Public>,
@@ -380,17 +388,21 @@ impl NewCachedServiceToken {
         refresh_token: Option<String>,
         expires_in: Option<i32>,
         scopes: Option<String>
-    ) -> Result<Self, crate::error::Error> {
+    ) -> Result<Self, FediProtoSyncError> {
         let time_context = uuid::ContextV7::new();
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
 
         let service_name = service_name.to_string();
 
-        let encrypted_access_token = crate::crypto::encrypt_string(encryption_public_key, access_token)?;
+        let encrypted_access_token =
+            fediproto_sync_lib::crypto::encrypt_string(encryption_public_key, access_token)?;
 
         let encrypted_refresh_token = match refresh_token {
             Some(refresh_token) => {
-                let encrypted_refresh_token = crate::crypto::encrypt_string(encryption_public_key, &refresh_token)?;
+                let encrypted_refresh_token = fediproto_sync_lib::crypto::encrypt_string(
+                    encryption_public_key,
+                    &refresh_token
+                )?;
 
                 Some(encrypted_refresh_token)
             }

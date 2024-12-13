@@ -2,8 +2,8 @@
 # see https://diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "fediproto-sync/src/schema_postgres.rs"
+file = "fediproto-sync-db/src/schema_postgres.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 
 [migrations_directory]
-dir = "fediproto-sync/migrations/postgres"
+dir = "fediproto-sync-db/migrations/postgres"
