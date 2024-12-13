@@ -1,16 +1,12 @@
 use atprotolib_rs::types::app_bsky;
-use diesel::{Connection, PgConnection, SqliteConnection};
+use fediproto_sync_db::models::{self, CachedServiceTokenDecrypt};
+use fediproto_sync_lib::{
+    config::{self, FediProtoSyncEnvVars},
+    error::{FediProtoSyncError, FediProtoSyncErrorKind}
+};
 use oauth2::TokenResponse;
 
-use crate::{
-    bsky,
-    config::{self, FediProtoSyncEnvVars},
-    db::{
-        self,
-        models::{self, CachedServiceTokenDecrypt}
-    },
-    mastodon::MastodonApiExtensions
-};
+use crate::{bsky, mastodon::MastodonApiExtensions};
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -18,7 +14,7 @@ pub struct FediProtoSyncLoop {
     config: FediProtoSyncEnvVars,
 
     /// The database connection for the FediProto Sync application.
-    db_connection: crate::db::AnyConnection,
+    db_connection: fediproto_sync_db::AnyConnection,
 
     /// The BlueSky authentication session.
     bsky_auth: bsky::BlueSkyAuthentication
@@ -37,27 +33,9 @@ impl FediProtoSyncLoop {
         let database_type = config.database_type.clone();
         let database_url = config.database_url.clone();
 
-        let db_connection = match database_type {
-            config::DatabaseType::Postgres => crate::db::AnyConnection::Postgres(
-                PgConnection::establish(&database_url).map_err(|e| {
-                    crate::error::Error::with_source(
-                        "Failed to connect to database.",
-                        crate::error::ErrorKind::DatabaseConnectionError,
-                        Box::new(e)
-                    )
-                })?
-            ),
+        let db_connection =
+            fediproto_sync_db::create_database_connection(&database_url, database_type)?;
 
-            config::DatabaseType::SQLite => crate::db::AnyConnection::SQLite(
-                SqliteConnection::establish(&database_url).map_err(|e| {
-                    crate::error::Error::with_source(
-                        "Failed to connect to database.",
-                        crate::error::ErrorKind::DatabaseConnectionError,
-                        Box::new(e)
-                    )
-                })?
-            )
-        };
         tracing::info!("Connected to database.");
 
         let client = create_http_client(&config)?;
@@ -84,8 +62,8 @@ impl FediProtoSyncLoop {
     ///
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
-    pub async fn run_loop(&mut self) -> Result<(), crate::error::Error> {
-        db::core::run_migrations(&mut self.db_connection)?;
+    pub async fn run_loop(&mut self) -> Result<(), FediProtoSyncError> {
+        fediproto_sync_db::core::run_migrations(&mut self.db_connection)?;
 
         if &self.config.mode == "auth" {
             let auth_result = self.run_auth().await;
@@ -123,12 +101,13 @@ impl FediProtoSyncLoop {
     }
 
     /// Run the authentication setup for the FediProto Sync application.
-    async fn run_auth(&mut self) -> Result<(), crate::error::Error> {
-        let mastodon_token_exists = db::operations::get_cached_service_token_by_service_name(
-            &mut self.db_connection,
-            "mastodon"
-        )?
-        .is_some();
+    async fn run_auth(&mut self) -> Result<(), FediProtoSyncError> {
+        let mastodon_token_exists =
+            fediproto_sync_db::operations::get_cached_service_token_by_service_name(
+                &mut self.db_connection,
+                "mastodon"
+            )?
+            .is_some();
 
         match mastodon_token_exists {
             false => {
@@ -144,7 +123,7 @@ impl FediProtoSyncLoop {
                     None
                 )?;
 
-                db::operations::insert_cached_service_token(
+                fediproto_sync_db::operations::insert_cached_service_token(
                     &mut self.db_connection,
                     &new_mastodon_token
                 )?;
@@ -176,23 +155,25 @@ impl FediProtoSyncLoop {
 
             config::MastodonAuthType::OAuth2 => {
                 tracing::info!("Using OAuth2 for Mastodon authentication.");
-                let cached_token = db::operations::get_cached_service_token_by_service_name(
-                    &mut self.db_connection,
-                    "mastodon"
-                )?;
+                let cached_token =
+                    fediproto_sync_db::operations::get_cached_service_token_by_service_name(
+                        &mut self.db_connection,
+                        "mastodon"
+                    )?;
 
                 let cached_token = match cached_token {
                     Some(token) => token,
                     None => {
-                        return Err(Box::new(crate::error::Error::new(
+                        return Err(Box::new(FediProtoSyncError::new(
                             "Mastodon token not found in database.",
-                            crate::error::ErrorKind::AuthenticationError
+                            FediProtoSyncErrorKind::AuthenticationError
                         )));
                     }
                 };
 
-                let decrypted_token =
-                    cached_token.decrypt_access_token(&self.config.token_encryption_private_key.as_ref().unwrap())?;
+                let decrypted_token = cached_token.decrypt_access_token(
+                    &self.config.token_encryption_private_key.as_ref().unwrap()
+                )?;
 
                 decrypted_token
             }
@@ -206,9 +187,9 @@ impl FediProtoSyncLoop {
             Some(self.config.user_agent.clone())
         )
         .map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to create Mastodon client.",
-                crate::error::ErrorKind::AuthenticationError,
+                FediProtoSyncErrorKind::AuthenticationError,
                 Box::new(e)
             )
         })?;
@@ -217,9 +198,9 @@ impl FediProtoSyncLoop {
             .verify_account_credentials()
             .await
             .map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to verify Mastodon account credentials.",
-                    crate::error::ErrorKind::AuthenticationError,
+                    FediProtoSyncErrorKind::AuthenticationError,
                     Box::new(e)
                 )
             })?;
@@ -231,8 +212,9 @@ impl FediProtoSyncLoop {
 
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
-        let last_synced_post_id =
-            db::operations::get_last_synced_mastodon_post_id(&mut self.db_connection)?;
+        let last_synced_post_id = fediproto_sync_db::operations::get_last_synced_mastodon_post_id(
+            &mut self.db_connection
+        )?;
 
         // Get the latest posts from Mastodon.
         // If there is no last synced post ID, we will only get the latest post.
@@ -253,7 +235,7 @@ impl FediProtoSyncLoop {
             let initial_post = latest_posts[0].clone();
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
-            db::operations::insert_new_synced_mastodon_post(
+            fediproto_sync_db::operations::insert_new_synced_mastodon_post(
                 &mut self.db_connection,
                 &new_mastodon_post
             )?;
@@ -300,7 +282,7 @@ impl FediProtoSyncLoop {
         }
 
         let cached_files_to_delete =
-            db::operations::get_cached_file_records(&mut self.db_connection)?;
+            fediproto_sync_db::operations::get_cached_file_records(&mut self.db_connection)?;
 
         if cached_files_to_delete.len() > 0 {
             tracing::info!("Deleting cached files during sync...");
@@ -322,14 +304,14 @@ impl FediProtoSyncLoop {
 /// * `config` - The environment variables for the FediProto Sync application.
 pub fn create_http_client(
     config: &FediProtoSyncEnvVars
-) -> Result<reqwest::Client, crate::error::Error> {
+) -> Result<reqwest::Client, FediProtoSyncError> {
     reqwest::Client::builder()
         .user_agent(config.user_agent.clone())
         .build()
         .map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to create HTTP client.",
-                crate::error::ErrorKind::HttpClientCreationError,
+                FediProtoSyncErrorKind::HttpClientCreationError,
                 Box::new(e)
             )
         })

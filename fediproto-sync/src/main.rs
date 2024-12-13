@@ -1,14 +1,9 @@
 mod auth;
 mod bsky;
-mod config;
 mod core;
-mod crypto;
-mod db;
-mod error;
 mod mastodon;
-mod schema;
-mod schema_postgres;
-mod schema_sqlite;
+
+use fediproto_sync_lib::config::FediProtoSyncEnvVars;
 
 pub const GIT_VERSION: &str = std::env!("GIT_VERSION");
 
@@ -59,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = dotenvy::from_path(env_vars_path)?;
     }
 
-    let config_result = config::FediProtoSyncEnvVars::new();
+    let config_result = FediProtoSyncEnvVars::new();
 
     let config = match config_result {
         Ok(config) => config,
