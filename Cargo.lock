@@ -459,6 +459,8 @@ dependencies = [
  "diesel_migrations",
  "dom_query",
  "dotenvy",
+ "fediproto-sync-db",
+ "fediproto-sync-lib",
  "git-version",
  "megalodon",
  "oauth2",
@@ -475,6 +477,33 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "fediproto-sync-db"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "diesel",
+ "diesel_migrations",
+ "fediproto-sync-lib",
+ "git-version",
+ "megalodon",
+ "openssl",
+ "serde",
+ "tokio",
+ "toml_edit",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "fediproto-sync-lib"
+version = "0.1.0"
+dependencies = [
+ "git-version",
+ "openssl",
+ "toml_edit",
 ]
 
 [[package]]
