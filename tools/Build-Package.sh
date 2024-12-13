@@ -9,8 +9,6 @@ while getopts ":n:p:" opt; do
     esac
 done
 
-echo "${PROFILE_NAME}"
-
 if [ -z "${PACKAGE_NAME}" ]; then
     echo "package is required"
     exit 1
