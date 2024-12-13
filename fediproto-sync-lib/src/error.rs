@@ -1,29 +1,28 @@
-
 /// Error value for FediProtoSync.
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct Error {
+pub struct FediProtoSyncError {
     /// A message describing the error.
     pub message: String,
 
     /// The kind of error that occurred.
-    pub kind: ErrorKind,
+    pub kind: FediProtoSyncErrorKind,
 
     /// The source of the error, if any.
     pub source: Option<Box<dyn std::error::Error>>
 }
 
 #[allow(dead_code)]
-impl Error {
+impl FediProtoSyncError {
     /// Create a new error.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `message` - A message describing the error.
     /// * `kind` - The kind of error that occurred.
     pub fn new(
         message: &str,
-        kind: ErrorKind
+        kind: FediProtoSyncErrorKind
     ) -> Self {
         Self {
             message: message.to_string(),
@@ -33,15 +32,15 @@ impl Error {
     }
 
     /// Create a new error with a source.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `message` - A message describing the error.
     /// * `kind` - The kind of error that occurred.
     /// * `source` - The source of the error.
     pub fn with_source(
         message: &str,
-        kind: ErrorKind,
+        kind: FediProtoSyncErrorKind,
         source: Box<dyn std::error::Error>
     ) -> Self {
         Self {
@@ -52,7 +51,7 @@ impl Error {
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for FediProtoSyncError {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter
@@ -61,7 +60,7 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {
+impl std::error::Error for FediProtoSyncError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source.as_ref().map(|e| &**e)
     }
@@ -70,7 +69,7 @@ impl std::error::Error for Error {
 /// The kind of error that occurred.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub enum ErrorKind {
+pub enum FediProtoSyncErrorKind {
     /// An error occurred while trying to read an environment variable.
     EnvironmentVariableError,
 
@@ -108,10 +107,10 @@ pub enum ErrorKind {
     VideoUploadError,
 
     /// An error occurred while removing a temporary file.
-    TempFileRemovalError,
+    TempFileRemovalError
 }
 
-impl std::fmt::Display for ErrorKind {
+impl std::fmt::Display for FediProtoSyncErrorKind {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter
