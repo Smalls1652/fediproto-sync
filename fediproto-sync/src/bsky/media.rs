@@ -2,11 +2,13 @@ use atprotolib_rs::{
     api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
     types::{app_bsky, com_atproto}
 };
+use fediproto_sync_db::models::NewCachedFile;
+use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use rand::distributions::DistString;
 use tokio::io::AsyncWriteExt;
 
 use super::BlueSkyPostSync;
-use crate::{bsky::utils::BlueSkyPostSyncUtils, db};
+use crate::bsky::utils::BlueSkyPostSyncUtils;
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -150,8 +152,11 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         #[allow(unused_assignments)]
         let temp_file_path = self.download_mastodon_video(media_attachment).await?;
 
-        let new_cached_file_record = crate::db::models::NewCachedFile::new(&temp_file_path);
-        db::operations::insert_cached_file_record(self.db_connection, &new_cached_file_record)?;
+        let new_cached_file_record = NewCachedFile::new(&temp_file_path);
+        fediproto_sync_db::operations::insert_cached_file_record(
+            self.db_connection,
+            &new_cached_file_record
+        )?;
 
         let mut should_fallback = false;
 
@@ -325,9 +330,9 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                     job_status.error.unwrap_or_else(|| "N/A".to_string())
                 );
 
-                return Err(Box::new(crate::error::Error::new(
+                return Err(Box::new(FediProtoSyncError::new(
                     "The BlueSky upload job failed.",
-                    crate::error::ErrorKind::VideoUploadError
+                    FediProtoSyncErrorKind::VideoUploadError
                 )));
             }
 

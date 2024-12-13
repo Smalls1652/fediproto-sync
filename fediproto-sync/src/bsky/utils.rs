@@ -1,4 +1,5 @@
 use atprotolib_rs::types::com_atproto;
+use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
 use super::BlueSkyPostSync;
 
@@ -89,9 +90,9 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
                 match pds_service {
                     Some(pds_service) => pds_service.service_endpoint.clone(),
                     None => {
-                        return Err(Box::new(crate::error::Error::new(
+                        return Err(Box::new(FediProtoSyncError::new(
                             "No PDS service found in Bluesky session.",
-                            crate::error::ErrorKind::AuthenticationError
+                            FediProtoSyncErrorKind::AuthenticationError
                         )))
                     }
                 }

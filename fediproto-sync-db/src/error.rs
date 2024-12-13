@@ -1,4 +1,3 @@
-
 /// Error value for FediProtoSync.
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -16,9 +15,9 @@ pub struct Error {
 #[allow(dead_code)]
 impl Error {
     /// Create a new error.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `message` - A message describing the error.
     /// * `kind` - The kind of error that occurred.
     pub fn new(
@@ -33,9 +32,9 @@ impl Error {
     }
 
     /// Create a new error with a source.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `message` - A message describing the error.
     /// * `kind` - The kind of error that occurred.
     /// * `source` - The source of the error.
@@ -108,7 +107,7 @@ pub enum ErrorKind {
     VideoUploadError,
 
     /// An error occurred while removing a temporary file.
-    TempFileRemovalError,
+    TempFileRemovalError
 }
 
 impl std::fmt::Display for ErrorKind {

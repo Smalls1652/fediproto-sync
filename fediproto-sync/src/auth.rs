@@ -1,10 +1,15 @@
+use fediproto_sync_lib::{
+    config::FediProtoSyncEnvVars,
+    error::{FediProtoSyncError, FediProtoSyncErrorKind}
+};
 use oauth2::{basic::BasicClient, reqwest::async_http_client};
-
-use crate::config::FediProtoSyncEnvVars;
 
 pub async fn get_mastodon_oauth_token(
     config: &FediProtoSyncEnvVars
-) -> Result<oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>, crate::error::Error> {
+) -> Result<
+    oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>,
+    FediProtoSyncError
+> {
     let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone().unwrap());
     let client_secret = Some(oauth2::ClientSecret::new(
         config.mastodon_client_secret.clone().unwrap()
@@ -15,9 +20,9 @@ pub async fn get_mastodon_oauth_token(
         config.mastodon_server.clone()
     ))
     .map_err(|e| {
-        crate::error::Error::with_source(
+        FediProtoSyncError::with_source(
             "Failed to create Mastodon auth URL.",
-            crate::error::ErrorKind::AuthenticationError,
+            FediProtoSyncErrorKind::AuthenticationError,
             Box::new(e)
         )
     })?;
@@ -28,9 +33,9 @@ pub async fn get_mastodon_oauth_token(
             config.mastodon_server.clone()
         ))
         .map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to create Mastodon token URL.",
-                crate::error::ErrorKind::AuthenticationError,
+                FediProtoSyncErrorKind::AuthenticationError,
                 Box::new(e)
             )
         })?
@@ -38,9 +43,9 @@ pub async fn get_mastodon_oauth_token(
 
     let redirect_url =
         oauth2::RedirectUrl::new("urn:ietf:wg:oauth:2.0:oob".to_string()).map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to create Mastodon redirect URL.",
-                crate::error::ErrorKind::AuthenticationError,
+                FediProtoSyncErrorKind::AuthenticationError,
                 Box::new(e)
             )
         })?;
@@ -69,9 +74,9 @@ pub async fn get_mastodon_oauth_token(
         .request_async(async_http_client)
         .await
         .map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to exchange Mastodon auth code for token.",
-                crate::error::ErrorKind::AuthenticationError,
+                FediProtoSyncErrorKind::AuthenticationError,
                 Box::new(e)
             )
         })?;

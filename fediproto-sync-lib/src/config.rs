@@ -1,4 +1,7 @@
-use crate::GIT_VERSION;
+use crate::{
+    error::{FediProtoSyncError, FediProtoSyncErrorKind},
+    GIT_VERSION
+};
 
 /// The environment variable values for configuring the FediProtoSync
 /// application.
@@ -60,7 +63,7 @@ pub struct FediProtoSyncEnvVars {
 
 impl FediProtoSyncEnvVars {
     /// Create a new instance of the `FediProtoSyncEnvVars` struct.
-    pub fn new() -> Result<Self, crate::error::Error> {
+    pub fn new() -> Result<Self, FediProtoSyncError> {
         // Read 'FEDIPROTO_SYNC_MODE' environment variable.
         let mode = std::env::var("FEDIPROTO_SYNC_MODE").unwrap_or("normal".to_string());
 
@@ -69,18 +72,18 @@ impl FediProtoSyncEnvVars {
             .unwrap_or("Postgres".to_string())
             .parse::<DatabaseType>()
             .map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to parse the DATABASE_TYPE environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
+                    FediProtoSyncErrorKind::EnvironmentVariableError,
                     Box::new(e)
                 )
             })?;
 
         // Read 'DATABASE_URL' environment variable.
         let database_url = std::env::var("DATABASE_URL").map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to read DATABASE_URL environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
+                FediProtoSyncErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
         })?;
@@ -90,9 +93,9 @@ impl FediProtoSyncEnvVars {
             .unwrap_or("AccessToken".to_string())
             .parse::<MastodonAuthType>()
             .map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to parse the MASTODON_AUTH_TYPE environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
+                    FediProtoSyncErrorKind::EnvironmentVariableError,
                     Box::new(e)
                 )
             })?;
@@ -101,24 +104,24 @@ impl FediProtoSyncEnvVars {
         let token_encryption_private_key = match mastodon_auth_type {
             MastodonAuthType::OAuth2 => {
                 let private_key = std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY").map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to read TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?;
                 let private_key = openssl::base64::decode_block(&private_key).map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?;
                 let private_key =
                     openssl::rsa::Rsa::private_key_from_pem(&private_key).map_err(|e| {
-                        crate::error::Error::with_source(
+                        FediProtoSyncError::with_source(
                             "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                            crate::error::ErrorKind::EnvironmentVariableError,
+                            FediProtoSyncErrorKind::EnvironmentVariableError,
                             Box::new(e)
                         )
                     })?;
@@ -133,24 +136,24 @@ impl FediProtoSyncEnvVars {
         let token_encryption_public_key = match mastodon_auth_type {
             MastodonAuthType::OAuth2 => {
                 let public_key = std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY").map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to read TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?;
                 let public_key = openssl::base64::decode_block(&public_key).map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?;
                 let public_key =
                     openssl::rsa::Rsa::public_key_from_pem(&public_key).map_err(|e| {
-                        crate::error::Error::with_source(
+                        FediProtoSyncError::with_source(
                             "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                            crate::error::ErrorKind::EnvironmentVariableError,
+                            FediProtoSyncErrorKind::EnvironmentVariableError,
                             Box::new(e)
                         )
                     })?;
@@ -169,9 +172,9 @@ impl FediProtoSyncEnvVars {
 
         // Read 'MASTODON_SERVER' environment variable.
         let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to read MASTODON_SERVER environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
+                FediProtoSyncErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
         })?;
@@ -179,9 +182,9 @@ impl FediProtoSyncEnvVars {
         // Read 'MASTODON_CLIENT_ID' environment variable.
         let mastodon_client_id = match mastodon_auth_type {
             MastodonAuthType::OAuth2 => Some(std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to read MASTODON_CLIENT_ID environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
+                    FediProtoSyncErrorKind::EnvironmentVariableError,
                     Box::new(e)
                 )
             })?),
@@ -193,9 +196,9 @@ impl FediProtoSyncEnvVars {
         let mastodon_client_secret = match mastodon_auth_type {
             MastodonAuthType::OAuth2 => {
                 Some(std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to read MASTODON_CLIENT_SECRET environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?)
@@ -208,9 +211,9 @@ impl FediProtoSyncEnvVars {
         let mastodon_access_token = match mastodon_auth_type {
             MastodonAuthType::AccessToken => {
                 Some(std::env::var("MASTODON_ACCESS_TOKEN").map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to read MASTODON_ACCESS_TOKEN environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?)
@@ -221,27 +224,27 @@ impl FediProtoSyncEnvVars {
 
         // Read 'BLUESKY_PDS_SERVER' environment variable.
         let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to read BLUESKY_PDS_SERVER environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
+                FediProtoSyncErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
         })?;
 
         // Read 'BLUESKY_HANDLE' environment variable.
         let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to read BLUESKY_HANDLE environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
+                FediProtoSyncErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
         })?;
 
         // Read 'BLUESKY_APP_PASSWORD' environment variable.
         let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to read BLUESKY_APP_PASSWORD environment variable.",
-                crate::error::ErrorKind::EnvironmentVariableError,
+                FediProtoSyncErrorKind::EnvironmentVariableError,
                 Box::new(e)
             )
         })?;
@@ -252,9 +255,9 @@ impl FediProtoSyncEnvVars {
                 .unwrap_or("300".to_string())
                 .parse::<u64>()
                 .map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to parse the SYNC_INTERVAL_SECONDS environment variable.",
-                        crate::error::ErrorKind::EnvironmentVariableError,
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
                         Box::new(e)
                     )
                 })?
@@ -265,9 +268,9 @@ impl FediProtoSyncEnvVars {
             .unwrap_or("false".to_string())
             .parse::<bool>()
             .map_err(|e| {
-                crate::error::Error::with_source(
+                FediProtoSyncError::with_source(
                     "Failed to parse the BLUESKY_VIDEO_ALWAYS_FALLBACK environment variable.",
-                    crate::error::ErrorKind::EnvironmentVariableError,
+                    FediProtoSyncErrorKind::EnvironmentVariableError,
                     Box::new(e)
                 )
             })?;
@@ -314,15 +317,15 @@ impl From<&str> for DatabaseType {
 }
 
 impl std::str::FromStr for DatabaseType {
-    type Err = crate::error::Error;
+    type Err = FediProtoSyncError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Postgres" => Ok(DatabaseType::Postgres),
             "SQLite" => Ok(DatabaseType::SQLite),
-            _ => Err(crate::error::Error::new(
+            _ => Err(FediProtoSyncError::new(
                 "Invalid database type.",
-                crate::error::ErrorKind::EnvironmentVariableError
+                FediProtoSyncErrorKind::EnvironmentVariableError
             ))
         }
     }
@@ -349,15 +352,15 @@ impl From<&str> for MastodonAuthType {
 }
 
 impl std::str::FromStr for MastodonAuthType {
-    type Err = crate::error::Error;
+    type Err = FediProtoSyncError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "AccessToken" => Ok(MastodonAuthType::AccessToken),
             "OAuth2" => Ok(MastodonAuthType::OAuth2),
-            _ => Err(crate::error::Error::new(
+            _ => Err(FediProtoSyncError::new(
                 "Invalid Mastodon authentication type.",
-                crate::error::ErrorKind::EnvironmentVariableError
+                FediProtoSyncErrorKind::EnvironmentVariableError
             ))
         }
     }

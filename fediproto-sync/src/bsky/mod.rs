@@ -9,11 +9,15 @@ use atprotolib_rs::{
         com_atproto::{self, server::CreateSessionRequest}
     }
 };
+use fediproto_sync_db::{
+    models::{NewMastodonPost, NewSyncedPostBlueSkyData},
+    AnyConnection
+};
+use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
-    db,
-    config::FediProtoSyncEnvVars
+    FediProtoSyncEnvVars
 };
 
 /// Holds the authentication information for a Bluesky session.
@@ -34,12 +38,13 @@ impl BlueSkyAuthentication {
     ///
     /// ## Arguments
     ///
-    /// * `config` - The environment variables for the FediProto Sync application.
+    /// * `config` - The environment variables for the FediProto Sync
+    ///   application.
     /// * `client` - The reqwest client to use for the API request.
     pub async fn new(
         config: &FediProtoSyncEnvVars,
         client: reqwest::Client
-    ) -> Result<Self, crate::error::Error> {
+    ) -> Result<Self, FediProtoSyncError> {
         let config = config.clone();
 
         let initial_auth_config = ApiAuthConfig {
@@ -58,9 +63,9 @@ impl BlueSkyAuthentication {
         )
         .await
         .map_err(|e| {
-            crate::error::Error::with_source(
+            FediProtoSyncError::with_source(
                 "Failed to create Bluesky session.",
-                crate::error::ErrorKind::AuthenticationError,
+                FediProtoSyncErrorKind::AuthenticationError,
                 e
             )
         })?;
@@ -86,7 +91,7 @@ impl BlueSkyAuthentication {
     pub async fn refresh_session_token(
         &mut self,
         client: reqwest::Client
-    ) -> Result<(), crate::error::Error> {
+    ) -> Result<(), FediProtoSyncError> {
         let refresh_auth_config = ApiAuthConfig {
             data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
                 token: self.session.refresh_jwt.clone()
@@ -97,9 +102,9 @@ impl BlueSkyAuthentication {
             com_atproto::server::refresh_session(&self.host_name, client, &refresh_auth_config)
                 .await
                 .map_err(|e| {
-                    crate::error::Error::with_source(
+                    FediProtoSyncError::with_source(
                         "Failed to refresh Bluesky session.",
-                        crate::error::ErrorKind::AuthenticationError,
+                        FediProtoSyncErrorKind::AuthenticationError,
                         e
                     )
                 })?;
@@ -126,7 +131,7 @@ pub struct BlueSkyPostSync<'a> {
     pub bsky_auth: BlueSkyAuthentication,
 
     /// The database connection for the FediProto Sync application.
-    pub db_connection: &'a mut crate::db::AnyConnection,
+    pub db_connection: &'a mut AnyConnection,
 
     /// The Mastodon account that posted the status.
     pub mastodon_account: megalodon::entities::account::Account,
@@ -161,8 +166,16 @@ impl BlueSkyPostSync<'_> {
             let in_reply_to_id = self.mastodon_status.in_reply_to_id.clone().unwrap();
 
             // Resolve the previous post in the thread and resolve it's synced post data.
-            let previous_mastodon_post = db::operations::get_synced_mastodon_post_by_id(self.db_connection, &in_reply_to_id)?;
-            let previous_synced_post = db::operations::get_bluesky_data_by_mastodon_post_id(self.db_connection, &in_reply_to_id)?;
+            let previous_mastodon_post =
+                fediproto_sync_db::operations::get_synced_mastodon_post_by_id(
+                    self.db_connection,
+                    &in_reply_to_id
+                )?;
+            let previous_synced_post =
+                fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
+                    self.db_connection,
+                    &in_reply_to_id
+                )?;
 
             // If the previous post has a root post, resolve it's synced post data.
             let previous_synced_post_root = match previous_mastodon_post.root_mastodon_post_id {
@@ -170,8 +183,11 @@ impl BlueSkyPostSync<'_> {
                     // Set the previous post ID to the root post ID retrieved.
                     previous_post_id = Some(root_mastodon_post_id.clone());
 
-                    db::operations::get_bluesky_data_by_mastodon_post_id(self.db_connection, &root_mastodon_post_id)?
-                },
+                    fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
+                        self.db_connection,
+                        &root_mastodon_post_id
+                    )?
+                }
                 None => {
                     // Set the previous post ID to the previous post ID.
                     previous_post_id = Some(in_reply_to_id.clone());
@@ -230,23 +246,29 @@ impl BlueSkyPostSync<'_> {
                     _ => panic!("Unexpected response from Bluesky")
                 };
 
-                let new_mastodon_post = crate::db::models::NewMastodonPost::new(
+                let new_mastodon_post = NewMastodonPost::new(
                     &self.mastodon_status,
                     Some(post_result.cid.clone()),
                     previous_post_id
                 );
 
-                let new_synced_post = crate::db::models::NewSyncedPostBlueSkyData::new(
+                let new_synced_post = NewSyncedPostBlueSkyData::new(
                     &self.mastodon_status.id,
                     &post_result.cid,
                     &post_result.uri
                 );
 
                 // Insert the synced Mastodon post into the database for future tracking.
-                db::operations::insert_new_synced_mastodon_post(self.db_connection, &new_mastodon_post)?;
+                fediproto_sync_db::operations::insert_new_synced_mastodon_post(
+                    self.db_connection,
+                    &new_mastodon_post
+                )?;
 
                 // Insert the synced BlueSky post into the database for future tracking.
-                db::operations::insert_new_bluesky_data_for_synced_mastodon_post(self.db_connection, &new_synced_post)?;
+                fediproto_sync_db::operations::insert_new_bluesky_data_for_synced_mastodon_post(
+                    self.db_connection,
+                    &new_synced_post
+                )?;
 
                 tracing::info!("Synced post '{}' to BlueSky.", &self.mastodon_status.id);
 
@@ -268,7 +290,8 @@ impl BlueSkyPostSync<'_> {
     /// Generate a Bluesky post item from a Mastodon status.
     pub async fn generate_post_item(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Parse the Mastodon status for post content and metadata. --
-        let mut parsed_status = crate::mastodon::ParsedMastodonPost::from_mastodon_status(&self.mastodon_status)?;
+        let mut parsed_status =
+            crate::mastodon::ParsedMastodonPost::from_mastodon_status(&self.mastodon_status)?;
 
         // -- Create a Bluesky post item from the parsed Mastodon status. --
 
