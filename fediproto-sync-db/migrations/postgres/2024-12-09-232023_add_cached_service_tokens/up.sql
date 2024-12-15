@@ -4,10 +4,10 @@
 
 CREATE TABLE "cached_service_tokens"(
 	"id" UUID NOT NULL PRIMARY KEY,
-	"service_name" TEXT NOT NULL,
-	"access_token" TEXT NOT NULL,
-	"refresh_token" TEXT,
-	"expires_in" INTEGER,
-	"scopes" TEXT
+	"service_name" VARCHAR NOT NULL,
+	"access_token" VARCHAR NOT NULL,
+	"refresh_token" VARCHAR,
+	"expires_in" TIMESTAMP,
+	"scopes" VARCHAR
 );
 
