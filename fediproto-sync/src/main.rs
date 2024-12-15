@@ -1,13 +1,8 @@
-mod auth;
 mod bsky;
 mod core;
 mod mastodon;
 
-use fediproto_sync_lib::config::FediProtoSyncConfig;
-
-use diesel::prelude::*;
-use diesel::r2d2::ConnectionManager;
-use diesel::r2d2::Pool;
+use fediproto_sync_lib::config::{FediProtoSyncConfig, FediProtoSyncMode};
 
 pub const GIT_VERSION: &str = std::env!("GIT_VERSION");
 /// The main entrypoint for the FediProtoSync application.
@@ -24,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up unbounded channels for shutdown and error signals.
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
-    let (sig_error_send, mut sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
+    let (core_sig_error_send, mut core_sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
 
     // Set up signal handlers for SIGTERM and SIGQUIT.
     let mut sig_term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
@@ -67,11 +62,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(1);
         }
     };
-    
+
     let database_url = config.database_url.clone();
 
-    let db_connection =
-        fediproto_sync_db::create_database_connection(&database_url)?;
+    let db_connection = fediproto_sync_db::create_database_connection(&database_url)?;
     tracing::info!("Connected to database.");
 
     let db_connection_pool_migration = db_connection.clone();
@@ -79,26 +73,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     fediproto_sync_db::core::run_migrations(db_connection_migration)?;
 
-    let config_core = config.clone();
-    let db_connection_pool_core = db_connection.clone();
+    match config.mode {
+        FediProtoSyncMode::Auth => {
+            let config_auth = config.clone();
+            let db_connection_pool_auth = db_connection.clone();
 
-    // Spawn the core loop for running the syncs.
-    tokio::spawn(async move {
-        let mut fediprotosync_loop = core::FediProtoSyncLoop::new(&config_core, db_connection_pool_core).await.unwrap();
+            // Spawn the auth web server.
+            tokio::spawn(async move {
+                let fediproto_auth_web_server = fediproto_sync_auth_ui::FediProtoSyncWebServer::new(
+                    &config_auth,
+                    db_connection_pool_auth
+                ).unwrap();
 
-        let result = fediprotosync_loop.run_loop().await;
+                let result = fediproto_auth_web_server.run().await;
 
-        match result {
-            Ok(_) => {
-                tracing::info!("FediProto Sync completed successfully.");
-            }
-            Err(e) => {
-                tracing::error!("FediProto Sync failed: {}", e.message);
+                match result {
+                    Ok(_) => {
+                        tracing::info!("Auth server completed successfully.");
+                    }
+                    Err(e) => {
+                        tracing::error!("Auth server failed: {}", e.message);
 
-                sig_error_send.send(()).unwrap();
-            }
+                        core_sig_error_send.send(()).unwrap();
+                    }
+                }
+            });
+        },
+
+        _ => {
+            let config_core = config.clone();
+            let db_connection_pool_core = db_connection.clone();
+
+            // Spawn the core loop for running the syncs.
+            tokio::spawn(async move {
+                let mut fediprotosync_loop =
+                    core::FediProtoSyncLoop::new(&config_core, db_connection_pool_core)
+                        .await
+                        .unwrap();
+
+                let result = fediprotosync_loop.run_loop().await;
+
+                match result {
+                    Ok(_) => {
+                        tracing::info!("FediProto Sync completed successfully.");
+                    }
+                    Err(e) => {
+                        tracing::error!("FediProto Sync failed: {}", e.message);
+
+                        core_sig_error_send.send(()).unwrap();
+                    }
+                }
+            });
         }
-    });
+    };
 
     // Wait for signals to be received.
     tokio::select! {
@@ -107,10 +134,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             shutdown_send.send(()).unwrap();
         },
 
-        _ = sig_error_recv.recv() => {
+        _ = core_sig_error_recv.recv() => {
             tracing::error!("An error occurred. Shutting down...");
             shutdown_send.send(()).unwrap();
-        }
+        },
 
         _ = sig_term.recv() => {
             tracing::warn!("Received SIGTERM, shutting down...");

@@ -1,12 +1,13 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::r2d2::{ConnectionManager, Pool};
-use fediproto_sync_db::{models::{self, CachedServiceTokenDecrypt}, AnyConnection};
+use fediproto_sync_db::{
+    models::{self, CachedServiceTokenDecrypt},
+    AnyConnection
+};
 use fediproto_sync_lib::{
-    config::{self, FediProtoSyncConfig},
+    config::FediProtoSyncConfig,
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
-
-use oauth2::TokenResponse;
 
 use crate::{bsky, mastodon::MastodonApiExtensions};
 
@@ -29,8 +30,13 @@ impl FediProtoSyncLoop {
     ///
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
-    pub async fn new(config: &FediProtoSyncConfig, db_connection: Pool<ConnectionManager<AnyConnection>>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(
+        config: &FediProtoSyncConfig,
+        db_connection: Pool<ConnectionManager<AnyConnection>>
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
+
+        tracing::info!("Connected to database.");
 
         let client = create_http_client(&config)?;
         let bsky_auth = bsky::BlueSkyAuthentication::new(&config, client).await?;
@@ -57,21 +63,6 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), FediProtoSyncError> {
-        if &self.config.mode == "auth" {
-            let auth_result = self.run_auth().await;
-
-            match auth_result {
-                Ok(_) => {
-                    tracing::info!("Authentication setup completed successfully.");
-                }
-                Err(e) => {
-                    tracing::error!("Authentication setup failed: {:#?}", e);
-                }
-            }
-
-            std::process::exit(0);
-        }
-
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
         loop {
@@ -92,54 +83,6 @@ impl FediProtoSyncLoop {
         }
     }
 
-    /// Run the authentication setup for the FediProto Sync application.
-    async fn run_auth(&mut self) -> Result<(), FediProtoSyncError> {
-        let db_connection = &mut self.db_connection.get()
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
-                    "Failed to get database connection.",
-                    FediProtoSyncErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?;
-
-        let mastodon_token_exists =
-            fediproto_sync_db::operations::get_cached_service_token_by_service_name(
-                db_connection,
-                "mastodon"
-            )?
-            .is_some();
-
-        match mastodon_token_exists {
-            false => {
-                let mastodon_token_response =
-                    crate::auth::get_mastodon_oauth_token(&self.config).await?;
-
-                let new_mastodon_token = models::NewCachedServiceToken::new(
-                    &self.config.token_encryption_public_key.as_ref().unwrap(),
-                    "mastodon",
-                    mastodon_token_response.access_token().secret(),
-                    None,
-                    None,
-                    None
-                )?;
-
-                fediproto_sync_db::operations::insert_cached_service_token(
-                    db_connection,
-                    &new_mastodon_token
-                )?;
-
-                tracing::info!("Inserted new Mastodon token into database.");
-            }
-
-            true => {
-                tracing::info!("Mastodon token already exists in database.");
-            }
-        }
-
-        Ok(())
-    }
-
     /// Run the Mastodon to BlueSky sync.
     ///
     /// ## Arguments
@@ -150,43 +93,30 @@ impl FediProtoSyncLoop {
     async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let db_connection = &mut self.db_connection.get()?;
 
-        let mastodon_token = match self.config.mastodon_auth_type {
-            config::MastodonAuthType::AccessToken => {
-                tracing::info!("Using Mastodon access token for authentication.");
-                self.config.mastodon_access_token.clone().unwrap()
-            }
+        let cached_mastodon_token =
+            fediproto_sync_db::operations::get_cached_service_token_by_service_name(
+                db_connection,
+                "mastodon"
+            )?;
 
-            config::MastodonAuthType::OAuth2 => {
-                tracing::info!("Using OAuth2 for Mastodon authentication.");
-                let cached_token =
-                    fediproto_sync_db::operations::get_cached_service_token_by_service_name(
-                        db_connection,
-                        "mastodon"
-                    )?;
-
-                let cached_token = match cached_token {
-                    Some(token) => token,
-                    None => {
-                        return Err(Box::new(FediProtoSyncError::new(
-                            "Mastodon token not found in database.",
-                            FediProtoSyncErrorKind::AuthenticationError
-                        )));
-                    }
-                };
-
-                let decrypted_token = cached_token.decrypt_access_token(
-                    &self.config.token_encryption_private_key.as_ref().unwrap()
-                )?;
-
-                decrypted_token
+        let cached_mastodon_token = match cached_mastodon_token {
+            Some(token) => token,
+            None => {
+                return Err(Box::new(FediProtoSyncError::new(
+                    "Mastodon token not found in database.",
+                    FediProtoSyncErrorKind::AuthenticationError
+                )));
             }
         };
+
+        let decrypted_mastodon_token = cached_mastodon_token
+            .decrypt_access_token(&self.config.token_encryption_private_key)?;
 
         // Create the Mastodon client and authenticate.
         let mastodon_client = megalodon::generator(
             megalodon::SNS::Mastodon,
             format!("https://{}", self.config.mastodon_server.clone()),
-            Some(mastodon_token),
+            Some(decrypted_mastodon_token),
             Some(self.config.user_agent.clone())
         )
         .map_err(|e| {
@@ -215,9 +145,8 @@ impl FediProtoSyncLoop {
 
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
-        let last_synced_post_id = fediproto_sync_db::operations::get_last_synced_mastodon_post_id(
-            db_connection
-        )?;
+        let last_synced_post_id =
+            fediproto_sync_db::operations::get_last_synced_mastodon_post_id(db_connection)?;
 
         // Get the latest posts from Mastodon.
         // If there is no last synced post ID, we will only get the latest post.

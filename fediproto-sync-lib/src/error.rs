@@ -107,7 +107,10 @@ pub enum FediProtoSyncErrorKind {
     VideoUploadError,
 
     /// An error occurred while removing a temporary file.
-    TempFileRemovalError
+    TempFileRemovalError,
+
+    /// An error occurred while running the web server.
+    WebServerError
 }
 
 impl std::fmt::Display for FediProtoSyncErrorKind {
