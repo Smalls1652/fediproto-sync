@@ -1,10 +1,10 @@
 use atprotolib_rs::types::app_bsky;
-use fediproto_sync_db::models::{self, CachedServiceTokenDecrypt};
+use diesel::r2d2::{ConnectionManager, Pool};
+use fediproto_sync_db::{models::{self, CachedServiceTokenDecrypt}, AnyConnection};
 use fediproto_sync_lib::{
     config::{self, FediProtoSyncEnvVars},
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
-use oauth2::TokenResponse;
 
 use crate::{bsky, mastodon::MastodonApiExtensions};
 
@@ -14,7 +14,7 @@ pub struct FediProtoSyncLoop {
     config: FediProtoSyncEnvVars,
 
     /// The database connection for the FediProto Sync application.
-    db_connection: fediproto_sync_db::AnyConnection,
+    db_connection: Pool<ConnectionManager<AnyConnection>>,
 
     /// The BlueSky authentication session.
     bsky_auth: bsky::BlueSkyAuthentication
@@ -27,16 +27,8 @@ impl FediProtoSyncLoop {
     ///
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
-    pub async fn new(config: &FediProtoSyncEnvVars) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(config: &FediProtoSyncEnvVars, db_connection: Pool<ConnectionManager<AnyConnection>>) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
-
-        let database_type = config.database_type.clone();
-        let database_url = config.database_url.clone();
-
-        let db_connection =
-            fediproto_sync_db::create_database_connection(&database_url, database_type)?;
-
-        tracing::info!("Connected to database.");
 
         let client = create_http_client(&config)?;
         let bsky_auth = bsky::BlueSkyAuthentication::new(&config, client).await?;
@@ -147,6 +139,8 @@ impl FediProtoSyncLoop {
     ///   application.
     /// * `db_connection` - The database connection to use for the sync.
     async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let db_connection = &mut self.db_connection.get()?;
+
         let mastodon_token = match self.config.mastodon_auth_type {
             config::MastodonAuthType::AccessToken => {
                 tracing::info!("Using Mastodon access token for authentication.");
@@ -157,7 +151,7 @@ impl FediProtoSyncLoop {
                 tracing::info!("Using OAuth2 for Mastodon authentication.");
                 let cached_token =
                     fediproto_sync_db::operations::get_cached_service_token_by_service_name(
-                        &mut self.db_connection,
+                        db_connection,
                         "mastodon"
                     )?;
 
@@ -213,7 +207,7 @@ impl FediProtoSyncLoop {
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
         let last_synced_post_id = fediproto_sync_db::operations::get_last_synced_mastodon_post_id(
-            &mut self.db_connection
+            db_connection
         )?;
 
         // Get the latest posts from Mastodon.
@@ -236,7 +230,7 @@ impl FediProtoSyncLoop {
 
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
             fediproto_sync_db::operations::insert_new_synced_mastodon_post(
-                &mut self.db_connection,
+                db_connection,
                 &new_mastodon_post
             )?;
 
@@ -256,7 +250,7 @@ impl FediProtoSyncLoop {
 
             let mut post_sync = bsky::BlueSkyPostSync {
                 config: self.config.clone(),
-                db_connection: &mut self.db_connection,
+                db_connection: db_connection,
                 bsky_auth: self.bsky_auth.clone(),
                 mastodon_account: account.json.clone(),
                 mastodon_status: post_item.clone(),
@@ -282,14 +276,14 @@ impl FediProtoSyncLoop {
         }
 
         let cached_files_to_delete =
-            fediproto_sync_db::operations::get_cached_file_records(&mut self.db_connection)?;
+            fediproto_sync_db::operations::get_cached_file_records(db_connection)?;
 
         if cached_files_to_delete.len() > 0 {
             tracing::info!("Deleting cached files during sync...");
 
             for cached_file in cached_files_to_delete {
                 tracing::info!("Deleting cached file '{}'.", cached_file.file_path);
-                cached_file.remove_file(&mut self.db_connection).await?;
+                cached_file.remove_file(db_connection).await?;
             }
         }
 
