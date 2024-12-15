@@ -1,8 +1,8 @@
+mod auth;
 mod bsky;
 mod core;
 mod mastodon;
 
-use fediproto_sync_auth_ui::FediProtoSyncWebServer;
 use fediproto_sync_lib::config::FediProtoSyncEnvVars;
 
 use diesel::prelude::*;

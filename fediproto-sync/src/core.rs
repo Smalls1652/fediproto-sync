@@ -6,6 +6,8 @@ use fediproto_sync_lib::{
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
 
+use oauth2::TokenResponse;
+
 use crate::{bsky, mastodon::MastodonApiExtensions};
 
 /// The main sync loop for the FediProto Sync application.
@@ -55,8 +57,6 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), FediProtoSyncError> {
-        fediproto_sync_db::core::run_migrations(&mut self.db_connection)?;
-
         if &self.config.mode == "auth" {
             let auth_result = self.run_auth().await;
 
@@ -94,9 +94,18 @@ impl FediProtoSyncLoop {
 
     /// Run the authentication setup for the FediProto Sync application.
     async fn run_auth(&mut self) -> Result<(), FediProtoSyncError> {
+        let db_connection = &mut self.db_connection.get()
+            .map_err(|e| {
+                FediProtoSyncError::with_source(
+                    "Failed to get database connection.",
+                    FediProtoSyncErrorKind::DatabaseConnectionError,
+                    Box::new(e)
+                )
+            })?;
+
         let mastodon_token_exists =
             fediproto_sync_db::operations::get_cached_service_token_by_service_name(
-                &mut self.db_connection,
+                db_connection,
                 "mastodon"
             )?
             .is_some();
@@ -116,7 +125,7 @@ impl FediProtoSyncLoop {
                 )?;
 
                 fediproto_sync_db::operations::insert_cached_service_token(
-                    &mut self.db_connection,
+                    db_connection,
                     &new_mastodon_token
                 )?;
 
