@@ -8,16 +8,12 @@ use diesel::{
     backend::Backend,
     connection::Connection,
     deserialize::{self, FromSql},
+    r2d2::{ConnectionManager, Pool},
     serialize::{self, IsNull, ToSql},
     sql_types::HasSqlType,
-    PgConnection,
-    QueryResult,
-    SqliteConnection
+    QueryResult
 };
-use fediproto_sync_lib::{
-    config,
-    error::{FediProtoSyncError, FediProtoSyncErrorKind}
-};
+use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use type_impls::{MultiBackendUuid, UuidProxy};
 
 /// A multi-backend enum to use with Diesel. Supports PostgreSQL and SQLite.
@@ -31,32 +27,22 @@ pub enum AnyConnection {
 }
 
 pub fn create_database_connection(
-    database_url: &str,
-    database_type: config::DatabaseType
-) -> Result<AnyConnection, FediProtoSyncError> {
-    let db_connection = match database_type {
-        config::DatabaseType::Postgres => {
-            AnyConnection::Postgres(PgConnection::establish(&database_url).map_err(|e| {
-                FediProtoSyncError::with_source(
-                    "Failed to connect to database.",
-                    FediProtoSyncErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?)
-        }
+    database_url: &str
+) -> Result<Pool<ConnectionManager<AnyConnection>>, FediProtoSyncError> {
+    let connection_manager = ConnectionManager::<AnyConnection>::new(database_url);
 
-        config::DatabaseType::SQLite => {
-            AnyConnection::SQLite(SqliteConnection::establish(&database_url).map_err(|e| {
-                FediProtoSyncError::with_source(
-                    "Failed to connect to database.",
-                    FediProtoSyncErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?)
-        }
-    };
+    let pool = Pool::builder()
+        .test_on_check_out(true)
+        .build(connection_manager)
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to create database connection pool.",
+                FediProtoSyncErrorKind::DatabaseConnectionError,
+                Box::new(e)
+            )
+        })?;
 
-    Ok(db_connection)
+    Ok(pool)
 }
 
 // We have to implement `HasSqlType` for `MultiBackendUuid` since it's not a

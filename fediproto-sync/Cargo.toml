@@ -33,7 +33,8 @@ diesel = { version = "2.2.6", features = [
     "postgres",
     "postgres_backend",
     "sqlite",
-    "returning_clauses_for_sqlite_3_35"
+    "returning_clauses_for_sqlite_3_35",
+    "r2d2"
 ] }
 tokio-util = { version = "0.7.12", features = ["rt", "time"] }
 tracing = "0.1.41"
