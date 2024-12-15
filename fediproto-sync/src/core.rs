@@ -5,7 +5,6 @@ use fediproto_sync_lib::{
     config::{self, FediProtoSyncConfig},
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
-
 use oauth2::TokenResponse;
 
 use crate::{bsky, mastodon::MastodonApiExtensions};
@@ -32,6 +31,14 @@ impl FediProtoSyncLoop {
     pub async fn new(config: &FediProtoSyncConfig, db_connection: Pool<ConnectionManager<AnyConnection>>) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
 
+        let database_type = config.database_type.clone();
+        let database_url = config.database_url.clone();
+
+        let db_connection =
+            fediproto_sync_db::create_database_connection(&database_url)?;
+
+        tracing::info!("Connected to database.");
+
         let client = create_http_client(&config)?;
         let bsky_auth = bsky::BlueSkyAuthentication::new(&config, client).await?;
         tracing::info!(
@@ -57,21 +64,6 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     pub async fn run_loop(&mut self) -> Result<(), FediProtoSyncError> {
-        if &self.config.mode == "auth" {
-            let auth_result = self.run_auth().await;
-
-            match auth_result {
-                Ok(_) => {
-                    tracing::info!("Authentication setup completed successfully.");
-                }
-                Err(e) => {
-                    tracing::error!("Authentication setup failed: {:#?}", e);
-                }
-            }
-
-            std::process::exit(0);
-        }
-
         // Run the sync loop.
         let mut interval = tokio::time::interval(self.config.sync_interval);
         loop {
@@ -90,54 +82,6 @@ impl FediProtoSyncLoop {
                 }
             }
         }
-    }
-
-    /// Run the authentication setup for the FediProto Sync application.
-    async fn run_auth(&mut self) -> Result<(), FediProtoSyncError> {
-        let db_connection = &mut self.db_connection.get()
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
-                    "Failed to get database connection.",
-                    FediProtoSyncErrorKind::DatabaseConnectionError,
-                    Box::new(e)
-                )
-            })?;
-
-        let mastodon_token_exists =
-            fediproto_sync_db::operations::get_cached_service_token_by_service_name(
-                db_connection,
-                "mastodon"
-            )?
-            .is_some();
-
-        match mastodon_token_exists {
-            false => {
-                let mastodon_token_response =
-                    crate::auth::get_mastodon_oauth_token(&self.config).await?;
-
-                let new_mastodon_token = models::NewCachedServiceToken::new(
-                    &self.config.token_encryption_public_key.as_ref().unwrap(),
-                    "mastodon",
-                    mastodon_token_response.access_token().secret(),
-                    None,
-                    None,
-                    None
-                )?;
-
-                fediproto_sync_db::operations::insert_cached_service_token(
-                    db_connection,
-                    &new_mastodon_token
-                )?;
-
-                tracing::info!("Inserted new Mastodon token into database.");
-            }
-
-            true => {
-                tracing::info!("Mastodon token already exists in database.");
-            }
-        }
-
-        Ok(())
     }
 
     /// Run the Mastodon to BlueSky sync.

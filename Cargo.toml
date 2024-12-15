@@ -1,5 +1,5 @@
 [workspace]
-members = ["fediproto-sync", "fediproto-sync-db", "fediproto-sync-lib"]
+members = ["fediproto-sync", "fediproto-sync-auth-ui", "fediproto-sync-db", "fediproto-sync-lib"]
 resolver = "2"
 
 package.authors = []

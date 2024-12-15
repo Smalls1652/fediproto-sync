@@ -1,4 +1,3 @@
-mod auth;
 mod bsky;
 mod core;
 mod mastodon;
@@ -24,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up unbounded channels for shutdown and error signals.
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
-    let (sig_error_send, mut sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
+    let (core_sig_error_send, mut core_sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
 
     // Set up signal handlers for SIGTERM and SIGQUIT.
     let mut sig_term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
@@ -95,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => {
                 tracing::error!("FediProto Sync failed: {}", e.message);
 
-                sig_error_send.send(()).unwrap();
+                core_sig_error_send.send(()).unwrap();
             }
         }
     });
@@ -107,10 +106,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             shutdown_send.send(()).unwrap();
         },
 
-        _ = sig_error_recv.recv() => {
+        _ = core_sig_error_recv.recv() => {
             tracing::error!("An error occurred. Shutting down...");
             shutdown_send.send(()).unwrap();
-        }
+        },
 
         _ = sig_term.recv() => {
             tracing::warn!("Received SIGTERM, shutting down...");

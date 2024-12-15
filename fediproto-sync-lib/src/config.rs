@@ -8,7 +8,13 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncConfig {
     /// The mode to run the application in.
-    pub mode: String,
+    pub mode: FediProtoSyncMode,
+
+    /// The address to bind the auth server to.
+    pub auth_server_address: Option<String>,
+
+    /// The port to bind the auth server to.
+    pub auth_server_port: Option<u16>,
 
     /// The type of database to use.
     pub database_type: DatabaseType,
@@ -36,6 +42,9 @@ pub struct FediProtoSyncConfig {
 
     /// The client secret for the Mastodon application.
     pub mastodon_client_secret: Option<String>,
+
+    /// The redirect URI for the Mastodon application.
+    pub mastodon_redirect_uri: Option<String>,
 
     /// The Mastodon access token to use for authentication.
     ///
@@ -65,7 +74,43 @@ impl FediProtoSyncConfig {
     /// Create a new instance of the `FediProtoSyncConfig` struct.
     pub fn new() -> Result<Self, FediProtoSyncError> {
         // Read 'FEDIPROTO_SYNC_MODE' environment variable.
-        let mode = std::env::var("FEDIPROTO_SYNC_MODE").unwrap_or("normal".to_string());
+        let mode = std::env::var("FEDIPROTO_SYNC_MODE")
+            .unwrap_or("normal".to_string())
+            .parse::<FediProtoSyncMode>()
+            .map_err(|e| {
+                FediProtoSyncError::with_source(
+                    "Failed to parse the FEDIPROTO_SYNC_MODE environment variable.",
+                    FediProtoSyncErrorKind::EnvironmentVariableError,
+                    Box::new(e)
+                )
+            })?;
+
+        // Read 'AUTH_SERVER_ADDRESS' environment variable.
+        let auth_server_address = match mode {
+            FediProtoSyncMode::Auth => Some(
+                std::env::var("AUTH_SERVER_ADDRESS").unwrap_or_else(|_| "localhost".to_string())
+            ),
+
+            FediProtoSyncMode::Normal => None
+        };
+
+        // Read 'AUTH_SERVER_PORT' environment variable.
+        let auth_server_port = match mode {
+            FediProtoSyncMode::Auth => Some(
+                std::env::var("AUTH_SERVER_PORT")
+                    .unwrap_or_else(|_| "3000".to_string())
+                    .parse::<u16>()
+                    .map_err(|e| {
+                        FediProtoSyncError::with_source(
+                            "Failed to parse the AUTH_SERVER_PORT environment variable.",
+                            FediProtoSyncErrorKind::EnvironmentVariableError,
+                            Box::new(e)
+                        )
+                    })?
+            ),
+
+            FediProtoSyncMode::Normal => None
+        };
 
         // Read 'DATABASE_TYPE' environment variable.
         let database_type = std::env::var("DATABASE_TYPE")
@@ -207,6 +252,21 @@ impl FediProtoSyncConfig {
             MastodonAuthType::AccessToken => None
         };
 
+        // Read 'MASTODON_REDIRECT_URI' environment variable.
+        let mastodon_redirect_uri = match mastodon_auth_type {
+            MastodonAuthType::OAuth2 => {
+                Some(std::env::var("MASTODON_REDIRECT_URI").map_err(|e| {
+                    FediProtoSyncError::with_source(
+                        "Failed to read MASTODON_REDIRECT_URI environment variable.",
+                        FediProtoSyncErrorKind::EnvironmentVariableError,
+                        Box::new(e)
+                    )
+                })?)
+            }
+
+            MastodonAuthType::AccessToken => None
+        };
+
         // Read 'MASTODON_ACCESS_TOKEN' environment variable.
         let mastodon_access_token = match mastodon_auth_type {
             MastodonAuthType::AccessToken => {
@@ -277,6 +337,8 @@ impl FediProtoSyncConfig {
 
         Ok(Self {
             mode,
+            auth_server_address,
+            auth_server_port,
             database_type,
             database_url,
             token_encryption_private_key,
@@ -286,6 +348,7 @@ impl FediProtoSyncConfig {
             mastodon_auth_type,
             mastodon_client_id,
             mastodon_client_secret,
+            mastodon_redirect_uri,
             mastodon_access_token,
             bluesky_pds_server,
             bluesky_handle,
@@ -293,6 +356,37 @@ impl FediProtoSyncConfig {
             sync_interval,
             bluesky_video_always_fallback
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum FediProtoSyncMode {
+    Auth,
+    Normal
+}
+
+impl From<&str> for FediProtoSyncMode {
+    fn from(s: &str) -> Self {
+        match s {
+            "auth" => FediProtoSyncMode::Auth,
+            "normal" => FediProtoSyncMode::Normal,
+            _ => FediProtoSyncMode::Normal
+        }
+    }
+}
+
+impl std::str::FromStr for FediProtoSyncMode {
+    type Err = FediProtoSyncError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auth" => Ok(FediProtoSyncMode::Auth),
+            "normal" => Ok(FediProtoSyncMode::Normal),
+            _ => Err(FediProtoSyncError::new(
+                "Invalid FediProtoSync mode.",
+                FediProtoSyncErrorKind::EnvironmentVariableError
+            ))
+        }
     }
 }
 

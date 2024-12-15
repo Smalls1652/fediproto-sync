@@ -9,6 +9,7 @@ repository.workspace = true
 build = "build.rs"
 
 [dependencies]
+fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", features = [
