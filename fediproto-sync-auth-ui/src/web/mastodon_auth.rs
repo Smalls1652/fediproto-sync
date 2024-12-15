@@ -182,9 +182,6 @@ pub async fn authorized_endpoint(
 
     // Get the token encryption public key.
     let encryption_public_key = &config.token_encryption_public_key.clone();
-    let encryption_public_key = encryption_public_key
-        .as_ref()
-        .context("Token encryption public key not found.")?;
 
     // Get the access token.
     let access_token = token.access_token().secret().to_string();

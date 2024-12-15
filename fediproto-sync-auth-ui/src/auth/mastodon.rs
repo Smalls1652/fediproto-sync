@@ -14,9 +14,9 @@ pub fn get_mastodon_oauth_client(
     config: &FediProtoSyncConfig,
     redirect_uri: &str
 ) -> Result<BasicClient, FediProtoSyncError> {
-    let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone().unwrap());
+    let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone());
     let client_secret = Some(oauth2::ClientSecret::new(
-        config.mastodon_client_secret.clone().unwrap()
+        config.mastodon_client_secret.clone()
     ));
 
     let auth_url = oauth2::AuthUrl::new(format!(

@@ -79,8 +79,7 @@ impl FediProtoSyncWebServer {
         let memory_store = MemoryStore::new();
 
         // Get the Mastodon redirect URI.
-        let mastodon_redirect_uri = self.config.mastodon_redirect_uri.clone()
-            .unwrap_or_else(|| format!("http://{}/auth/mastodon/authorized", full_bind_address));
+        let mastodon_redirect_uri = self.config.mastodon_redirect_uri.clone();
 
         // Create the app state.
         let app_state = FediProtoSyncWebServerAppState {
