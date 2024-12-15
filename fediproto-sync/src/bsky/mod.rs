@@ -17,7 +17,7 @@ use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
 use crate::{
     bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
-    FediProtoSyncEnvVars
+    FediProtoSyncConfig
 };
 
 /// Holds the authentication information for a Bluesky session.
@@ -42,7 +42,7 @@ impl BlueSkyAuthentication {
     ///   application.
     /// * `client` - The reqwest client to use for the API request.
     pub async fn new(
-        config: &FediProtoSyncEnvVars,
+        config: &FediProtoSyncConfig,
         client: reqwest::Client
     ) -> Result<Self, FediProtoSyncError> {
         let config = config.clone();
@@ -125,7 +125,7 @@ impl BlueSkyAuthentication {
 /// Struct to hold the data and logic for syncing a Mastodon post to BlueSky.
 pub struct BlueSkyPostSync<'a> {
     /// The environment variables for the FediProto Sync application.
-    pub config: FediProtoSyncEnvVars,
+    pub config: FediProtoSyncConfig,
 
     /// The authentication session for BlueSky.
     pub bsky_auth: BlueSkyAuthentication,

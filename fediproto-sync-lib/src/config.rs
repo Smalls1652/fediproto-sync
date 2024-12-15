@@ -3,10 +3,10 @@ use crate::{
     GIT_VERSION
 };
 
-/// The environment variable values for configuring the FediProtoSync
+/// Config values for configuring the FediProtoSync
 /// application.
 #[derive(Debug, Clone)]
-pub struct FediProtoSyncEnvVars {
+pub struct FediProtoSyncConfig {
     /// The mode to run the application in.
     pub mode: String,
 
@@ -61,8 +61,8 @@ pub struct FediProtoSyncEnvVars {
     pub bluesky_video_always_fallback: bool
 }
 
-impl FediProtoSyncEnvVars {
-    /// Create a new instance of the `FediProtoSyncEnvVars` struct.
+impl FediProtoSyncConfig {
+    /// Create a new instance of the `FediProtoSyncConfig` struct.
     pub fn new() -> Result<Self, FediProtoSyncError> {
         // Read 'FEDIPROTO_SYNC_MODE' environment variable.
         let mode = std::env::var("FEDIPROTO_SYNC_MODE").unwrap_or("normal".to_string());

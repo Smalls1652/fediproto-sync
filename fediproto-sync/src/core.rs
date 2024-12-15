@@ -2,7 +2,7 @@ use atprotolib_rs::types::app_bsky;
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{models::{self, CachedServiceTokenDecrypt}, AnyConnection};
 use fediproto_sync_lib::{
-    config::{self, FediProtoSyncEnvVars},
+    config::{self, FediProtoSyncConfig},
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
 
@@ -13,7 +13,7 @@ use crate::{bsky, mastodon::MastodonApiExtensions};
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
     /// The environment variables for the FediProto Sync application.
-    config: FediProtoSyncEnvVars,
+    config: FediProtoSyncConfig,
 
     /// The database connection for the FediProto Sync application.
     db_connection: Pool<ConnectionManager<AnyConnection>>,
@@ -29,7 +29,7 @@ impl FediProtoSyncLoop {
     ///
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
-    pub async fn new(config: &FediProtoSyncEnvVars, db_connection: Pool<ConnectionManager<AnyConnection>>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(config: &FediProtoSyncConfig, db_connection: Pool<ConnectionManager<AnyConnection>>) -> Result<Self, Box<dyn std::error::Error>> {
         let config = config.clone();
 
         let client = create_http_client(&config)?;
@@ -306,7 +306,7 @@ impl FediProtoSyncLoop {
 ///
 /// * `config` - The environment variables for the FediProto Sync application.
 pub fn create_http_client(
-    config: &FediProtoSyncEnvVars
+    config: &FediProtoSyncConfig
 ) -> Result<reqwest::Client, FediProtoSyncError> {
     reqwest::Client::builder()
         .user_agent(config.user_agent.clone())
