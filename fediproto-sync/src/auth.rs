@@ -1,11 +1,11 @@
 use fediproto_sync_lib::{
-    config::FediProtoSyncEnvVars,
+    config::FediProtoSyncConfig,
     error::{FediProtoSyncError, FediProtoSyncErrorKind}
 };
 use oauth2::{basic::BasicClient, reqwest::async_http_client};
 
 pub async fn get_mastodon_oauth_token(
-    config: &FediProtoSyncEnvVars
+    config: &FediProtoSyncConfig
 ) -> Result<
     oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>,
     FediProtoSyncError

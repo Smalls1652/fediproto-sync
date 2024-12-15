@@ -3,7 +3,7 @@ mod bsky;
 mod core;
 mod mastodon;
 
-use fediproto_sync_lib::config::FediProtoSyncEnvVars;
+use fediproto_sync_lib::config::FediProtoSyncConfig;
 
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = dotenvy::from_path(env_vars_path)?;
     }
 
-    let config_result = FediProtoSyncEnvVars::new();
+    let config_result = FediProtoSyncConfig::new();
 
     let config = match config_result {
         Ok(config) => config,
