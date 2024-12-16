@@ -123,7 +123,7 @@ impl BlueSkyAuthentication {
 }
 
 /// Struct to hold the data and logic for syncing a Mastodon post to BlueSky.
-pub struct BlueSkyPostSync<'a> {
+pub struct BlueSkyPostSync {
     /// The environment variables for the FediProto Sync application.
     pub config: FediProtoSyncConfig,
 
@@ -143,7 +143,7 @@ pub struct BlueSkyPostSync<'a> {
     pub post_item: app_bsky::feed::Post
 }
 
-impl BlueSkyPostSync<'_> {
+impl BlueSkyPostSync {
     /// Sync a Mastodon post to Bluesky.
     pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // -- Generate a BlueSky post item from the Mastodon status. --

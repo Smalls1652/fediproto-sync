@@ -91,7 +91,7 @@ pub trait BlueSkyPostSyncMedia {
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
+impl BlueSkyPostSyncMedia for BlueSkyPostSync {
     /// Generate an image embed for a BlueSky post from media attachments from
     /// a Mastodon status.
     ///
