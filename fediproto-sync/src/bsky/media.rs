@@ -70,12 +70,12 @@ pub trait BlueSkyPostSyncMedia {
         file_path: &std::path::PathBuf
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
 
-    /// Download a video from a Mastodon status to a temporary file.
+    /// Download a media attachment from a Mastodon status to a temporary file.
     ///
     /// ## Arguments
     ///
     /// * `media_attachment` - The media attachment to download.
-    async fn download_mastodon_video(
+    async fn download_mastodon_media_attachment(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
@@ -150,7 +150,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
         #[allow(unused_assignments)]
-        let temp_file_path = self.download_mastodon_video(media_attachment).await?;
+        let temp_file_path = self.download_mastodon_media_attachment(media_attachment).await?;
 
         let new_cached_file_record = NewCachedFile::new(&temp_file_path);
         fediproto_sync_db::operations::insert_cached_file_record(
@@ -352,17 +352,17 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         }
     }
 
-    /// Download a video from a Mastodon status to a temporary file.
+    /// Download a media attachment from a Mastodon status to a temporary file.
     ///
     /// ## Arguments
     ///
     /// * `media_attachment` - The media attachment to download.
-    async fn download_mastodon_video(
+    async fn download_mastodon_media_attachment(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
         tracing::info!(
-            "Downloading video attachment '{}' from Mastodon",
+            "Downloading media attachment '{}' from Mastodon",
             media_attachment.url
         );
 
