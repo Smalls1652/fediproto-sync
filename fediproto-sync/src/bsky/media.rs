@@ -91,7 +91,7 @@ pub trait BlueSkyPostSyncMedia {
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
+impl BlueSkyPostSyncMedia for BlueSkyPostSync {
     /// Generate an image embed for a BlueSky post from media attachments from
     /// a Mastodon status.
     ///
@@ -160,6 +160,8 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
+        let db_connection = &mut self.db_connection_pool.get()?;
+
         #[allow(unused_assignments)]
         let temp_file_path = self
             .download_mastodon_media_attachment_to_file(media_attachment)
@@ -167,7 +169,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
         let new_cached_file_record = NewCachedFile::new(&temp_file_path);
         fediproto_sync_db::operations::insert_cached_file_record(
-            self.db_connection,
+            db_connection,
             &new_cached_file_record
         )?;
 

@@ -29,7 +29,7 @@ pub trait BlueSkyPostSyncUtils {
     fn get_pds_service_endpoint(&mut self) -> Result<String, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
+impl BlueSkyPostSyncUtils for BlueSkyPostSync {
     /// Get link metadata from the CardyB API.
     ///
     /// ## Arguments

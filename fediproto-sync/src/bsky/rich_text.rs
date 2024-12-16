@@ -30,7 +30,7 @@ pub trait BlueSkyPostSyncRichText {
     ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
+impl BlueSkyPostSyncRichText for BlueSkyPostSync {
     /// Generate rich text tags for the post item.
     ///
     /// ## Arguments

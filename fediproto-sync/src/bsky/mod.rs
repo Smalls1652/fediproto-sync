@@ -9,6 +9,7 @@ use atprotolib_rs::{
         com_atproto::{self, server::CreateSessionRequest}
     }
 };
+use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
     models::{NewMastodonPost, NewSyncedPostBlueSkyData},
     AnyConnection
@@ -123,7 +124,7 @@ impl BlueSkyAuthentication {
 }
 
 /// Struct to hold the data and logic for syncing a Mastodon post to BlueSky.
-pub struct BlueSkyPostSync<'a> {
+pub struct BlueSkyPostSync {
     /// The environment variables for the FediProto Sync application.
     pub config: FediProtoSyncConfig,
 
@@ -131,7 +132,7 @@ pub struct BlueSkyPostSync<'a> {
     pub bsky_auth: BlueSkyAuthentication,
 
     /// The database connection for the FediProto Sync application.
-    pub db_connection: &'a mut AnyConnection,
+    pub db_connection_pool: Pool<ConnectionManager<AnyConnection>>,
 
     /// The Mastodon account that posted the status.
     pub mastodon_account: megalodon::entities::account::Account,
@@ -143,9 +144,11 @@ pub struct BlueSkyPostSync<'a> {
     pub post_item: app_bsky::feed::Post
 }
 
-impl BlueSkyPostSync<'_> {
+impl BlueSkyPostSync {
     /// Sync a Mastodon post to Bluesky.
     pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let db_connection = &mut self.db_connection_pool.get()?;
+
         // -- Generate a BlueSky post item from the Mastodon status. --
         self.generate_post_item().await?;
 
@@ -168,12 +171,12 @@ impl BlueSkyPostSync<'_> {
             // Resolve the previous post in the thread and resolve it's synced post data.
             let previous_mastodon_post =
                 fediproto_sync_db::operations::get_synced_mastodon_post_by_id(
-                    self.db_connection,
+                    db_connection,
                     &in_reply_to_id
                 )?;
             let previous_synced_post =
                 fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
-                    self.db_connection,
+                    db_connection,
                     &in_reply_to_id
                 )?;
 
@@ -184,7 +187,7 @@ impl BlueSkyPostSync<'_> {
                     previous_post_id = Some(root_mastodon_post_id.clone());
 
                     fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
-                        self.db_connection,
+                        db_connection,
                         &root_mastodon_post_id
                     )?
                 }
@@ -260,13 +263,13 @@ impl BlueSkyPostSync<'_> {
 
                 // Insert the synced Mastodon post into the database for future tracking.
                 fediproto_sync_db::operations::insert_new_synced_mastodon_post(
-                    self.db_connection,
+                    db_connection,
                     &new_mastodon_post
                 )?;
 
                 // Insert the synced BlueSky post into the database for future tracking.
                 fediproto_sync_db::operations::insert_new_bluesky_data_for_synced_mastodon_post(
-                    self.db_connection,
+                    db_connection,
                     &new_synced_post
                 )?;
 
