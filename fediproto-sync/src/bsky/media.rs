@@ -70,12 +70,22 @@ pub trait BlueSkyPostSyncMedia {
         file_path: &std::path::PathBuf
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
 
-    /// Download a video from a Mastodon status to a temporary file.
+    /// Download a media attachment from a Mastodon status.
     ///
     /// ## Arguments
     ///
     /// * `media_attachment` - The media attachment to download.
-    async fn download_mastodon_video(
+    async fn download_mastodon_media_attachment(
+        &mut self,
+        media_attachment: &megalodon::entities::attachment::Attachment
+    ) -> Result<reqwest::Response, Box<dyn std::error::Error>>;
+
+    /// Download a media attachment from a Mastodon status to a temporary file.
+    ///
+    /// ## Arguments
+    ///
+    /// * `media_attachment` - The media attachment to download.
+    async fn download_mastodon_media_attachment_to_file(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
@@ -97,12 +107,11 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
         for image_attachment in media_attachments {
             // Download the media attachment from the Mastodon server.
-            let media_attachment_client = crate::core::create_http_client(&self.config)?;
-            let media_attachment_response = media_attachment_client
-                .get(&image_attachment.url)
-                .send()
+            let media_attachment_temp_path = self
+                .download_mastodon_media_attachment_to_file(image_attachment)
                 .await?;
-            let media_attachment_bytes = media_attachment_response.bytes().await?;
+
+            let media_attachment_temp_file = tokio::fs::File::open(&media_attachment_temp_path).await?;
 
             let blob_upload_client = crate::core::create_http_client(&self.config)?;
             // Upload the media attachment to Bluesky.
@@ -110,10 +119,12 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                 &self.bsky_auth.host_name,
                 blob_upload_client,
                 &self.bsky_auth.auth_config,
-                media_attachment_bytes.to_vec(),
+                media_attachment_temp_file,
                 Some("image/jpeg")
             )
             .await?;
+
+            tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
             // Create an image embed and add it to the list of image attachments.
             image_attachments.push(app_bsky::embed::ImageEmbed {
@@ -150,7 +161,9 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
         #[allow(unused_assignments)]
-        let temp_file_path = self.download_mastodon_video(media_attachment).await?;
+        let temp_file_path = self
+            .download_mastodon_media_attachment_to_file(media_attachment)
+            .await?;
 
         let new_cached_file_record = NewCachedFile::new(&temp_file_path);
         fediproto_sync_db::operations::insert_cached_file_record(
@@ -201,6 +214,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         let video_link_thumbnail_bytes = self
             .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
             .await?;
+        let video_link_thumbnail_bytes = video_link_thumbnail_bytes.bytes().await?;
 
         let blob_item = match video_link_thumbnail_bytes.len() > 0 {
             true => {
@@ -352,25 +366,39 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         }
     }
 
-    /// Download a video from a Mastodon status to a temporary file.
+    /// Download a media attachment from a Mastodon status.
     ///
     /// ## Arguments
     ///
     /// * `media_attachment` - The media attachment to download.
-    async fn download_mastodon_video(
+    async fn download_mastodon_media_attachment(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::Response, Box<dyn std::error::Error>> {
         tracing::info!(
-            "Downloading video attachment '{}' from Mastodon",
+            "Downloading media attachment '{}' from Mastodon",
             media_attachment.url
         );
 
         let media_attachment_client = crate::core::create_http_client(&self.config)?;
-        let mut media_attachment_response = media_attachment_client
+        let media_attachment_response = media_attachment_client
             .get(&media_attachment.url)
             .send()
             .await?;
+
+        Ok(media_attachment_response)
+    }
+
+    /// Download a media attachment from a Mastodon status to a temporary file.
+    ///
+    /// ## Arguments
+    ///
+    /// * `media_attachment` - The media attachment to download.
+    async fn download_mastodon_media_attachment_to_file(
+        &mut self,
+        media_attachment: &megalodon::entities::attachment::Attachment
+    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+        let mut media_attachment_response = self.download_mastodon_media_attachment(media_attachment).await?;
 
         let temp_path = std::env::temp_dir()
             .join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));
