@@ -188,7 +188,7 @@ impl FediProtoSyncLoop {
 
             let mut post_sync = bsky::BlueSkyPostSync {
                 config: self.config.clone(),
-                db_connection: db_connection,
+                db_connection_pool: self.db_connection.clone(),
                 bsky_auth: self.bsky_auth.clone(),
                 mastodon_account: account.json.clone(),
                 mastodon_status: post_item.clone(),
