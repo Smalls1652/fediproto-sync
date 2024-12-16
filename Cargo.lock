@@ -682,7 +682,6 @@ dependencies = [
  "bytes",
  "chrono",
  "diesel",
- "diesel_migrations",
  "dom_query",
  "dotenvy",
  "fediproto-sync-auth-ui",
@@ -690,20 +689,13 @@ dependencies = [
  "fediproto-sync-lib",
  "git-version",
  "megalodon",
- "oauth2",
- "openssl",
  "rand",
  "reqwest 0.12.9",
- "serde",
  "serde_json",
- "tendril",
  "tokio",
- "tokio-util",
  "toml_edit",
  "tracing",
  "tracing-subscriber",
- "url",
- "uuid",
 ]
 
 [[package]]
@@ -717,12 +709,9 @@ dependencies = [
  "diesel",
  "fediproto-sync-db",
  "fediproto-sync-lib",
- "megalodon",
  "oauth2",
  "serde",
- "serde_json",
  "tokio",
- "tower",
  "tracing",
 ]
 
@@ -737,7 +726,6 @@ dependencies = [
  "git-version",
  "megalodon",
  "openssl",
- "serde",
  "tokio",
  "toml_edit",
  "tracing",
@@ -936,12 +924,6 @@ dependencies = [
  "tokio-util",
  "tracing",
 ]
-
-[[package]]
-name = "hashbrown"
-version = "0.14.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 
 [[package]]
 name = "hashbrown"
@@ -1347,7 +1329,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
 dependencies = [
  "equivalent",
- "hashbrown 0.15.2",
+ "hashbrown",
 ]
 
 [[package]]
@@ -2740,10 +2722,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
- "futures-util",
- "hashbrown 0.14.5",
  "pin-project-lite",
- "slab",
  "tokio",
 ]
 

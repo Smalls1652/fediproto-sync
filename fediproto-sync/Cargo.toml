@@ -9,44 +9,36 @@ repository.workspace = true
 build = "build.rs"
 
 [dependencies]
-fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
-fediproto-sync-db = { path = "../fediproto-sync-db" }
-fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", features = [
     "apicalls",
 ] }
+bytes = "1.9.0"
 chrono = { version = "0.4.39", features = ["serde"] }
-serde = { version = "1.0.216", features = ["derive"] }
-serde_json = "1.0.133"
+diesel = { version = "2.2.6", features = [
+    "chrono",
+    "postgres",
+    "postgres_backend",
+    "r2d2",
+    "returning_clauses_for_sqlite_3_35",
+    "serde_json",
+    "sqlite",
+    "uuid",
+] }
+dom_query = "0.11.0"
+dotenvy = "0.15.7"
+fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
+fediproto-sync-db = { path = "../fediproto-sync-db" }
+fediproto-sync-lib = { path = "../fediproto-sync-lib" }
+megalodon = "0.14.1"
+rand = "0.8.5"
 reqwest = { version = "0.12.9", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
+serde_json = "1.0.133"
 tokio = { version = "1.42.0", features = ["full"] }
-megalodon = "0.14.1"
-dotenvy = "0.15.7"
-dom_query = "0.11.0"
-tendril = "0.4.3"
-diesel = { version = "2.2.6", features = [
-    "chrono",
-    "serde_json",
-    "uuid",
-    "postgres",
-    "postgres_backend",
-    "sqlite",
-    "returning_clauses_for_sqlite_3_35",
-    "r2d2"
-] }
-tokio-util = { version = "0.7.12", features = ["rt", "time"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
-rand = "0.8.5"
-uuid = { version = "1.11.0", features = ["v4", "v7", "fast-rng"] }
-oauth2 = "4.4.2"
-url = "2.5.4"
-bytes = "1.9.0"
-openssl = "0.10.68"
 
 [build-dependencies]
 git-version = "0.3.9"
