@@ -23,7 +23,7 @@ pub trait BlueSkyPostSyncUtils {
     async fn get_link_thumbnail(
         &mut self,
         image_url: &str
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    ) -> Result<reqwest::Response, Box<dyn std::error::Error>>;
 
     /// Get the PDS service endpoint from the Bluesky session.
     fn get_pds_service_endpoint(&mut self) -> Result<String, Box<dyn std::error::Error>>;
@@ -63,16 +63,14 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
     async fn get_link_thumbnail(
         &mut self,
         image_url: &str
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::Response, Box<dyn std::error::Error>> {
         tracing::info!("Getting link thumbnail for '{}'.", image_url);
 
         let link_thumbnail_client = crate::core::create_http_client(&self.config)?;
 
         let link_thumbnail_response = link_thumbnail_client.get(image_url).send().await?;
 
-        let link_thumbnail_bytes = link_thumbnail_response.bytes().await?;
-
-        Ok(link_thumbnail_bytes.to_vec())
+        Ok(link_thumbnail_response)
     }
 
     /// Get the PDS service endpoint from the Bluesky session.

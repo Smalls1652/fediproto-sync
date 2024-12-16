@@ -2,6 +2,7 @@ use atprotolib_rs::types::{
     app_bsky::{self, richtext::RichTextFacet},
     com_atproto
 };
+use bytes::Bytes;
 
 use super::BlueSkyPostSync;
 use crate::bsky::utils::BlueSkyPostSyncUtils;
@@ -130,8 +131,12 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             // Get the thumbnail for the link if it has one and upload it to BlueSky.
             let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
             let link_thumbnail_bytes = match link_thumbnail_url == "" {
-                true => vec![],
-                false => self.get_link_thumbnail(link_thumbnail_url).await?
+                true => Bytes::new(),
+                false => {
+                    let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
+
+                    link_thumbnail.bytes().await?
+                }
             };
 
             let blob_item = match link_thumbnail_bytes.len() > 0 {
