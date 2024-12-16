@@ -709,9 +709,11 @@ dependencies = [
  "diesel",
  "fediproto-sync-db",
  "fediproto-sync-lib",
+ "git-version",
  "oauth2",
  "serde",
  "tokio",
+ "toml_edit",
  "tracing",
 ]
 
