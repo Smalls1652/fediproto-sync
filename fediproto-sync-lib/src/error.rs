@@ -110,7 +110,10 @@ pub enum FediProtoSyncErrorKind {
     TempFileRemovalError,
 
     /// An error occurred while running the web server.
-    WebServerError
+    WebServerError,
+
+    /// An error occurred while trying to compress an image.
+    ImageCompressionError
 }
 
 impl std::fmt::Display for FediProtoSyncErrorKind {
