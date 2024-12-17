@@ -15,6 +15,11 @@ use crate::bsky::utils::BlueSkyPostSyncUtils;
 /// (Currently `60` seconds)
 pub const MAX_VIDEO_DURATION: f64 = 60.0;
 
+/// The maximum size for a BlueSky image in bytes.
+/// 
+/// (Currently `976.56 KB`, but set to `950 KB` to account for overhead)
+pub const MAX_IMAGE_SIZE: u64 = 950_000;
+
 /// The maximum size for a BlueSky video in bytes.
 ///
 /// (Currently `50 MB`)
@@ -217,6 +222,21 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
             .await?;
         let video_link_thumbnail_bytes = video_link_thumbnail_bytes.bytes().await?;
+        let video_link_thumbnail_bytes = match video_link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
+            true => {
+                let compressed_image = crate::img_utils::compress_image(&video_link_thumbnail_bytes)?;
+
+                tracing::info!(
+                    "Compressed video link thumbnail from {} bytes to {} bytes",
+                    video_link_thumbnail_bytes.len(),
+                    compressed_image.len()
+                );
+
+                compressed_image
+            }
+
+            _ => video_link_thumbnail_bytes
+        };
 
         let blob_item = match video_link_thumbnail_bytes.len() > 0 {
             true => {

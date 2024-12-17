@@ -5,7 +5,7 @@ use atprotolib_rs::types::{
 use bytes::Bytes;
 
 use super::BlueSkyPostSync;
-use crate::bsky::utils::BlueSkyPostSyncUtils;
+use crate::bsky::{media::MAX_IMAGE_SIZE, utils::BlueSkyPostSyncUtils};
 
 /// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {
@@ -137,6 +137,22 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
 
                     link_thumbnail.bytes().await?
                 }
+            };
+
+            let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
+                true => {
+                    let compressed_image = crate::img_utils::compress_image(link_thumbnail_bytes.as_ref())?;
+
+                    tracing::info!(
+                        "Compressed link thumbnail from {} bytes to {} bytes",
+                        link_thumbnail_bytes.len(),
+                        compressed_image.len()
+                    );
+
+                    compressed_image
+                }
+
+                _ => link_thumbnail_bytes
             };
 
             let blob_item = match link_thumbnail_bytes.len() > 0 {

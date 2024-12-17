@@ -1,5 +1,6 @@
 mod bsky;
 mod core;
+mod img_utils;
 mod mastodon;
 
 use fediproto_sync_lib::config::{FediProtoSyncConfig, FediProtoSyncMode};
