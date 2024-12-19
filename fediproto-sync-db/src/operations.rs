@@ -25,6 +25,26 @@ pub fn get_synced_mastodon_post_by_id(
     Ok(post)
 }
 
+/// Check if a synced Mastodon post exists by its ID in the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `mastodon_post_id` - The Mastodon post ID to check.
+pub fn check_synced_mastodon_post_exists(
+    db_connection: &mut crate::AnyConnection,
+    mastodon_post_id: &str
+) -> Result<bool, FediProtoSyncError> {
+    let post = get_synced_mastodon_post_by_id(db_connection, &mastodon_post_id);
+
+    let post_exists = match post {
+        Ok(_) => true,
+        Err(_) => false
+    };
+
+    Ok(post_exists)
+}
+
 /// Get the last synced Mastodon post ID from the database.
 ///
 /// ## Arguments
@@ -233,6 +253,137 @@ pub fn insert_cached_service_token(
             FediProtoSyncError::with_source(
                 "Failed to insert new cached service token.",
                 FediProtoSyncErrorKind::DatabaseInsertError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(())
+}
+
+/// Get Mastodon post retry queue items from the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+pub fn get_mastodon_post_retry_queue_items(
+    db_connection: &mut crate::AnyConnection
+) -> Result<Vec<crate::models::MastodonPostRetryQueueItem>, FediProtoSyncError> {
+    let items = crate::schema::mastodon_post_retry_queue::table
+        .select(crate::models::MastodonPostRetryQueueItem::as_select())
+        .load(db_connection)
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to get Mastodon post retry queue items.",
+                FediProtoSyncErrorKind::DatabaseQueryError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(items)
+}
+
+/// Get a Mastodon post retry queue item by the Mastodon post ID.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `mastodon_post_id` - The Mastodon post ID to get.
+pub fn get_mastodon_post_retry_queue_item_by_post_id(
+    db_connection: &mut crate::AnyConnection,
+    mastodon_post_id: &i64
+) -> Result<Option<crate::models::MastodonPostRetryQueueItem>, FediProtoSyncError> {
+    let item = crate::schema::mastodon_post_retry_queue::table
+        .filter(crate::schema::mastodon_post_retry_queue::id.eq(mastodon_post_id))
+        .select(crate::models::MastodonPostRetryQueueItem::as_select())
+        .first::<crate::models::MastodonPostRetryQueueItem>(db_connection)
+        .optional()
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to get Mastodon post retry queue item by post ID.",
+                FediProtoSyncErrorKind::DatabaseQueryError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(item)
+}
+
+/// Insert a new Mastodon post retry queue item into the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `new_item` - The new item to insert.
+pub fn insert_mastodon_post_retry_queue_item(
+    db_connection: &mut crate::AnyConnection,
+    new_item: &crate::models::NewMastodonPostRetryQueueItem
+) -> Result<(), FediProtoSyncError> {
+    diesel::insert_into(crate::schema::mastodon_post_retry_queue::table)
+        .values(new_item)
+        .execute(db_connection)
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to insert new Mastodon post retry queue item.",
+                FediProtoSyncErrorKind::DatabaseInsertError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(())
+}
+
+/// Update a Mastodon post retry queue item in the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `item` - The item to update.
+pub fn update_mastodon_post_retry_queue_item(
+    db_connection: &mut crate::AnyConnection,
+    item: &crate::models::MastodonPostRetryQueueItem,
+    new_reason: Option<&str>
+) -> Result<(), FediProtoSyncError> {
+    use crate::schema::mastodon_post_retry_queue::dsl::*;
+    let updated_reason = match new_reason {
+        Some(reason) => reason,
+        None => item.failure_reason.as_str()
+    };
+
+    diesel::update(item)
+        .set((
+            failure_reason.eq(updated_reason),
+            last_retried_at.eq(diesel::dsl::now),
+            retry_count.eq(retry_count + 1)
+        ))
+        .execute(db_connection)
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to update Mastodon post retry queue item.",
+                FediProtoSyncErrorKind::DatabaseQueryError,
+                Box::new(e)
+            )
+        })?;
+
+    Ok(())
+}
+
+/// Delete a Mastodon post retry queue item from the database.
+/// 
+/// ## Arguments
+/// 
+/// * `db_connection` - The database connection to use.
+/// * `item` - The item to delete.
+pub fn delete_mastodon_post_retry_queue_item(
+    db_connection: &mut crate::AnyConnection,
+    item: &crate::models::MastodonPostRetryQueueItem
+) -> Result<(), FediProtoSyncError> {
+    diesel::delete(crate::schema::mastodon_post_retry_queue::table)
+        .filter(crate::schema::mastodon_post_retry_queue::id.eq(&item.id))
+        .execute(db_connection)
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to delete Mastodon post retry queue item.",
+                FediProtoSyncErrorKind::DatabaseDeleteError,
                 Box::new(e)
             )
         })?;
