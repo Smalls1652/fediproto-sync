@@ -4,6 +4,11 @@ pub mod operations;
 pub mod schema;
 pub mod type_impls;
 
+#[cfg(feature = "local_dev")]
+mod schema_postgres;
+#[cfg(feature = "local_dev")]
+mod schema_sqlite;
+
 use diesel::{
     backend::Backend,
     connection::Connection,

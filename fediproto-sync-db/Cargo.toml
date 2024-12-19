@@ -28,6 +28,9 @@ tokio = { version = "1.42.0", features = ["io-std", "io-util"] }
 tracing = "0.1.41"
 uuid = { version = "1.11.0", features = ["fast-rng", "v4", "v7"] }
 
+[features]
+local_dev = []
+
 [build-dependencies]
 git-version = "0.3.9"
 toml_edit = "0.22.22"
