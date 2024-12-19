@@ -16,3 +16,6 @@ target/
 ## Postgres database files
 .local/postgres/*
 !.local/postgres/docker-compose.yml
+
+## Public dev files
+.local/public/*
