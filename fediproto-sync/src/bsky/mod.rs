@@ -168,6 +168,21 @@ impl BlueSkyPostSync {
         {
             let in_reply_to_id = self.mastodon_status.in_reply_to_id.clone().unwrap();
 
+            match fediproto_sync_db::operations::check_synced_mastodon_post_exists(
+                db_connection,
+                &in_reply_to_id
+            )? {
+                true => {}
+
+                false => {
+                    return Err(Box::new(FediProtoSyncError::new(
+                        format!("Previous post '{}' not found in database.", &in_reply_to_id)
+                            .as_str(),
+                        FediProtoSyncErrorKind::DatabaseQueryError
+                    )));
+                }
+            };
+
             // Resolve the previous post in the thread and resolve it's synced post data.
             let previous_mastodon_post =
                 fediproto_sync_db::operations::get_synced_mastodon_post_by_id(

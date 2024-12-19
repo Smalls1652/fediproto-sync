@@ -39,3 +39,13 @@ diesel::table! {
         file_path -> VarChar
     }
 }
+
+diesel::table! {
+    mastodon_post_retry_queue (id) {
+        id -> BigInt,
+        mastodon_post_id -> VarChar,
+        failure_reason -> VarChar,
+        last_retried_at -> Timestamp,
+        retry_count -> Integer
+    }
+}

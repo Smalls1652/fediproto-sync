@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use megalodon::entities::Status;
@@ -420,3 +420,63 @@ impl NewCachedServiceToken {
         })
     }
 }
+
+/// Represents a Mastodon post in the `mastodon_post_retry_queue` table.
+#[derive(Queryable, Selectable, Identifiable, AsChangeset, Clone, PartialEq, Debug)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::schema::mastodon_post_retry_queue)]
+#[diesel(primary_key(id))]
+pub struct MastodonPostRetryQueueItem {
+    /// The unique Mastodon post ID.
+    pub id: i64,
+
+    /// The reason the post failed to sync.
+    pub failure_reason: String,
+
+    /// The last time a retry was attempted.
+    pub last_retried_at: NaiveDateTime,
+
+    /// The amount of times retries have been attempted.
+    pub retry_count: i32
+}
+
+/// Represents a new Mastodon post to insert into the
+/// `mastodon_post_retry_queue` table.
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::mastodon_post_retry_queue)]
+pub struct NewMastodonPostRetryQueueItem {
+    /// A unique Mastodon post ID.
+    pub id: i64,
+
+    /// The reason the post failed to sync.
+    pub failure_reason: String,
+
+    /// The last time a retry was attempted.
+    pub last_retried_at: NaiveDateTime,
+
+    /// The amount of times retries have been attempted.
+    pub retry_count: i32
+}
+
+impl NewMastodonPostRetryQueueItem {
+    /// Create a new instance of the `NewMastodonPostRetryQueueItem` struct.
+    ///
+    /// ## Arguments
+    ///
+    /// * `mastodon_post_id` - The Mastodon post ID.
+    /// * `failure_reason` - The reason the post failed to sync.
+    pub fn new(
+        mastodon_post_id: &i64,
+        failure_reason: &str
+    ) -> Self {
+
+        Self {
+            id: mastodon_post_id.clone(),
+            failure_reason: failure_reason.to_string(),
+            last_retried_at: Utc::now().naive_utc(),
+            retry_count: 0
+        }
+    }
+}
+
+
