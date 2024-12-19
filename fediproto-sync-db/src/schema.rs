@@ -39,3 +39,11 @@ diesel::table! {
         file_path -> VarChar
     }
 }
+
+diesel::table! {
+    mastodon_post_retry_queue (id) {
+        id -> crate::type_impls::MultiBackendUuid,
+        mastodon_post_id -> VarChar,
+        failure_reason -> VarChar
+    }
+}

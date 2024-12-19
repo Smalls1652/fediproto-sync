@@ -35,7 +35,15 @@ diesel::table! {
         service_name -> VarChar,
         access_token -> VarChar,
         refresh_token -> Nullable<VarChar>,
-        expires_in -> Nullable<Integer>,
+        expires_in -> Nullable<Timestamp>,
         scopes -> Nullable<VarChar>,
+    }
+}
+
+diesel::table! {
+    mastodon_post_retry_queue (id) {
+        id -> Uuid,
+        mastodon_post_id -> VarChar,
+        failure_reason -> VarChar
     }
 }

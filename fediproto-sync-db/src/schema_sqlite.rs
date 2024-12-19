@@ -39,3 +39,11 @@ diesel::table! {
         scopes -> Nullable<Text>,
     }
 }
+
+diesel::table! {
+    mastodon_post_retry_queue (id) {
+        id -> Text,
+        mastodon_post_id -> Text,
+        failure_reason -> Text
+    }
+}
