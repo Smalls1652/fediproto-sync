@@ -1,7 +1,7 @@
 use atprotolib_rs::types::app_bsky;
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
-    models::{self, CachedServiceTokenDecrypt},
+    models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem},
     AnyConnection
 };
 use fediproto_sync_lib::{
@@ -182,6 +182,103 @@ impl FediProtoSyncLoop {
             latest_posts.len()
         );
 
+        let posts_to_retry =
+            fediproto_sync_db::operations::get_mastodon_post_retry_queue_items(db_connection)?;
+
+        // Filter out any posts that are in the retry queue so we don't try to process
+        // them twice.
+        let latest_posts = latest_posts
+            .iter()
+            .filter(|post| {
+                let post_id = post.id.clone();
+                let post_id = post_id.parse::<i64>().unwrap_or(0);
+
+                let retry_post_exists = posts_to_retry.iter().any(|retry_item| {
+                    let retry_post_id = retry_item.id;
+                    retry_post_id == post_id
+                });
+
+                !retry_post_exists
+            })
+            .cloned()
+            .collect::<Vec<megalodon::entities::Status>>();
+
+        if posts_to_retry.len() > 0 {
+            tracing::info!(
+                "Retrying '{}' posts that failed to sync previously.",
+                posts_to_retry.len()
+            );
+
+            for retry_item in posts_to_retry {
+                let fetched_post = mastodon_client
+                    .get_status(retry_item.id.to_string())
+                    .await;
+
+                match fetched_post {
+                    Ok(post) => {
+                        tracing::info!("Retrying sync for post '{}'", retry_item.id);
+                        let post = post.json;
+
+                        let mut post_sync = bsky::BlueSkyPostSync {
+                            config: self.config.clone(),
+                            db_connection_pool: self.db_connection.clone(),
+                            bsky_auth: self.bsky_auth.clone(),
+                            mastodon_account: account.json.clone(),
+                            mastodon_status: post.clone(),
+                            post_item: app_bsky::feed::Post::new("", post.created_at.clone(), None)
+                        };
+
+                        let sync_result = post_sync.sync_post().await;
+
+                        match sync_result {
+                            Ok(_) => {
+                                tracing::info!(
+                                    "Post '{}' processed successfully.",
+                                    retry_item.id
+                                );
+                                fediproto_sync_db::operations::delete_mastodon_post_retry_queue_item(
+                                    db_connection,
+                                    &retry_item
+                                )?;
+                            }
+
+                            Err(e) => {
+                                tracing::error!(
+                                    "Failed to process post '{}': {:#?}",
+                                    retry_item.id,
+                                    e
+                                );
+
+                                let source_error = e.source();
+
+                                if let Some(source_error) = source_error {
+                                    tracing::error!("Source error: {:#?}", source_error);
+                                }
+
+                                fediproto_sync_db::operations::update_mastodon_post_retry_queue_item(db_connection, &retry_item, None)?;
+                            }
+                        }
+                    }
+
+                    Err(e) => {
+                        tracing::warn!(
+                            "Failed to fetch post '{}': {:#?}",
+                            retry_item.id,
+                            e
+                        );
+                        tracing::warn!("Removing post from retry queue.");
+
+                        fediproto_sync_db::operations::delete_mastodon_post_retry_queue_item(
+                            db_connection,
+                            &retry_item
+                        )?;
+
+                        continue;
+                    }
+                }
+            }
+        }
+
         // Process each new post and sync it to BlueSky.
         for post_item in latest_posts {
             tracing::info!("Processing post '{}'", post_item.id);
@@ -209,6 +306,14 @@ impl FediProtoSyncLoop {
                     if let Some(source_error) = source_error {
                         tracing::error!("Source error: {:#?}", source_error);
                     }
+
+                    let new_retry_item =
+                        NewMastodonPostRetryQueueItem::new(&post_item.id.parse::<i64>()?, e.to_string().as_str());
+
+                    fediproto_sync_db::operations::insert_mastodon_post_retry_queue_item(
+                        db_connection,
+                        &new_retry_item
+                    )?;
                 }
             }
         }
