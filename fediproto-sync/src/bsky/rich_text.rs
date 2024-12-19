@@ -96,7 +96,10 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
 
             let link_start_index = match link_start_index_filter.len() > 0 {
                 true => link_start_index_filter[0],
-                false => parsed_status.stripped_html.find(&link).unwrap().clone()
+                false => match parsed_status.stripped_html.find(&link) {
+                    Some(index) => index,
+                    None => return Err("Link not found in post content".into())
+                }
             };
 
             let link_end_index = link_start_index + &link.len();
