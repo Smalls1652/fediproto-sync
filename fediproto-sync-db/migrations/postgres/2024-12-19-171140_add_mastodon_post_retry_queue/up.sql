@@ -4,8 +4,9 @@
 
 
 CREATE TABLE "mastodon_post_retry_queue"(
-	"id" UUID NOT NULL PRIMARY KEY,
-	"mastodon_post_id" VARCHAR NOT NULL,
-	"failure_reason" VARCHAR NOT NULL
+	"id" BIGINT NOT NULL PRIMARY KEY,
+	"failure_reason" VARCHAR NOT NULL,
+	"last_retried_at" TIMESTAMP NOT NULL,
+	"retry_count" INTEGER NOT NULL
 );
 

@@ -42,8 +42,9 @@ diesel::table! {
 
 diesel::table! {
     mastodon_post_retry_queue (id) {
-        id -> Uuid,
-        mastodon_post_id -> VarChar,
-        failure_reason -> VarChar
+        id -> BigInt,
+        failure_reason -> VarChar,
+        last_retried_at -> Timestamp,
+        retry_count -> Integer
     }
 }
