@@ -1,10 +1,17 @@
 [workspace]
-members = ["fediproto-sync", "fediproto-sync-auth-ui", "fediproto-sync-db", "fediproto-sync-lib"]
+members = [
+    "fediproto-sync",
+    "fediproto-sync-auth-ui",
+    "fediproto-sync-db",
+    "fediproto-sync-lib",
+    "atprotolib-rs"
+]
 resolver = "2"
 
 package.authors = []
 package.homepage = ""
 package.repository = ""
+package.license-file = "LICENSE"
 
 [profile.release]
 opt-level = "s"

@@ -9,7 +9,7 @@ repository.workspace = true
 build = "build.rs"
 
 [dependencies]
-atprotolib-rs = { git = "https://github.com/Smalls1652/atprotolib-rs.git", features = [
+atprotolib-rs = { path = "../atprotolib-rs", features = [
     "apicalls",
 ] }
 bytes = "1.9.0"
