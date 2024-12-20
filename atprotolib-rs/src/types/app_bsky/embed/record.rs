@@ -11,10 +11,6 @@ use crate::types::{
     com_atproto::label::Label
 };
 
-/*
-    app.bsky.embed.record
-*/
-
 /// A view of a record embed.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "$type", rename = "app.bsky.embed.record#view")]

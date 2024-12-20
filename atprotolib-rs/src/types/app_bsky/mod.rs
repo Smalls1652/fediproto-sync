@@ -2,16 +2,7 @@
 pub mod actor;
 
 /// Contains types for the `app.bsky.embed` namespace.
-pub mod embed {
-    mod defs;
-    mod external;
-    mod images;
-    mod record;
-    mod record_with_media;
-    mod video;
-
-    pub use self::{defs::*, external::*, images::*, record::*, record_with_media::*, video::*};
-}
+pub mod embed;
 
 /// Contains types for the `app.bsky.feed` namespace.
 pub mod feed {

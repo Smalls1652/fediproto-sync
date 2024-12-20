@@ -4,10 +4,6 @@ use crate::types::com_atproto::repo::BlobItem;
 
 use super::AspectRatio;
 
-/*
-    app.bsky.embed.images
-*/
-
 /// A representation of an image embedded in a Bluesky record (eg, a post).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImageEmbed {

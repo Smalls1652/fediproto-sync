@@ -5,11 +5,11 @@ use crate::types::{
     app_bsky::{
         actor::{ProfileView, ProfileViewBasic},
         embed::{
-            ExternalEmbedView,
-            ImageEmbedView,
-            RecordEmbedView,
-            RecordWithMediaEmbedView,
-            VideoEmbedView
+            external::ExternalEmbedView,
+            image::ImageEmbedView,
+            record::RecordEmbedView,
+            record_with_media::RecordWithMediaEmbedView,
+            video::VideoEmbedView
         },
         graph::ListViewBasic
     },
@@ -92,7 +92,8 @@ pub enum PostViewEmbed {
     RecordWithMedia(RecordWithMediaEmbedView)
 }
 
-/// Metadata about the requesting account's relationship with the subject content. Only has meaningful content for authed requests.
+/// Metadata about the requesting account's relationship with the subject
+/// content. Only has meaningful content for authed requests.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "$type", rename = "app.bsky.feed.defs#viewerState")]
 pub struct ViewerState {
@@ -137,7 +138,8 @@ pub struct FeedViewPost {
     #[serde(rename = "reason", skip_serializing_if = "Option::is_none")]
     pub reason: Option<FeedViewPostReason>,
 
-    /// Context provided by a feed generator that may be passed back alongside interactions.
+    /// Context provided by a feed generator that may be passed back alongside
+    /// interactions.
     #[serde(rename = "feedContext", skip_serializing_if = "Option::is_none")]
     pub feed_context: Option<String>
 }
@@ -164,7 +166,8 @@ pub struct ReplyRef {
     #[serde(rename = "parent")]
     pub parent: ReplyRefItem,
 
-    /// If the parent reply is to another post, this is the author of the original post.
+    /// If the parent reply is to another post, this is the author of the
+    /// original post.
     #[serde(rename = "grandparentAuthor", skip_serializing_if = "Option::is_none")]
     pub grandparent_author: Option<ProfileViewBasic>
 }
@@ -174,7 +177,7 @@ pub struct ReplyRef {
 pub enum ReplyRefItem {
     /// A post.
     Post(PostView),
-    
+
     /// The post was not found.
     NotFoundPost(NotFoundPost),
 

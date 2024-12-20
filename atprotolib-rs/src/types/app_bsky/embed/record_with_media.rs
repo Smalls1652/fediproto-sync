@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ExternalEmbedView, ImageEmbedView, RecordEmbedView, VideoEmbedView};
+use super::{
+    external::ExternalEmbedView,
+    image::ImageEmbedView,
+    record::RecordEmbedView,
+    video::VideoEmbedView
+};
 
-/*
-    app.bsky.embed.recordWithMedia
-*/
-
-/// A representation of a record with media embedded in a Bluesky record (eg, a post).
+/// A representation of a record with media embedded in a Bluesky record (eg, a
+/// post).
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "$type", rename = "app.bsky.embed.recordWithMedia#view")]
 pub struct RecordWithMediaEmbedView {

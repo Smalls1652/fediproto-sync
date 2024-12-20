@@ -1,3 +1,9 @@
+pub mod external;
+pub mod image;
+pub mod record;
+pub mod record_with_media;
+pub mod video;
+
 use serde::{Deserialize, Serialize};
 
 /// Represents the aspect ratio of an embed.

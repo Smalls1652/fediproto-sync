@@ -2,10 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::com_atproto::repo::BlobItem;
 
-/*
-    app.bsky.embed.external
-*/
-
 /// A representation of some externally linked content (eg, a URL and 'card'), embedded in a Bluesky record (eg, a post).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExternalEmbed {

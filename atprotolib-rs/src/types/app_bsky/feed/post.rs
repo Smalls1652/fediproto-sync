@@ -3,10 +3,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{
     app_bsky::{
-        embed::{AspectRatio, ExternalEmbed, ImageEmbed},
+        embed::{external::ExternalEmbed, image::ImageEmbed, AspectRatio},
         richtext::RichTextFacet
     },
-    com_atproto::{label::SelfLabels, repo::{BlobItem, StrongRef}}
+    com_atproto::{
+        label::SelfLabels,
+        repo::{BlobItem, StrongRef}
+    }
 };
 
 /*
