@@ -8,14 +8,14 @@ use super::{LabelerView, LabelerViewDetailed};
 
 /// The response to a request getting services for a labeler.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetServicesResponse {
+pub struct ServicesResponse {
     /// The views.
     views: Vec<LabelerViewDetailed>
 }
 
 /// A type union for the views in the response.
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GetServicesResponseViews {
+pub enum ServicesResponseViews {
     /// A view of a labeler.
     LabelerView(LabelerView),
 

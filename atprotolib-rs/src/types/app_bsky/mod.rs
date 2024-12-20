@@ -11,12 +11,7 @@ pub mod feed;
 pub mod graph;
 
 /// Contains types for the `app.bsky.labeler` namespace.
-pub mod labeler {
-    mod defs;
-    mod get_services;
-
-    pub use self::{defs::*, get_services::*};
-}
+pub mod labeler;
 
 /// Contains types for the `app.bsky.notification` namespace.
 pub mod notification {
