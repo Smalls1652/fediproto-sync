@@ -17,11 +17,7 @@ pub mod labeler;
 pub mod notification;
 
 /// Contains types for the `app.bsky.richtext` namespace.
-pub mod richtext {
-    mod facet;
-
-    pub use self::facet::*;
-}
+pub mod richtext;
 
 /// Contains types for the `app.bsky.video` namespace.
 pub mod video {

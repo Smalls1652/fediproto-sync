@@ -1,9 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/*
-    app.bsky.richtext.facet
-*/
-
 /// Represents a facet of rich text.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "$type", rename = "app.bsky.richtext.facet")]
