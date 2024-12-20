@@ -14,21 +14,7 @@ pub mod graph;
 pub mod labeler;
 
 /// Contains types for the `app.bsky.notification` namespace.
-pub mod notification {
-    mod get_unread_count;
-    mod list_notifications;
-    mod put_preferences;
-    mod register_push;
-    mod update_seen;
-
-    pub use self::{
-        get_unread_count::*,
-        list_notifications::*,
-        put_preferences::*,
-        register_push::*,
-        update_seen::*
-    };
-}
+pub mod notification;
 
 /// Contains types for the `app.bsky.richtext` namespace.
 pub mod richtext {
