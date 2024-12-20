@@ -2,9 +2,11 @@
 name = "fediproto-sync-auth-ui"
 version = "0.1.0"
 edition = "2021"
+description = "Authentication web server for fediproto-sync."
 authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
+license-file.workspace = true
 
 build = "build.rs"
 
