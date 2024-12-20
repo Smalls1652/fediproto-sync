@@ -20,17 +20,4 @@ pub mod notification;
 pub mod richtext;
 
 /// Contains types for the `app.bsky.video` namespace.
-pub mod video {
-    mod defs;
-    mod get_job_status;
-    mod get_upload_limits;
-    mod upload_video;
-
-    pub use self::{defs::*, get_job_status::*, get_upload_limits::*, upload_video::*};
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod video;

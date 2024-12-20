@@ -1,3 +1,8 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_responses;
+
 use serde::{Deserialize, Serialize};
 
 use crate::types::com_atproto::repo::BlobItem;
