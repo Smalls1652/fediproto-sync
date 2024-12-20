@@ -3,6 +3,8 @@ use crate::{
     types::app_bsky
 };
 
+use super::{ProfileViewDetailed, SuggestionsResponse, SearchActorsTypeaheadResponse, SearchActorsResponse};
+
 /// Get a detailed profile view of an actor. Does not require auth, but contains relevant metadata with auth.
 /// 
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
@@ -17,7 +19,7 @@ pub async fn get_profile(
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
     actor: &str
-) -> Result<app_bsky::actor::ProfileViewDetailed, Box<dyn std::error::Error>> {
+) -> Result<ProfileViewDetailed, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.actor.getProfile", host_name);
 
     let query_params = vec![("actor", actor)];
@@ -32,7 +34,7 @@ pub async fn get_profile(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::actor::ProfileViewDetailed = response.json().await?;
+            let response_body: ProfileViewDetailed = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -55,7 +57,7 @@ pub async fn get_suggestions(
     api_auth_config: &ApiAuthConfig,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::actor::GetSuggestionsResponse, Box<dyn std::error::Error>> {
+) -> Result<SuggestionsResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.actor.getSuggestions", host_name);
 
     let mut query_params = vec![];
@@ -77,7 +79,7 @@ pub async fn get_suggestions(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::actor::GetSuggestionsResponse = response.json().await?;
+            let response_body: SuggestionsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -122,7 +124,7 @@ pub async fn search_actors_typeahead(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::actor::SearchActorsTypeaheadResponse =
+            let response_body: SearchActorsTypeaheadResponse =
                 response.json().await?;
             Ok(response_body)
         }
@@ -148,7 +150,7 @@ pub async fn search_actors(
     query: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::actor::SearchActorsResponse, Box<dyn std::error::Error>> {
+) -> Result<SearchActorsResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.actor.searchActors", host_name);
 
     let mut query_params = Vec::new();
@@ -171,7 +173,7 @@ pub async fn search_actors(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::actor::SearchActorsResponse = response.json().await?;
+            let response_body: SearchActorsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))

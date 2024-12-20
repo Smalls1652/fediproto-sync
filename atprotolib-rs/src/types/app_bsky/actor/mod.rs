@@ -1,3 +1,6 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -253,18 +256,38 @@ pub struct Preferences {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PreferencesEnum {
+    /// Adult content preferences.
     AdultContentPref(AdultContentPref),
+
+    /// Content label preferences.
     ContentLabelPref(ContentLabelPref),
+
+    /// Saved feeds (v2) preferences.
     SavedFeedsPrefV2(SavedFeedsPrefV2),
+
+    /// Saved feeds preferences.
     SavedFeedsPref(SavedFeedsPref),
+
+    /// Personal details preferences.
     PersonalDetailsPref(PersonalDetailsPref),
+
+    /// Feed view preferences.
     FeedViewPref(FeedViewPref),
+
+    /// Thread view preferences.
     ThreadViewPref(ThreadViewPref),
+
+    /// Interests preferences.
     InterestsPref(InterestsPref),
+
+    /// Muted words preferences.
     MutedWordsPref(MutedWordsPref),
+
+    /// Hidden posts preferences.
     HiddenPostsPref(HiddenPostsPref),
-    LabelersPref(LabelersPref),
-    BskyAppStatePref(BskyAppStatePref)
+
+    /// Labelers preferences.
+    LabelersPref(LabelersPref)
 }
 
 /// Represents adult content preferences.
@@ -460,62 +483,34 @@ pub struct LabelerPrefItem {
     pub did: String
 }
 
-/*    Type: bskyAppStatePref
-    Id: app.bsky.actor.defs#bskyAppStatePref
-    Kind: object
-
-    Properties:
-    - active_progress_guide: #bskyAppProgressGuide (JsonProperty: activeProgressGuide) [Optional]
-    - queued_nudges: string[] (JsonProperty: queuedNudges) [Optional]
-    - nuxs: app.bsky.actor.defs#nux[] (JsonProperty: nuxs) [Optional]
-*/
+/// A response to getting suggested actors.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "$type", rename = "app.bsky.actor.defs#bskyAppStatePref")]
-pub struct BskyAppStatePref {
-    #[serde(
-        rename = "activeProgressGuide",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub active_progress_guide: Option<BskyAppProgressGuide>,
-    #[serde(rename = "queuedNudges", skip_serializing_if = "Option::is_none")]
-    pub queued_nudges: Option<Vec<String>>,
-    #[serde(rename = "nuxs", skip_serializing_if = "Option::is_none")]
-    pub nuxs: Option<Vec<Nux>>
+pub struct SuggestionsResponse {
+    /// A cursor for the stream.
+    #[serde(rename = "cursor", skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+
+    /// A list of actors.
+    #[serde(rename = "actors")]
+    pub actors: Vec<ProfileView>
 }
 
-/*    Type: bskyAppProgressGuide
-    Id: app.bsky.actor.defs#bskyAppProgressGuide
-    Kind: object
-
-    Properties:
-    - guide: string (JsonProperty: guide) [Required]
-*/
+/// A response for the typeahead search for actors.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "$type", rename = "app.bsky.actor.defs#bskyAppProgressGuide")]
-pub struct BskyAppProgressGuide {
-    #[serde(rename = "guide")]
-    pub guide: String
+pub struct SearchActorsTypeaheadResponse {
+    /// A list of actors.
+    #[serde(rename = "actors")]
+    pub actors: Vec<ProfileViewBasic>
 }
 
-/*    Type: nux
-    Id: app.bsky.actor.defs#nux
-    Kind: object
-
-    Properties:
-    - id: string (JsonProperty: id) [Required]
-    - completed: boolean  (JsonProperty: completed) [Required]
-    - data: string (JsonProperty: data) [Optional]
-    - expires_at: datetime (JsonProperty: expiresAt) [Optional]
-*/
+/// A response to searching for actors.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "$type", rename = "app.bsky.actor.defs#nux")]
-pub struct Nux {
-    #[serde(rename = "id")]
-    pub id: String,
-    #[serde(rename = "completed", default)]
-    pub completed: bool,
-    #[serde(rename = "data", skip_serializing_if = "Option::is_none")]
-    pub data: Option<String>,
-    #[serde(rename = "expiresAt", skip_serializing_if = "Option::is_none")]
-    pub expires_at: Option<DateTime<Utc>>
+pub struct SearchActorsResponse {
+    /// A cursor for the stream.
+    #[serde(rename = "cursor", skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+
+    /// A list of actors.
+    #[serde(rename = "actors")]
+    pub actors: Vec<ProfileView>
 }

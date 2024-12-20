@@ -1,25 +1,5 @@
 /// Contains types for the `app.bsky.actor` namespace.
-pub mod actor {
-    mod defs;
-    mod get_profiles;
-    mod get_suggestions;
-    mod search_actors;
-    mod search_actors_typeahead;
-
-    pub use self::{
-        defs::*,
-        get_profiles::*,
-        get_suggestions::*,
-        search_actors::*,
-        search_actors_typeahead::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod actor;
 
 /// Contains types for the `app.bsky.embed` namespace.
 pub mod embed {
