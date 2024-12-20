@@ -5,61 +5,7 @@ pub mod actor;
 pub mod embed;
 
 /// Contains types for the `app.bsky.feed` namespace.
-pub mod feed {
-    mod defs;
-    mod describe_feed_generator;
-    mod get_actor_feeds;
-    mod get_actor_likes;
-    mod get_author_feed;
-    mod get_feed;
-    mod get_feed_generator;
-    mod get_feed_generators;
-    mod get_feed_skeleton;
-    mod get_likes;
-    mod get_list_feed;
-    mod get_post_thread;
-    mod get_posts;
-    mod get_quotes;
-    mod get_reposted_by;
-    mod get_suggested_feeds;
-    mod get_timeline;
-    mod post;
-    mod postgate;
-    mod search_posts;
-    mod send_interactions;
-    mod threadgate;
-
-    pub use self::{
-        defs::*,
-        describe_feed_generator::*,
-        get_actor_feeds::*,
-        get_actor_likes::*,
-        get_author_feed::*,
-        get_feed::*,
-        get_feed_generator::*,
-        get_feed_generators::*,
-        get_feed_skeleton::*,
-        get_likes::*,
-        get_list_feed::*,
-        get_post_thread::*,
-        get_posts::*,
-        get_quotes::*,
-        get_reposted_by::*,
-        get_suggested_feeds::*,
-        get_timeline::*,
-        post::*,
-        postgate::*,
-        search_posts::*,
-        send_interactions::*,
-        threadgate::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod feed;
 
 /// Contains types for the `app.bsky.graph` namespace.
 pub mod graph {

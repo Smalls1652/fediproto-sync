@@ -1,3 +1,8 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_responses;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -5,15 +10,20 @@ use crate::types::{
     app_bsky::{
         actor::{ProfileView, ProfileViewBasic},
         embed::{
-            external::ExternalEmbedView,
-            image::ImageEmbedView,
+            external::{ExternalEmbed, ExternalEmbedView},
+            image::{ImageEmbed, ImageEmbedView},
             record::RecordEmbedView,
             record_with_media::RecordWithMediaEmbedView,
-            video::VideoEmbedView
+            video::VideoEmbedView,
+            AspectRatio
         },
-        graph::ListViewBasic
+        graph::ListViewBasic,
+        richtext::RichTextFacet
     },
-    com_atproto::label::Label
+    com_atproto::{
+        label::{Label, SelfLabels},
+        repo::{BlobItem, StrongRef}
+    }
 };
 
 /// Represents a post view.
@@ -431,4 +441,180 @@ pub struct Interaction {
     pub event: Option<String>,
     #[serde(rename = "feedContext", skip_serializing_if = "Option::is_none")]
     pub feed_context: Option<String>
+}
+
+/// Represents a feed that a feed generator provides.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeedGeneratorFeed {
+    /// The URI of the feed.
+    uri: String
+}
+
+/// Links to the feed generator's privacy policy and terms of service.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeedGeneratorLinks {
+    /// A link to the privacy policy.
+    privacy_policy: Option<String>,
+
+    /// A link to the terms of service.
+    terms_of_service: Option<String>
+}
+
+/// Data about a like.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Like {
+    /// The date and time the like was indexed.
+    #[serde(rename = "indexedAt")]
+    pub indexed_at: String,
+
+    /// The date and time the like was created.
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+
+    /// The actor who liked the post.
+    #[serde(rename = "actor")]
+    pub actor: ProfileView
+}
+
+/// Represents a post.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Post {
+    /// The text of the post.
+    #[serde(rename = "text")]
+    pub text: String,
+
+    /// Rich text facets in the post.
+    #[serde(rename = "facets", skip_serializing_if = "Option::is_none")]
+    pub facets: Option<Vec<RichTextFacet>>,
+
+    /// A reference to the post the post is replying to.
+    #[serde(rename = "reply", skip_serializing_if = "Option::is_none")]
+    pub reply_ref: Option<PostReplyRef>,
+
+    /// Embeds in the post.
+    #[serde(rename = "embed", skip_serializing_if = "Option::is_none")]
+    pub embed: Option<PostEmbeds>,
+
+    /// The language(s) the post is in.
+    #[serde(rename = "langs", skip_serializing_if = "Option::is_none")]
+    pub langs: Option<Vec<String>>,
+
+    /// Labels applied to the post.
+    #[serde(rename = "labels", skip_serializing_if = "Option::is_none")]
+    pub labels: Option<PostLabels>,
+
+    /// Tags/hashtags in the post.
+    #[serde(rename = "tags", skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+
+    /// The date and time the post was created.
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>
+}
+
+impl Post {
+    pub fn new(
+        text: &str,
+        created_at: DateTime<Utc>,
+        langs: Option<Vec<&str>>
+    ) -> Post {
+        Post {
+            text: text.to_string(),
+            facets: None,
+            reply_ref: None,
+            embed: None,
+            langs: Some(
+                langs
+                    .unwrap_or_else(|| vec!["en"])
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            ),
+            labels: None,
+            tags: None,
+            created_at
+        }
+    }
+}
+
+/// Represents the type of an embed.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "$type")]
+pub enum PostEmbeds {
+    /// An image embed.
+    #[serde(rename = "app.bsky.embed.images")]
+    Images(PostEmbedImage),
+
+    /// An external embed.
+    #[serde(rename = "app.bsky.embed.external")]
+    External(PostEmbedExternal),
+
+    /// A video embed.
+    #[serde(rename = "app.bsky.embed.video")]
+    Video(PostEmbedVideo)
+}
+
+/// Represents an image embed.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostEmbedImage {
+    /// The images in the embed.
+    #[serde(rename = "images")]
+    pub images: Vec<ImageEmbed>
+}
+
+/// Represents an external embed.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostEmbedExternal {
+    /// The external embed.
+    #[serde(rename = "external")]
+    pub external: ExternalEmbed
+}
+
+/// Represents a video embed.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostEmbedVideo {
+    /// The aspect ratio of the video.
+    #[serde(rename = "aspectRatio", skip_serializing_if = "Option::is_none")]
+    pub aspect_ratio: Option<AspectRatio>,
+
+    /// The video in the embed.
+    #[serde(rename = "video")]
+    pub video: BlobItem
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "$type")]
+pub enum PostLabels {
+    #[serde(rename = "com.atproto.label.defs#selfLabels")]
+    SelfLabels(SelfLabels)
+}
+
+/// Represents a reference to a post that is being replied to.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostReplyRef {
+    /// The root post in the thread.
+    #[serde(rename = "root")]
+    pub root: StrongRef,
+
+    /// The post the post is directly replying to.
+    #[serde(rename = "parent")]
+    pub parent: StrongRef
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PostEntity {
+    #[serde(rename = "index")]
+    pub index: PostTextSlice,
+    #[serde(rename = "type")]
+    pub type_: String,
+    #[serde(rename = "value")]
+    pub value: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PostTextSlice {
+    #[serde(rename = "start", default)]
+    pub start: i32,
+    #[serde(rename = "end", default)]
+    pub end: i32
 }
