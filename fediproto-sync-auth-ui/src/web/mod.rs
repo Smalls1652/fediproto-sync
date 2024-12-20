@@ -1,3 +1,4 @@
+/// Mastodon authentication endpoints.
 pub mod mastodon_auth;
 
 use diesel::r2d2::{ConnectionManager, PooledConnection};

@@ -7,8 +7,7 @@ use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use rand::distributions::DistString;
 use tokio::io::AsyncWriteExt;
 
-use super::BlueSkyPostSync;
-use crate::bsky::utils::BlueSkyPostSyncUtils;
+use super::{BlueSkyPostSync, BlueSkyPostSyncUtils};
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -16,7 +15,7 @@ use crate::bsky::utils::BlueSkyPostSyncUtils;
 pub const MAX_VIDEO_DURATION: f64 = 60.0;
 
 /// The maximum size for a BlueSky image in bytes.
-/// 
+///
 /// (Currently `976.56 KB`, but set to `950 KB` to account for overhead)
 pub const MAX_IMAGE_SIZE: u64 = 950_000;
 
@@ -116,7 +115,8 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
                 .download_mastodon_media_attachment_to_file(image_attachment)
                 .await?;
 
-            let media_attachment_temp_file = tokio::fs::File::open(&media_attachment_temp_path).await?;
+            let media_attachment_temp_file =
+                tokio::fs::File::open(&media_attachment_temp_path).await?;
 
             let blob_upload_client = crate::core::create_http_client(&self.config)?;
             // Upload the media attachment to Bluesky.
@@ -222,21 +222,23 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
             .await?;
         let video_link_thumbnail_bytes = video_link_thumbnail_bytes.bytes().await?;
-        let video_link_thumbnail_bytes = match video_link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
-            true => {
-                let compressed_image = crate::img_utils::compress_image(&video_link_thumbnail_bytes)?;
+        let video_link_thumbnail_bytes =
+            match video_link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
+                true => {
+                    let compressed_image =
+                        crate::img_utils::compress_image(&video_link_thumbnail_bytes)?;
 
-                tracing::info!(
-                    "Compressed video link thumbnail from {} bytes to {} bytes",
-                    video_link_thumbnail_bytes.len(),
-                    compressed_image.len()
-                );
+                    tracing::info!(
+                        "Compressed video link thumbnail from {} bytes to {} bytes",
+                        video_link_thumbnail_bytes.len(),
+                        compressed_image.len()
+                    );
 
-                compressed_image
-            }
+                    compressed_image
+                }
 
-            _ => video_link_thumbnail_bytes
-        };
+                _ => video_link_thumbnail_bytes
+            };
 
         let blob_item = match video_link_thumbnail_bytes.len() > 0 {
             true => {
@@ -420,7 +422,9 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
-        let mut media_attachment_response = self.download_mastodon_media_attachment(media_attachment).await?;
+        let mut media_attachment_response = self
+            .download_mastodon_media_attachment(media_attachment)
+            .await?;
 
         let temp_path = std::env::temp_dir()
             .join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));

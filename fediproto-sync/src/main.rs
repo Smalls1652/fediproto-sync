@@ -1,6 +1,10 @@
+/// BlueSky operations for syncing posts.
 mod bsky;
+/// Core operations for the application.
 mod core;
+/// Utilities for working with images.
 mod img_utils;
+/// Mastodon operations.
 mod mastodon;
 
 use fediproto_sync_lib::config::{FediProtoSyncConfig, FediProtoSyncMode};

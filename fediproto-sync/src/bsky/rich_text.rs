@@ -4,8 +4,11 @@ use atprotolib_rs::types::{
 };
 use bytes::Bytes;
 
-use super::BlueSkyPostSync;
-use crate::bsky::{media::MAX_IMAGE_SIZE, utils::BlueSkyPostSyncUtils};
+use super::{
+    BlueSkyPostSync,
+    BlueSkyPostSyncUtils,
+    MAX_IMAGE_SIZE
+};
 
 /// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {

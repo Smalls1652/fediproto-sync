@@ -16,10 +16,13 @@ use fediproto_sync_db::{
 };
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
-use crate::{
-    bsky::{media::BlueSkyPostSyncMedia, rich_text::BlueSkyPostSyncRichText},
-    FediProtoSyncConfig
+#[allow(unused_imports)]
+pub use self::{
+    media::{BlueSkyPostSyncMedia, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE, MAX_VIDEO_DURATION},
+    rich_text::BlueSkyPostSyncRichText,
+    utils::BlueSkyPostSyncUtils
 };
+use crate::FediProtoSyncConfig;
 
 /// Holds the authentication information for a Bluesky session.
 #[derive(Debug, Clone)]

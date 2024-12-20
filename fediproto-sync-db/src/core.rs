@@ -1,7 +1,10 @@
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
+/// Embedded database migrations for PostgreSQL.
 pub const POSTGRES_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
     diesel_migrations::embed_migrations!("./migrations/postgres");
+
+/// Embedded database migrations for SQLite.
 pub const SQLITE_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
     diesel_migrations::embed_migrations!("./migrations/sqlite");
 

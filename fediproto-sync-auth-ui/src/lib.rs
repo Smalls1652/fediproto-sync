@@ -1,5 +1,8 @@
+/// Authentication operations for Mastodon and BlueSky.
 pub mod auth;
+/// Error types for the FediProtoSync authentication web server.
 pub mod error;
+/// Endpoints for the FediProtoSync authentication web server.
 pub mod web;
 
 use async_session::MemoryStore;

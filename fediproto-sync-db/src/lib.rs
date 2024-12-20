@@ -1,11 +1,18 @@
+/// Core database functionality for the FediProto Sync project.
 pub mod core;
+/// Database models for FediProto Sync.
 pub mod models;
+/// Database operations for FediProto Sync.
 pub mod operations;
+/// Database schema for FediProto Sync.
 pub mod schema;
+/// Type implementations for FediProto Sync.
 pub mod type_impls;
 
+/// PostgreSQL database schema for FediProto Sync. 
 #[cfg(feature = "local_dev")]
 mod schema_postgres;
+/// SQLite database schema for FediProto Sync.
 #[cfg(feature = "local_dev")]
 mod schema_sqlite;
 
