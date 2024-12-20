@@ -1,44 +1,5 @@
 /// Contains types for the `com.atproto.admin` namespace.
-pub mod admin {
-    mod defs;
-    mod delete_account;
-    mod disable_account_invites;
-    mod disable_invite_codes;
-    mod enable_account_invites;
-    mod get_account_info;
-    mod get_account_infos;
-    mod get_invite_codes;
-    mod get_subject_status;
-    mod search_accounts;
-    mod send_email;
-    mod update_account_email;
-    mod update_account_handle;
-    mod update_account_password;
-    mod update_subject_status;
-
-    pub use self::{
-        defs::*,
-        delete_account::*,
-        disable_account_invites::*,
-        disable_invite_codes::*,
-        enable_account_invites::*,
-        get_account_info::*,
-        get_account_infos::*,
-        get_invite_codes::*,
-        get_subject_status::*,
-        search_accounts::*,
-        send_email::*,
-        update_account_email::*,
-        update_account_handle::*,
-        update_account_password::* // update_subject_status::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod admin;
 
 /// Contains types for the `com.atproto.identity` namespace.
 pub mod identity {

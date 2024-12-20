@@ -1,3 +1,9 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_requests;
+pub mod api_responses;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
