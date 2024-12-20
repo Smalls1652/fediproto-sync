@@ -1,3 +1,9 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_requests;
+pub mod api_responses;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -193,6 +199,14 @@ pub struct Relationship {
     /// If the actor follows this DID, this is the AT-URI of the follow record.
     following: Option<String>,
 
-    /// If the actor is followed by this DID, contains the AT-URI of the follow record.
+    /// If the actor is followed by this DID, contains the AT-URI of the follow
+    /// record.
     followed_by: Option<String>
+}
+
+/// A feed item for a starter pack.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StarterPackFeedItem {
+    /// The URI of the feed item.
+    uri: String
 }

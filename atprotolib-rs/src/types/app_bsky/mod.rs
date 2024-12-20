@@ -8,63 +8,7 @@ pub mod embed;
 pub mod feed;
 
 /// Contains types for the `app.bsky.graph` namespace.
-pub mod graph {
-    mod defs;
-    mod get_actor_starter_packs;
-    mod get_blocks;
-    mod get_followers;
-    mod get_follows;
-    mod get_known_followers;
-    mod get_list;
-    mod get_list_blocks;
-    mod get_list_mutes;
-    mod get_lists;
-    mod get_mutes;
-    mod get_relationships;
-    mod get_starter_pack;
-    mod get_starter_packs;
-    mod get_suggested_follows_by_actor;
-    mod mute_actor;
-    mod mute_actor_list;
-    mod mute_thread;
-    mod search_starter_packs;
-    mod starterpack;
-    mod unmute_actor;
-    mod unmute_actor_list;
-    mod unmute_thread;
-
-    pub use self::{
-        defs::*,
-        get_actor_starter_packs::*,
-        get_blocks::*,
-        get_followers::*,
-        get_follows::*,
-        get_known_followers::*,
-        get_list::*,
-        get_list_blocks::*,
-        get_list_mutes::*,
-        get_lists::*,
-        get_mutes::*,
-        get_relationships::*,
-        get_starter_pack::*,
-        get_starter_packs::*,
-        get_suggested_follows_by_actor::*,
-        mute_actor::*,
-        mute_actor_list::*,
-        mute_thread::*,
-        search_starter_packs::*,
-        starterpack::*,
-        unmute_actor::*,
-        unmute_actor_list::*,
-        unmute_thread::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod graph;
 
 /// Contains types for the `app.bsky.labeler` namespace.
 pub mod labeler {

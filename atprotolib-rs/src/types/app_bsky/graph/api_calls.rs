@@ -1,14 +1,35 @@
-use crate::{
-    api_calls::{AddApiAuth, ApiAuthConfig, ApiError},
-    types::app_bsky
+use super::{
+    api_requests::{
+        MuteActorListRequest,
+        MuteActorRequest,
+        MuteThreadRequest,
+        UnmuteActorListRequest,
+        UnmuteActorRequest,
+        UnmuteThreadRequest
+    },
+    api_responses::{
+        ActorStarterPacksResponse,
+        BlocksResponse,
+        FollowersResponse,
+        FollowsResponse,
+        KnownFollowersResponse,
+        ListBlocksResponse,
+        ListMutesResponse,
+        ListResponse,
+        ListsResponse,
+        MutesResponse,
+        StarterPackResponse,
+        SuggestedFollowsByActorResponse
+    }
 };
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
 /// Get a list of starter packs created by the actor.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the starter packs of.
@@ -21,7 +42,7 @@ pub async fn get_actor_starter_packs(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetActorStarterPacksResponse, Box<dyn std::error::Error>> {
+) -> Result<ActorStarterPacksResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/app.bsky.graph.getActorStarterPacks",
         host_name
@@ -37,7 +58,6 @@ pub async fn get_actor_starter_packs(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -47,20 +67,20 @@ pub async fn get_actor_starter_packs(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetActorStarterPacksResponse =
-                response.json().await?;
+            let response_body: ActorStarterPacksResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Enumerates which accounts the requesting account is currently blocking. Requires auth.
-/// 
+/// Enumerates which accounts the requesting account is currently blocking.
+/// Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `limit` - The maximum number of accounts to return. Defaults to 50.
@@ -71,7 +91,7 @@ pub async fn get_blocks(
     api_auth_config: &ApiAuthConfig,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetBlocksResponse, Box<dyn std::error::Error>> {
+) -> Result<BlocksResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getBlocks", host_name);
 
     let mut query_params = Vec::new();
@@ -83,7 +103,6 @@ pub async fn get_blocks(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -93,7 +112,7 @@ pub async fn get_blocks(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetBlocksResponse = response.json().await?;
+            let response_body: BlocksResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -101,11 +120,11 @@ pub async fn get_blocks(
 }
 
 /// Enumerates accounts which follow a specified account (actor).
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the followers of.
@@ -118,7 +137,7 @@ pub async fn get_followers(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetFollowersResponse, Box<dyn std::error::Error>> {
+) -> Result<FollowersResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getFollowers", host_name);
 
     let mut query_params = Vec::new();
@@ -131,7 +150,6 @@ pub async fn get_followers(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -141,7 +159,7 @@ pub async fn get_followers(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetFollowersResponse = response.json().await?;
+            let response_body: FollowersResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -149,11 +167,11 @@ pub async fn get_followers(
 }
 
 /// Enumerates accounts which a specified account (actor) follows.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the profiles of.
@@ -166,7 +184,7 @@ pub async fn get_follows(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetFollowsResponse, Box<dyn std::error::Error>> {
+) -> Result<FollowsResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getFollows", host_name);
 
     let mut query_params = Vec::new();
@@ -179,7 +197,6 @@ pub async fn get_follows(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -189,19 +206,20 @@ pub async fn get_follows(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetFollowsResponse = response.json().await?;
+            let response_body: FollowsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Enumerates accounts which follow a specified account (actor) and are followed by the viewer.
-/// 
+/// Enumerates accounts which follow a specified account (actor) and are
+/// followed by the viewer.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the followers of.
@@ -214,7 +232,7 @@ pub async fn get_known_followers(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetKnownFollowersResponse, Box<dyn std::error::Error>> {
+) -> Result<KnownFollowersResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/app.bsky.graph.getKnownFollowers",
         host_name
@@ -230,7 +248,6 @@ pub async fn get_known_followers(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -240,19 +257,20 @@ pub async fn get_known_followers(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetKnownFollowersResponse = response.json().await?;
+            let response_body: KnownFollowersResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get mod lists that the requesting account (actor) is blocking. Requires auth.
-/// 
+/// Get mod lists that the requesting account (actor) is blocking. Requires
+/// auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `limit` - The maximum number of mod lists to return. Defaults to 50.
@@ -263,7 +281,7 @@ pub async fn get_list_blocks(
     api_auth_config: &ApiAuthConfig,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetListBlocksResponse, Box<dyn std::error::Error>> {
+) -> Result<ListBlocksResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getListBlocks", host_name);
 
     let mut query_params = Vec::new();
@@ -275,7 +293,6 @@ pub async fn get_list_blocks(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -285,19 +302,20 @@ pub async fn get_list_blocks(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetListBlocksResponse = response.json().await?;
+            let response_body: ListBlocksResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Enumerates mod lists that the requesting account (actor) currently has muted. Requires auth.
-/// 
+/// Enumerates mod lists that the requesting account (actor) currently has
+/// muted. Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `limit` - The maximum number of mod lists to return. Defaults to 50.
@@ -308,7 +326,7 @@ pub async fn get_list_mutes(
     api_auth_config: &ApiAuthConfig,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetListMutesResponse, Box<dyn std::error::Error>> {
+) -> Result<ListMutesResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getListMutes", host_name);
 
     let mut query_params = Vec::new();
@@ -320,7 +338,6 @@ pub async fn get_list_mutes(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -330,7 +347,7 @@ pub async fn get_list_mutes(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetListMutesResponse = response.json().await?;
+            let response_body: ListMutesResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -338,11 +355,11 @@ pub async fn get_list_mutes(
 }
 
 /// Gets a 'view' (with additional context) of a specified list.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `list` - The list to fetch.
@@ -355,7 +372,7 @@ pub async fn get_list(
     list: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetListResponse, Box<dyn std::error::Error>> {
+) -> Result<ListResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getList", host_name);
 
     let mut query_params = Vec::new();
@@ -368,7 +385,6 @@ pub async fn get_list(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -378,7 +394,7 @@ pub async fn get_list(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetListResponse = response.json().await?;
+            let response_body: ListResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -386,11 +402,11 @@ pub async fn get_list(
 }
 
 /// Enumerates the lists created by a specified account (actor).
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the lists of.
@@ -403,7 +419,7 @@ pub async fn get_lists(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetListsResponse, Box<dyn std::error::Error>> {
+) -> Result<ListsResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getLists", host_name);
 
     let mut query_params = Vec::new();
@@ -416,7 +432,6 @@ pub async fn get_lists(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -426,19 +441,20 @@ pub async fn get_lists(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetListsResponse = response.json().await?;
+            let response_body: ListsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Enumerates accounts that the requesting account (actor) currently has muted. Requires auth.
-/// 
+/// Enumerates accounts that the requesting account (actor) currently has muted.
+/// Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `limit` - The maximum number of accounts to return. Defaults to 50.
@@ -449,7 +465,7 @@ pub async fn get_mutes(
     api_auth_config: &ApiAuthConfig,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::graph::GetMutesResponse, Box<dyn std::error::Error>> {
+) -> Result<MutesResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getMutes", host_name);
 
     let mut query_params = Vec::new();
@@ -461,7 +477,6 @@ pub async fn get_mutes(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -471,7 +486,7 @@ pub async fn get_mutes(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetMutesResponse = response.json().await?;
+            let response_body: MutesResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -479,11 +494,11 @@ pub async fn get_mutes(
 }
 
 /// Gets a view of a starter pack.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `starter_pack` - The URI of the starter pack to fetch.
@@ -492,12 +507,11 @@ pub async fn get_starter_pack(
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
     starter_pack: &str
-) -> Result<app_bsky::graph::GetStarterPackResponse, Box<dyn std::error::Error>> {
+) -> Result<StarterPackResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.getStarterPack", host_name);
 
     let query_params = vec![("starter_pack", starter_pack)];
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -507,19 +521,20 @@ pub async fn get_starter_pack(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetStarterPackResponse = response.json().await?;
+            let response_body: StarterPackResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Enumerates follows similar to a given account (actor). Expected use is to recommend additional accounts immediately after following one account.
-/// 
+/// Enumerates follows similar to a given account (actor). Expected use is to
+/// recommend additional accounts immediately after following one account.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the suggested follows for.
@@ -528,7 +543,7 @@ pub async fn get_suggested_follows_by_actor(
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
     actor: &str
-) -> Result<app_bsky::graph::GetSuggestedFollowsByActorResponse, Box<dyn std::error::Error>> {
+) -> Result<SuggestedFollowsByActorResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/app.bsky.graph.getSuggestedFollowsByActor",
         host_name
@@ -536,7 +551,6 @@ pub async fn get_suggested_follows_by_actor(
 
     let query_params = vec![("actor", actor)];
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -546,20 +560,20 @@ pub async fn get_suggested_follows_by_actor(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::graph::GetSuggestedFollowsByActorResponse =
-                response.json().await?;
+            let response_body: SuggestedFollowsByActorResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Creates a mute relationship for the specified list of accounts. Mutes are private in Bluesky. Requires auth.
-/// 
+/// Creates a mute relationship for the specified list of accounts. Mutes are
+/// private in Bluesky. Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to mute a list of actors.
@@ -567,11 +581,10 @@ pub async fn mute_actor_list(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::MuteActorListRequest
+    request: MuteActorListRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.muteActorList", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
@@ -585,12 +598,13 @@ pub async fn mute_actor_list(
     }
 }
 
-/// Creates a mute relationship for the specified account. Mutes are private in Bluesky. Requires auth.
-/// 
+/// Creates a mute relationship for the specified account. Mutes are private in
+/// Bluesky. Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to mute an actor.
@@ -598,11 +612,10 @@ pub async fn mute_actor(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::MuteActorRequest
+    request: MuteActorRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.muteActor", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
@@ -616,12 +629,13 @@ pub async fn mute_actor(
     }
 }
 
-/// Mutes a thread preventing notifications from the thread and any of its children. Mutes are private in Bluesky. Requires auth.
-/// 
+/// Mutes a thread preventing notifications from the thread and any of its
+/// children. Mutes are private in Bluesky. Requires auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to mute a thread.
@@ -629,11 +643,10 @@ pub async fn mute_thread(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::MuteThreadRequest
+    request: MuteThreadRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.muteThread", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
@@ -648,11 +661,11 @@ pub async fn mute_thread(
 }
 
 /// Unmutes the specified list of accounts. Requires auth.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to unmute a list of actors.
@@ -660,11 +673,10 @@ pub async fn unmute_actor_list(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::UnmuteActorListRequest
+    request: UnmuteActorListRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.unmuteActorList", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
@@ -679,11 +691,11 @@ pub async fn unmute_actor_list(
 }
 
 /// Unmutes the specified account. Requires auth.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to unmute an actor.
@@ -691,11 +703,10 @@ pub async fn unmute_actor(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::UnmuteActorRequest
+    request: UnmuteActorRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.unmuteActor", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
@@ -710,11 +721,11 @@ pub async fn unmute_actor(
 }
 
 /// Unmutes the specified thread. Requires auth.
-/// 
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to unmute a thread.
@@ -722,11 +733,10 @@ pub async fn unmute_thread(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: app_bsky::graph::UnmuteThreadRequest
+    request: UnmuteThreadRequest
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.graph.unmuteThread", host_name);
 
-    
     let response = client
         .post(&api_url)
         .json(&request)
