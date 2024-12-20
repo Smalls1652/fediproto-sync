@@ -7,9 +7,11 @@ mod img_utils;
 /// Mastodon operations.
 mod mastodon;
 
-use fediproto_sync_lib::config::{FediProtoSyncConfig, FediProtoSyncMode};
+use fediproto_sync_lib::{
+    config::{FediProtoSyncConfig, FediProtoSyncMode},
+    GIT_VERSION
+};
 
-pub const GIT_VERSION: &str = std::env!("GIT_VERSION");
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -85,10 +87,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Spawn the auth web server.
             tokio::spawn(async move {
-                let fediproto_auth_web_server = fediproto_sync_auth_ui::FediProtoSyncWebServer::new(
-                    &config_auth,
-                    db_connection_pool_auth
-                ).unwrap();
+                let fediproto_auth_web_server =
+                    fediproto_sync_auth_ui::FediProtoSyncWebServer::new(
+                        &config_auth,
+                        db_connection_pool_auth
+                    )
+                    .unwrap();
 
                 let result = fediproto_auth_web_server.run().await;
 
@@ -103,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             });
-        },
+        }
 
         _ => {
             let config_core = config.clone();
