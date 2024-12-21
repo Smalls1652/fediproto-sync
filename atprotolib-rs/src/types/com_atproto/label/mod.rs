@@ -1,3 +1,5 @@
+pub mod api_responses;
+
 use serde::{Deserialize, Serialize};
 
 /// Metadata tag on an atproto resource (eg, repo or record).
@@ -106,4 +108,22 @@ pub struct LabelValueDefinitionStrings {
     /// A longer description of what the label means and why it might be applied.
     #[serde(rename = "description")]
     pub description: String
+}
+
+#[allow(missing_docs)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Labels {
+    #[serde(rename = "seq")]
+    pub seq: i64,
+    #[serde(rename = "labels")]
+    pub labels: Vec<Label>
+}
+
+#[allow(missing_docs)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LabelInfo {
+    #[serde(rename = "name")]
+    pub name: String,
+    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>
 }

@@ -5,13 +5,7 @@ pub mod admin;
 pub mod identity;
 
 /// Contains types for the `com.atproto.label` namespace.
-pub mod label {
-    mod defs;
-    mod query_labels;
-    mod subscribe_labels;
-
-    pub use self::{defs::*, query_labels::*, subscribe_labels::*};
-}
+pub mod label;
 
 /// Contains types for the `com.atproto.moderation` namespace.
 pub mod moderation {
