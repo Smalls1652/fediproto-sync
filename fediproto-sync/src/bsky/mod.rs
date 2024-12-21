@@ -6,7 +6,7 @@ use atprotolib_rs::{
     api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
     types::{
         app_bsky,
-        com_atproto::{self, server::CreateSessionRequest}
+        com_atproto::{self, server::api_requests::CreateSessionRequest}
     }
 };
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -18,7 +18,7 @@ use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
 #[allow(unused_imports)]
 pub use self::{
-    media::{BlueSkyPostSyncMedia, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE, MAX_VIDEO_DURATION},
+    media::{BlueSkyPostSyncMedia, MAX_IMAGE_SIZE, MAX_VIDEO_DURATION, MAX_VIDEO_SIZE},
     rich_text::BlueSkyPostSyncRichText,
     utils::BlueSkyPostSyncUtils
 };
@@ -34,7 +34,7 @@ pub struct BlueSkyAuthentication {
     pub auth_config: ApiAuthConfig,
 
     /// The session information for the authenticated BlueSky session.
-    pub session: com_atproto::server::CreateSessionResponse
+    pub session: com_atproto::server::api_responses::CreateSessionResponse
 }
 
 impl BlueSkyAuthentication {
@@ -55,7 +55,7 @@ impl BlueSkyAuthentication {
             data: ApiAuthConfigData::None
         };
 
-        let bsky_create_session = com_atproto::server::create_session(
+        let bsky_create_session = com_atproto::server::api_calls::create_session(
             &config.bluesky_pds_server,
             client,
             &initial_auth_config,
@@ -102,16 +102,19 @@ impl BlueSkyAuthentication {
             })
         };
 
-        let bsky_refresh_session =
-            com_atproto::server::refresh_session(&self.host_name, client, &refresh_auth_config)
-                .await
-                .map_err(|e| {
-                    FediProtoSyncError::with_source(
-                        "Failed to refresh Bluesky session.",
-                        FediProtoSyncErrorKind::AuthenticationError,
-                        e
-                    )
-                })?;
+        let bsky_refresh_session = com_atproto::server::api_calls::refresh_session(
+            &self.host_name,
+            client,
+            &refresh_auth_config
+        )
+        .await
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to refresh Bluesky session.",
+                FediProtoSyncErrorKind::AuthenticationError,
+                e
+            )
+        })?;
 
         let bsky_auth_config = ApiAuthConfig {
             data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
@@ -232,13 +235,13 @@ impl BlueSkyPostSync {
 
         // -- Send the post item to BlueSky through the 'com.atproto.repo.applyWrites'
         // API. --
-        let apply_write_request = com_atproto::repo::ApplyWritesRequest {
+        let apply_write_request = com_atproto::repo::api_requests::ApplyWritesRequest {
             repo: self.bsky_auth.session.did.clone(),
             validate: true,
-            writes: vec![com_atproto::repo::ApplyWritesRequestWrites::Create(
-                com_atproto::repo::Create::new(
+            writes: vec![com_atproto::repo::RequestWrites::Create(
+                com_atproto::repo::WriteCreate::new(
                     "app.bsky.feed.post",
-                    com_atproto::repo::ApplyWritesValue::Post(self.post_item.clone())
+                    com_atproto::repo::WritesValue::Post(self.post_item.clone())
                 )
             )],
             swap_commit: None
@@ -246,7 +249,7 @@ impl BlueSkyPostSync {
 
         let apply_write_client = crate::core::create_http_client(&self.config)?;
 
-        let apply_write_result = com_atproto::repo::apply_writes(
+        let apply_write_result = com_atproto::repo::api_calls::apply_writes(
             &self.bsky_auth.host_name,
             apply_write_client,
             &self.bsky_auth.auth_config,
@@ -260,9 +263,9 @@ impl BlueSkyPostSync {
                 // If no HTTP errors occurred, get the results from the response.
                 // We need the CID and URI of the post that was created from it.
                 let post_result = match result.results.first().unwrap() {
-                    com_atproto::repo::ApplyWritesResponseResults::CreateResult(create_result) => {
+                    com_atproto::repo::api_responses::ApplyWritesResponseResults::CreateResult(
                         create_result
-                    }
+                    ) => create_result,
 
                     _ => panic!("Unexpected response from Bluesky")
                 };

@@ -107,7 +107,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
         &mut self,
         media_attachments: &Vec<megalodon::entities::attachment::Attachment>
     ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
-        let mut image_attachments = Vec::<app_bsky::embed::ImageEmbed>::new();
+        let mut image_attachments = Vec::<app_bsky::embed::image::ImageEmbed>::new();
 
         for image_attachment in media_attachments {
             // Download the media attachment from the Mastodon server.
@@ -120,7 +120,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
 
             let blob_upload_client = crate::core::create_http_client(&self.config)?;
             // Upload the media attachment to Bluesky.
-            let blob_upload_response = com_atproto::repo::upload_blob(
+            let blob_upload_response = com_atproto::repo::api_calls::upload_blob(
                 &self.bsky_auth.host_name,
                 blob_upload_client,
                 &self.bsky_auth.auth_config,
@@ -132,7 +132,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
             // Create an image embed and add it to the list of image attachments.
-            image_attachments.push(app_bsky::embed::ImageEmbed {
+            image_attachments.push(app_bsky::embed::image::ImageEmbed {
                 image: blob_upload_response.blob,
                 alt: image_attachment
                     .description
@@ -244,7 +244,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             true => {
                 let blob_upload_client = crate::core::create_http_client(&self.config)?;
                 Some(
-                    com_atproto::repo::upload_blob(
+                    com_atproto::repo::api_calls::upload_blob(
                         &self.bsky_auth.host_name,
                         blob_upload_client,
                         &self.bsky_auth.auth_config,
@@ -261,7 +261,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
 
         Ok(Some(app_bsky::feed::PostEmbeds::External(
             app_bsky::feed::PostEmbedExternal {
-                external: app_bsky::embed::ExternalEmbed {
+                external: app_bsky::embed::external::ExternalEmbed {
                     uri: self.mastodon_status.url.clone().unwrap(),
                     title: "View video on Mastodon".to_string(),
                     description: format!(
@@ -288,7 +288,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
         let service_endpoint = service_endpoint.replace("https://", "");
 
         let service_auth_client = crate::core::create_http_client(&self.config)?;
-        let service_auth_token = com_atproto::server::get_service_auth(
+        let service_auth_token = com_atproto::server::api_calls::get_service_auth(
             &service_endpoint,
             service_auth_client,
             &self.bsky_auth.auth_config,
@@ -319,7 +319,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
         let temp_file = tokio::fs::File::open(&temp_path).await?;
 
         let upload_video_client = crate::core::create_http_client(&self.config)?;
-        let upload_video_job_response = app_bsky::video::upload_video(
+        let upload_video_job_response = app_bsky::video::api_calls::upload_video(
             "video.bsky.app",
             upload_video_client,
             &upload_auth_config,
@@ -342,7 +342,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
 
         while job_status.state != "JOB_STATE_FAILED" {
             let job_client = crate::core::create_http_client(&self.config)?;
-            job_status = app_bsky::video::get_job_status(
+            job_status = app_bsky::video::api_calls::get_job_status(
                 "video.bsky.app",
                 job_client,
                 &no_auth_config,

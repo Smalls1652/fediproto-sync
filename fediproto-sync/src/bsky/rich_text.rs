@@ -4,11 +4,7 @@ use atprotolib_rs::types::{
 };
 use bytes::Bytes;
 
-use super::{
-    BlueSkyPostSync,
-    BlueSkyPostSyncUtils,
-    MAX_IMAGE_SIZE
-};
+use super::{BlueSkyPostSync, BlueSkyPostSyncUtils, MAX_IMAGE_SIZE};
 
 /// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {
@@ -147,7 +143,8 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
 
             let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
                 true => {
-                    let compressed_image = crate::img_utils::compress_image(link_thumbnail_bytes.as_ref())?;
+                    let compressed_image =
+                        crate::img_utils::compress_image(link_thumbnail_bytes.as_ref())?;
 
                     tracing::info!(
                         "Compressed link thumbnail from {} bytes to {} bytes",
@@ -165,7 +162,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
                 true => {
                     let blob_upload_client = crate::core::create_http_client(&self.config)?;
                     Some(
-                        com_atproto::repo::upload_blob(
+                        com_atproto::repo::api_calls::upload_blob(
                             &self.bsky_auth.host_name,
                             blob_upload_client,
                             &self.bsky_auth.auth_config,
@@ -183,7 +180,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
             // Create an external embed for the link and add it to the post item.
             self.post_item.embed = Some(app_bsky::feed::PostEmbeds::External(
                 app_bsky::feed::PostEmbedExternal {
-                    external: app_bsky::embed::ExternalEmbed {
+                    external: app_bsky::embed::external::ExternalEmbed {
                         uri: link_metadata["url"].as_str().unwrap().to_string(),
                         title: link_metadata["title"].as_str().unwrap().to_string(),
                         description: link_metadata["description"].as_str().unwrap().to_string(),
