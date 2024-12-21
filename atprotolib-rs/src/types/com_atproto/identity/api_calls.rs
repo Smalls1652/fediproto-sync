@@ -1,6 +1,12 @@
+use super::{
+    api_requests::{SignPlcOperationRequest, SubmitPlcOperationRequest, UpdateHandleRequest},
+    api_responses::{
+        RecommendedDidCredentialsResponse,
+        ResolveHandleResponse,
+        SignPlcOperationResponse
+    }
+};
 use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
-
-use super::{api_requests::{SignPlcOperationRequest, SubmitPlcOperationRequest, UpdateHandleRequest}, api_responses::{RecommendedDidCredentialsResponse, ResolveHandleResponse, SignPlcOperationResponse}};
 
 /// Describe the credentials that should be included in the DID doc of an
 /// account that is migrating to this service.
@@ -13,8 +19,7 @@ pub async fn get_recommended_did_credentials(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig
-) -> Result<RecommendedDidCredentialsResponse, Box<dyn std::error::Error>>
-{
+) -> Result<RecommendedDidCredentialsResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.identity.getRecommendedDidCredentials",
         host_name
@@ -28,8 +33,7 @@ pub async fn get_recommended_did_credentials(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: RecommendedDidCredentialsResponse =
-                response.json().await?;
+            let response_body: RecommendedDidCredentialsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -65,8 +69,7 @@ pub async fn resolve_handle(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: ResolveHandleResponse =
-                response.json().await?;
+            let response_body: ResolveHandleResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -101,8 +104,7 @@ pub async fn sign_plc_operation(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: SignPlcOperationResponse =
-                response.json().await?;
+            let response_body: SignPlcOperationResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))

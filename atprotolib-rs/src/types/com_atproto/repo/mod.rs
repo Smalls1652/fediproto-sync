@@ -77,9 +77,9 @@ pub struct WriteCreate {
 
 impl WriteCreate {
     /// Creates a new `Create` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `collection` - The collection to create the record in.
     /// * `value` - The value to create.
     pub fn new(
@@ -112,9 +112,9 @@ pub struct WriteUpdate {
 
 impl WriteUpdate {
     /// Creates a new `Update` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `collection` - The collection to update the record in.
     /// * `rkey` - The record key.
     /// * `value` - The value to update.
@@ -145,9 +145,9 @@ pub struct WriteDelete {
 
 impl WriteDelete {
     /// Creates a new `Delete` struct.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `collection` - The collection to delete the record from.
     /// * `rkey` - The record key.
     pub fn new(

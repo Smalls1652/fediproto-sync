@@ -1,8 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use super::{
+    ListItemView,
+    ListView,
+    NotFoundActor,
+    Relationship,
+    StarterPackView,
+    StarterPackViewBasic
+};
 use crate::types::app_bsky::actor::ProfileView;
-
-use super::{ListItemView, ListView, NotFoundActor, Relationship, StarterPackView, StarterPackViewBasic};
 
 /// The response to a request for a user's starter packs.
 #[derive(Serialize, Deserialize, Debug)]

@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::com_atproto::repo::BlobItem;
-
 use super::AspectRatio;
+use crate::types::com_atproto::repo::BlobItem;
 
 /// A representation of an image embedded in a Bluesky record (eg, a post).
 #[derive(Serialize, Deserialize, Debug, Clone)]

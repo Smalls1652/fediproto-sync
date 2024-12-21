@@ -419,7 +419,8 @@ pub struct ThreadViewPref {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "$type", rename = "app.bsky.actor.defs#interestsPref")]
 pub struct InterestsPref {
-    /// A list of tags which describe the account owner's interests gathered during onboarding.
+    /// A list of tags which describe the account owner's interests gathered
+    /// during onboarding.
     #[serde(rename = "tags")]
     pub tags: Vec<String>
 }
@@ -440,7 +441,8 @@ pub struct MutedWord {
     #[serde(rename = "targets")]
     pub targets: Vec<String>,
 
-    /// Groups of users to apply the muted word to. If undefined, applies to all users.
+    /// Groups of users to apply the muted word to. If undefined, applies to all
+    /// users.
     #[serde(rename = "actorTarget", skip_serializing_if = "Option::is_none")]
     pub actor_target: Option<String>,
 

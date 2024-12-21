@@ -43,7 +43,7 @@ pub enum RecordEmbedUnion {
 
     /// A starter pack view.
     StarterPackViewBasic(StarterPackViewBasic),
-    
+
     /// A labeler view.
     LabelerView(LabelerView)
 }

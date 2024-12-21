@@ -1,6 +1,5 @@
-use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
-
 use super::{api_requests::CreateReportRequest, api_responses::CreateReportResponse};
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
 /// Submit a moderation report regarding an atproto account or record.
 /// Implemented by moderation services (with PDS proxying), and requires auth.
@@ -31,8 +30,7 @@ pub async fn create_report(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: CreateReportResponse =
-                response.json().await?;
+            let response_body: CreateReportResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))

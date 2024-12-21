@@ -14,11 +14,13 @@ pub struct Label {
     #[serde(rename = "src")]
     pub src: String,
 
-    /// AT URI of the record, repository (account), or other resource that this label applies to.
+    /// AT URI of the record, repository (account), or other resource that this
+    /// label applies to.
     #[serde(rename = "uri")]
     pub uri: String,
 
-    /// CID specifying the specific version of 'uri' resource this label applies to.
+    /// CID specifying the specific version of 'uri' resource this label applies
+    /// to.
     #[serde(rename = "cid", skip_serializing_if = "Option::is_none")]
     pub cid: Option<String>,
 
@@ -43,7 +45,8 @@ pub struct Label {
     pub sig: Option<Vec<u8>>
 }
 
-/// Metadata tags on an atproto record, published by the author within the record.
+/// Metadata tags on an atproto record, published by the author within the
+/// record.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "$type", rename = "com.atproto.label.defs#selfLabels")]
 pub struct SelfLabels {
@@ -52,7 +55,8 @@ pub struct SelfLabels {
     pub values: Vec<SelfLabel>
 }
 
-/// Metadata tag on an atproto record, published by the author within the record.
+/// Metadata tag on an atproto record, published by the author within the
+/// record.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "$type", rename = "com.atproto.label.defs#selfLabel")]
 pub struct SelfLabel {
@@ -65,15 +69,20 @@ pub struct SelfLabel {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "$type", rename = "com.atproto.label.defs#labelValueDefinition")]
 pub struct LabelValueDefinition {
-    /// The value of the label being defined. Must only include lowercase ascii and the '-' character ([a-z-]+).
+    /// The value of the label being defined. Must only include lowercase ascii
+    /// and the '-' character ([a-z-]+).
     #[serde(rename = "identifier")]
     pub identifier: String,
 
-    /// How should a client visually convey this label? 'inform' means neutral and informational; 'alert' means negative and warning; 'none' means show nothing.
+    /// How should a client visually convey this label? 'inform' means neutral
+    /// and informational; 'alert' means negative and warning; 'none' means show
+    /// nothing.
     #[serde(rename = "severity")]
     pub severity: String,
 
-    /// What should this label hide in the UI, if applied? 'content' hides all of the target; 'media' hides the images/video/audio; 'none' hides nothing.
+    /// What should this label hide in the UI, if applied? 'content' hides all
+    /// of the target; 'media' hides the images/video/audio; 'none' hides
+    /// nothing.
     #[serde(rename = "blurs")]
     pub blurs: String,
 
@@ -81,7 +90,8 @@ pub struct LabelValueDefinition {
     #[serde(rename = "defaultSetting", skip_serializing_if = "Option::is_none")]
     pub default_setting: Option<String>,
 
-    /// Does the user need to have adult content enabled in order to configure this label?
+    /// Does the user need to have adult content enabled in order to configure
+    /// this label?
     #[serde(rename = "adultOnly", default)]
     pub adult_only: bool,
 
@@ -90,7 +100,8 @@ pub struct LabelValueDefinition {
     pub locales: Vec<LabelValueDefinitionStrings>
 }
 
-/// Strings which describe the label in the UI, localized into a specific language.
+/// Strings which describe the label in the UI, localized into a specific
+/// language.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(
     tag = "$type",
@@ -105,7 +116,8 @@ pub struct LabelValueDefinitionStrings {
     #[serde(rename = "name")]
     pub name: String,
 
-    /// A longer description of what the label means and why it might be applied.
+    /// A longer description of what the label means and why it might be
+    /// applied.
     #[serde(rename = "description")]
     pub description: String
 }

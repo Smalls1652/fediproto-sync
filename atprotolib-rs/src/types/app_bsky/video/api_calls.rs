@@ -1,6 +1,8 @@
+use super::{
+    api_responses::{JobStatusResponse, UploadLimitsResponse},
+    JobStatus
+};
 use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
-
-use super::{api_responses::{JobStatusResponse, UploadLimitsResponse}, JobStatus};
 
 /// Get status details for a video processing job.
 ///

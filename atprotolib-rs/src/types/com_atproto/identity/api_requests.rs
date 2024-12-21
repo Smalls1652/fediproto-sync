@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 /// Represents a request to sign a PLC operation.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignPlcOperationRequest {
-    /// A token received through com.atproto.identity.requestPlcOperationSignature
+    /// A token received through
+    /// com.atproto.identity.requestPlcOperationSignature
     #[serde(rename = "token", skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
 

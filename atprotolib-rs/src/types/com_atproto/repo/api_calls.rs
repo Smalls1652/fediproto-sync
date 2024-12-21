@@ -1,6 +1,8 @@
+use super::{
+    api_requests::ApplyWritesRequest,
+    api_responses::{ApplyWritesResponse, UploadBlobResponse}
+};
 use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
-
-use super::{api_requests::ApplyWritesRequest, api_responses::{ApplyWritesResponse, UploadBlobResponse}};
 
 /// Apply a batch transaction of repository creates, updates, and deletes.
 /// Requires auth, implemented by PDS.

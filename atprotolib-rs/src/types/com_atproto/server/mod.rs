@@ -87,7 +87,7 @@ pub struct DidDocVerificationMethodMultiKey {
     pub controller: String,
 
     #[serde(rename = "publicKeyMultibase")]
-    pub public_key_multibase: String,
+    pub public_key_multibase: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -149,7 +149,8 @@ pub struct AppPassword {
     #[serde(rename = "createdAt")]
     pub created_at: DateTime<Utc>,
 
-    /// If an app password has 'privileged' access to possibly sensitive account data.
+    /// If an app password has 'privileged' access to possibly sensitive account
+    /// data.
     #[serde(rename = "privileged", default)]
     pub privileged: bool
 }
