@@ -1,9 +1,35 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_requests;
+pub mod api_responses;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/*
-    com.atproto.sync.subscribeRepos
-*/
+/// Represents a repository.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Repo {
+    /// The DID of the repository.
+    #[serde(rename = "did")]
+    pub did: String,
+
+    /// The head of the repository.
+    #[serde(rename = "head")]
+    pub head: String,
+
+    /// The latest revision of the repository.
+    #[serde(rename = "rev")]
+    pub rev: String,
+
+    /// Whether the repository is active.
+    #[serde(rename = "active", default)]
+    pub active: bool,
+
+    /// The status of the repository.
+    #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>
+}
 
 #[allow(missing_docs)]
 #[derive(Serialize, Deserialize, Debug)]
