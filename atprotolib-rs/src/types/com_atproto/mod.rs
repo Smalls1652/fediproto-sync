@@ -2,27 +2,7 @@
 pub mod admin;
 
 /// Contains types for the `com.atproto.identity` namespace.
-pub mod identity {
-    mod get_recommended_did_credentials;
-    mod resolve_handle;
-    mod sign_plc_operation;
-    mod submit_plc_operation;
-    mod update_handle;
-
-    pub use self::{
-        get_recommended_did_credentials::*,
-        resolve_handle::*,
-        sign_plc_operation::*,
-        submit_plc_operation::*,
-        update_handle::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod identity;
 
 /// Contains types for the `com.atproto.label` namespace.
 pub mod label {

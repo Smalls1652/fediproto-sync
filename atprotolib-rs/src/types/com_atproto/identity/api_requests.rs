@@ -1,9 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/*
-    com.atproto.identity.signPlcOperation
-*/
-
 /// Represents a request to sign a PLC operation.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignPlcOperationRequest {
@@ -31,10 +27,18 @@ pub struct SignPlcOperationRequest {
     pub services: Option<serde_json::Value>
 }
 
-/// Represents a response to sign a PLC operation.
+/// Represents a request to submit a PLC operation.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignPlcOperationResponse {
-    /// A value of the operation. (?)
+pub struct SubmitPlcOperationRequest {
+    /// The operation to submit.
     #[serde(rename = "operation")]
     pub operation: serde_json::Value
+}
+
+/// Represents a request to update a handle.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateHandleRequest {
+    /// The new handle.
+    #[serde(rename = "handle")]
+    pub handle: String
 }
