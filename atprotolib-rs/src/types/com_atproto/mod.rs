@@ -10,38 +10,7 @@ pub mod label;
 /// Contains types for the `com.atproto.moderation` namespace.
 pub mod moderation;
 
-/// Contains types for the `com.atproto.repo` namespace.
-pub mod repo {
-    mod apply_writes;
-    mod create_record;
-    mod defs;
-    mod delete_record;
-    mod describe_repo;
-    mod get_record;
-    mod list_missing_blobs;
-    mod list_records;
-    mod put_record;
-    mod upload_blob;
-
-    pub use self::{
-        apply_writes::*,
-        create_record::*,
-        defs::*,
-        delete_record::*,
-        describe_repo::*,
-        get_record::*,
-        list_missing_blobs::*,
-        list_records::*,
-        put_record::*,
-        upload_blob::*
-    };
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod repo;
 
 /// Contains types for the `com.atproto.server` namespace.
 pub mod server {
