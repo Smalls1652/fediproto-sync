@@ -1,30 +1,32 @@
-use crate::{
-    api_calls::{AddApiAuth, ApiAuthConfig, ApiError},
-    types::com_atproto::admin::{
+use super::{
+    api_requests::{
+        AccountInfosRequest,
         DeleteAccountRequest,
         DisableAccountInvitesRequest,
         DisableInviteCodesRequest,
         EnableAccountInvitesRequest,
-        GetAccountInfoResponse,
-        GetAccountInfosRequest,
-        GetAccountInfosResponse,
-        GetInviteCodesResponse,
-        GetSubjectStatusAccountResponse,
-        GetSubjectStatusBlobResponse,
-        GetSubjectStatusRecordResponse,
-        SearchAccountsResponse,
         SendEmailRequest,
-        SendEmailResponse,
         UpdateAccountEmailRequest,
         UpdateAccountHandleRequest,
         UpdateAccountPasswordRequest
+    },
+    api_responses::{
+        AccountInfoResponse,
+        AccountInfosResponse,
+        InviteCodesResponse,
+        SearchAccountsResponse,
+        SendEmailResponse,
+        SubjectStatusAccountResponse,
+        SubjectStatusBlobResponse,
+        SubjectStatusRecordResponse
     }
 };
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
 /// Delete a user account as an administrator.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to delete an account.
@@ -36,7 +38,6 @@ pub async fn delete_account(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.admin.deleteAccount", host_name);
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -51,10 +52,11 @@ pub async fn delete_account(
     }
 }
 
-/// Disable an account from receiving new invite codes, but does not invalidate existing codes.
-/// 
+/// Disable an account from receiving new invite codes, but does not invalidate
+/// existing codes.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to disable account invites.
@@ -69,7 +71,6 @@ pub async fn disable_account_invites(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -84,11 +85,10 @@ pub async fn disable_account_invites(
     }
 }
 
-
 /// Disable some set of codes and/or all codes associated with a set of users.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to disable invite codes.
@@ -103,7 +103,6 @@ pub async fn disable_invite_codes(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -119,9 +118,9 @@ pub async fn disable_invite_codes(
 }
 
 /// Re-enable an account's ability to receive invite codes.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to enable account invites.
@@ -136,7 +135,6 @@ pub async fn enable_account_invites(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -151,10 +149,10 @@ pub async fn enable_account_invites(
     }
 }
 
-/// Get details about an account.
-/// 
+///  details about an account.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `did` - The DID of the account.
@@ -163,13 +161,12 @@ pub async fn get_account_info(
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
     did: String
-) -> Result<GetAccountInfoResponse, Box<dyn std::error::Error>> {
+) -> Result<AccountInfoResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.admin.getAccountInfo",
         host_name
     );
 
-    
     let response = client
         .get(&api_url)
         .query(&[("did", did)])
@@ -179,17 +176,17 @@ pub async fn get_account_info(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: GetAccountInfoResponse = response.json().await?;
+            let response_body: AccountInfoResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get details about some accounts.
-/// 
+///  details about some accounts.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to get account infos.
@@ -197,14 +194,13 @@ pub async fn get_account_infos(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    request: GetAccountInfosRequest
-) -> Result<GetAccountInfosResponse, Box<dyn std::error::Error>> {
+    request: AccountInfosRequest
+) -> Result<AccountInfosResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.admin.getAccountInfos",
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -215,17 +211,17 @@ pub async fn get_account_infos(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: GetAccountInfosResponse = response.json().await?;
+            let response_body: AccountInfosResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get an admin view of invite codes.
-/// 
+///  an admin view of invite codes.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `limit` - The maximum number of invite codes to return. Defaults to 100.
@@ -238,7 +234,7 @@ pub async fn get_invite_codes(
     limit: Option<i32>,
     cursor: Option<String>,
     sort: Option<String>
-) -> Result<GetInviteCodesResponse, Box<dyn std::error::Error>> {
+) -> Result<InviteCodesResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.admin.getInviteCodes",
         host_name
@@ -255,7 +251,6 @@ pub async fn get_invite_codes(
         query_params.push(("sort", sort));
     }
 
-    
     let response = client
         .post(&api_url)
         .query(&query_params)
@@ -266,7 +261,7 @@ pub async fn get_invite_codes(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: GetInviteCodesResponse = response.json().await?;
+            let response_body: InviteCodesResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -274,7 +269,7 @@ pub async fn get_invite_codes(
 }
 
 /// The subject to get the status of.
-pub enum GetSubjectStatusSubject {
+pub enum SubjectStatusSubject {
     /// The account DID.
     Account(String),
 
@@ -286,21 +281,22 @@ pub enum GetSubjectStatusSubject {
 }
 
 /// The response from getting the status of a subject.
-pub enum GetSubjectStatusResponse {
+pub enum SubjectStatusResponse {
     /// The account status.
-    Account(GetSubjectStatusAccountResponse),
+    Account(SubjectStatusAccountResponse),
 
     /// The record status.
-    Record(GetSubjectStatusRecordResponse),
+    Record(SubjectStatusRecordResponse),
 
     /// The blob status.
-    Blob(GetSubjectStatusBlobResponse)
+    Blob(SubjectStatusBlobResponse)
 }
 
-/// Get the service-specific admin status of a subject (account, record, or blob).
-/// 
+///  the service-specific admin status of a subject (account, record, or
+/// blob).
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `subject` - The subject to get the status of.
@@ -308,20 +304,19 @@ pub async fn get_subject_status(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig,
-    subject: GetSubjectStatusSubject
-) -> Result<GetSubjectStatusResponse, Box<dyn std::error::Error>> {
+    subject: SubjectStatusSubject
+) -> Result<SubjectStatusResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.admin.getSubjectStatus",
         host_name
     );
 
     let query_params = match &subject {
-        GetSubjectStatusSubject::Account(did) => vec![("did", did)],
-        GetSubjectStatusSubject::Record(uri) => vec![("uri", uri)],
-        GetSubjectStatusSubject::Blob(blob) => vec![("blob", blob)]
+        SubjectStatusSubject::Account(did) => vec![("did", did)],
+        SubjectStatusSubject::Record(uri) => vec![("uri", uri)],
+        SubjectStatusSubject::Blob(blob) => vec![("blob", blob)]
     };
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -332,27 +327,27 @@ pub async fn get_subject_status(
 
     match response.status() {
         reqwest::StatusCode::OK => match &subject {
-            GetSubjectStatusSubject::Account(_) => {
-                let account_response: GetSubjectStatusAccountResponse = response.json().await?;
-                Ok(GetSubjectStatusResponse::Account(account_response))
+            SubjectStatusSubject::Account(_) => {
+                let account_response: SubjectStatusAccountResponse = response.json().await?;
+                Ok(SubjectStatusResponse::Account(account_response))
             }
-            GetSubjectStatusSubject::Record(_) => {
-                let record_response: GetSubjectStatusRecordResponse = response.json().await?;
-                Ok(GetSubjectStatusResponse::Record(record_response))
+            SubjectStatusSubject::Record(_) => {
+                let record_response: SubjectStatusRecordResponse = response.json().await?;
+                Ok(SubjectStatusResponse::Record(record_response))
             }
-            GetSubjectStatusSubject::Blob(_) => {
-                let blob_response: GetSubjectStatusBlobResponse = response.json().await?;
-                Ok(GetSubjectStatusResponse::Blob(blob_response))
+            SubjectStatusSubject::Blob(_) => {
+                let blob_response: SubjectStatusBlobResponse = response.json().await?;
+                Ok(SubjectStatusResponse::Blob(blob_response))
             }
         },
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get a list of accounts that matches your search query.
-/// 
+///  a list of accounts that matches your search query.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `query` - The search query.
@@ -379,7 +374,6 @@ pub async fn search_accounts(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -397,9 +391,9 @@ pub async fn search_accounts(
 }
 
 /// Send an email to a user's account email address.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to send an email.
@@ -411,7 +405,6 @@ pub async fn send_email(
 ) -> Result<SendEmailResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.admin.sendEmail", host_name);
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -430,9 +423,9 @@ pub async fn send_email(
 }
 
 /// Administrative action to update an account's email.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to update an account's email.
@@ -447,7 +440,6 @@ pub async fn update_account_email(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -463,9 +455,9 @@ pub async fn update_account_email(
 }
 
 /// Administrative action to update an account's handle.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to update an account's handle.
@@ -480,7 +472,6 @@ pub async fn update_account_handle(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -496,9 +487,9 @@ pub async fn update_account_handle(
 }
 
 /// Update the password for a user account as an administrator.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to update an account's password.
@@ -513,7 +504,6 @@ pub async fn update_account_password(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())

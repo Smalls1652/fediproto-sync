@@ -1,16 +1,17 @@
-use crate::{
-    api_calls::{AddApiAuth, ApiAuthConfig, ApiError},
-    types::com_atproto::repo::{ApplyWritesRequest, ApplyWritesResponse}
+use super::{
+    api_requests::ApplyWritesRequest,
+    api_responses::{ApplyWritesResponse, UploadBlobResponse}
 };
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
-use super::UploadBlobResponse;
-
-/// Apply a batch transaction of repository creates, updates, and deletes. Requires auth, implemented by PDS.
-/// 
+/// Apply a batch transaction of repository creates, updates, and deletes.
+/// Requires auth, implemented by PDS.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to send the request to.
-/// * `api_auth_config` - The authentication configuration to use for the request.
+/// * `api_auth_config` - The authentication configuration to use for the
+///   request.
 /// * `request` - The writes to apply.
 pub async fn apply_writes(
     host_name: &str,
@@ -20,7 +21,6 @@ pub async fn apply_writes(
 ) -> Result<ApplyWritesResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.repo.applyWrites", host_name);
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -47,11 +47,13 @@ pub async fn upload_blob<T: Into<reqwest::Body>>(
 ) -> Result<UploadBlobResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.repo.uploadBlob", host_name);
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
-        .header("Content-Type", content_type.unwrap_or_else(|| "application/octet-stream"))
+        .header(
+            "Content-Type",
+            content_type.unwrap_or_else(|| "application/octet-stream")
+        )
         .body(blob)
         .send()
         .await?;

@@ -1,4 +1,5 @@
-//! This crate provides a library of types and functions to interact with the ATProtocol.
+//! This crate provides a library of types and functions to interact with the
+//! ATProtocol.
 
 /// Contains types related to the ATProtocol.
 pub mod types;

@@ -1,14 +1,13 @@
-use crate::{
-    api_calls::{AddApiAuth, ApiAuthConfig, ApiError},
-    types::app_bsky
-};
+use super::api_responses::{ActorFeedsResponse, ActorLikesResponse, AuthorFeedResponse};
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
-/// Get a list of feeds (feed generator records) created by the actor (in the actor's repo).
-/// 
+/// Get a list of feeds (feed generator records) created by the actor (in the
+/// actor's repo).
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the feeds of.
@@ -21,7 +20,7 @@ pub async fn get_actor_feeds(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::feed::GetActorFeedsResponse, Box<dyn std::error::Error>> {
+) -> Result<ActorFeedsResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.feed.getActorFeeds", host_name);
 
     let mut query_params = Vec::new();
@@ -34,7 +33,6 @@ pub async fn get_actor_feeds(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -44,19 +42,20 @@ pub async fn get_actor_feeds(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::feed::GetActorFeedsResponse = response.json().await?;
+            let response_body: ActorFeedsResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get a list of posts liked by an actor. Requires auth, actor must be the requesting account.
-/// 
+/// Get a list of posts liked by an actor. Requires auth, actor must be the
+/// requesting account.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the likes of.
@@ -69,7 +68,7 @@ pub async fn get_actor_likes(
     actor: &str,
     limit: Option<i32>,
     cursor: Option<&str>
-) -> Result<app_bsky::feed::GetActorLikesResponse, Box<dyn std::error::Error>> {
+) -> Result<ActorLikesResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.feed.getActorLikes", host_name);
 
     let mut query_params = Vec::new();
@@ -82,7 +81,6 @@ pub async fn get_actor_likes(
         query_params.push(("cursor", cursor));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -92,19 +90,20 @@ pub async fn get_actor_likes(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::feed::GetActorLikesResponse = response.json().await?;
+            let response_body: ActorLikesResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
     }
 }
 
-/// Get a view of an actor's 'author feed' (post and reposts by the author). Does not require auth.
-/// 
+/// Get a view of an actor's 'author feed' (post and reposts by the author).
+/// Does not require auth.
+///
 /// <div class="warning">Requires the <code>apicalls</code> feature.</div>
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server to make the request to.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `actor` - Handle or DID of the account to fetch the author feed of.
@@ -121,7 +120,7 @@ pub async fn get_author_feed(
     cursor: Option<&str>,
     filter: Option<&str>,
     include_pins: bool
-) -> Result<app_bsky::feed::GetAuthorFeedResponse, Box<dyn std::error::Error>> {
+) -> Result<AuthorFeedResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/app.bsky.feed.getAuthorFeed", host_name);
 
     let mut query_params = Vec::new();
@@ -141,7 +140,6 @@ pub async fn get_author_feed(
     let include_pins_string = include_pins.to_string();
     query_params.push(("includePins", include_pins_string.as_str()));
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -151,7 +149,7 @@ pub async fn get_author_feed(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: app_bsky::feed::GetAuthorFeedResponse = response.json().await?;
+            let response_body: AuthorFeedResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))

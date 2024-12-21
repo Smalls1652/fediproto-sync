@@ -38,12 +38,13 @@ pub struct ApiAuthBearerToken {
     pub token: String
 }
 
-/// A trait to add ATProto API authentication to a `RequestBuilder` instance from `reqwest`.
+/// A trait to add ATProto API authentication to a `RequestBuilder` instance
+/// from `reqwest`.
 pub trait AddApiAuth {
     /// Adds ATProto API authentication to a `RequestBuilder` instance.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `api_auth_config` - The API authentication configuration.
     fn add_api_auth(
         self,
@@ -53,9 +54,9 @@ pub trait AddApiAuth {
 
 impl AddApiAuth for RequestBuilder {
     /// Adds ATProto API authentication to a `RequestBuilder` instance.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `api_auth_config` - The API authentication configuration.
     fn add_api_auth(
         self,
@@ -94,9 +95,9 @@ pub struct ApiError {
 
 impl ApiError {
     /// Creates a new `ApiError` instance from a `Response`.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `response` - The `Response` instance.
     pub async fn new(response: Response) -> Result<Self, Box<dyn std::error::Error>> {
         let status = response.status();
@@ -131,7 +132,12 @@ impl std::fmt::Display for ApiError {
         &self,
         f: &mut std::fmt::Formatter
     ) -> std::fmt::Result {
-        write!(f, "API Error: {} - {}", self.error, self.message.clone().unwrap_or_else(|| "N/A".to_string()))
+        write!(
+            f,
+            "API Error: {} - {}",
+            self.error,
+            self.message.clone().unwrap_or_else(|| "N/A".to_string())
+        )
     }
 }
 
