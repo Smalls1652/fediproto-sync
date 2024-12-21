@@ -1,35 +1,38 @@
-use crate::{
-    api_calls::{AddApiAuth, ApiAuthConfig, ApiError},
-    types::com_atproto::server::{
+use super::{
+    api_requests::{
         ConfirmEmailRequest,
         CreateAccountRequest,
-        CreateAccountResponse,
         CreateAppPasswordRequest,
-        CreateAppPasswordResponse,
         CreateSessionRequest,
-        CreateSessionResponse,
         DeactivateAccountRequest,
         DeleteAccountRequest,
-        DescribeServerResponse,
-        GetServiceAuthResponse,
-        GetSessionResponse,
         InviteCodeRequest,
-        InviteCodeResponse,
-        ListAppPasswordsResponse,
-        RequestEmailUpdateResponse,
         RequestPasswordResetRequest,
         ReserveSigningKeyRequest,
-        ReserveSigningKeyResponse,
         ResetPasswordRequest,
         RevokeAppPasswordRequest,
         UpdateEmailRequest
+    },
+    api_responses::{
+        CreateAccountResponse,
+        CreateAppPasswordResponse,
+        CreateSessionResponse,
+        DescribeServerResponse,
+        InviteCodeResponse,
+        ListAppPasswordsResponse,
+        RequestEmailUpdateResponse,
+        ReserveSigningKeyResponse,
+        ServiceAuthResponse,
+        SessionResponse
     }
 };
+use crate::api_calls::{AddApiAuth, ApiAuthConfig, ApiError};
 
-/// Confirm an email using a token from `com.atproto.server.requestEmailConfirmation`.
-/// 
+/// Confirm an email using a token from
+/// `com.atproto.server.requestEmailConfirmation`.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to confirm the email.
@@ -41,7 +44,6 @@ pub async fn confirm_email(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.server.confirmEmail", host_name);
 
-    
     let request_builder = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -57,9 +59,9 @@ pub async fn confirm_email(
 }
 
 /// Create an account. Implemented by PDS.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to create the account.
@@ -74,7 +76,6 @@ pub async fn create_account(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -93,9 +94,9 @@ pub async fn create_account(
 }
 
 /// Create an App Password.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to create the App Password.
@@ -110,7 +111,6 @@ pub async fn create_app_password(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -129,9 +129,9 @@ pub async fn create_app_password(
 }
 
 /// Create an invite code.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to create the invite code.
@@ -146,7 +146,6 @@ pub async fn create_invite_code(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -165,9 +164,9 @@ pub async fn create_invite_code(
 }
 
 /// Create an authentication session.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to create the session.
@@ -182,7 +181,6 @@ pub async fn create_session(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -200,10 +198,12 @@ pub async fn create_session(
     }
 }
 
-/// Deactivates a currently active account. Stops serving of repo, and future writes to repo until reactivated. Used to finalize account migration with the old host after the account has been activated on the new host.
-/// 
+/// Deactivates a currently active account. Stops serving of repo, and future
+/// writes to repo until reactivated. Used to finalize account migration with
+/// the old host after the account has been activated on the new host.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to deactivate the account.
@@ -218,7 +218,6 @@ pub async fn deactivate_account(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -233,10 +232,11 @@ pub async fn deactivate_account(
     }
 }
 
-/// Delete an actor's account with a token and password. Can only be called after requesting a deletion token. Requires auth.
-/// 
+/// Delete an actor's account with a token and password. Can only be called
+/// after requesting a deletion token. Requires auth.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to delete the account.
@@ -251,7 +251,6 @@ pub async fn delete_account(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -266,10 +265,11 @@ pub async fn delete_account(
     }
 }
 
-/// Describes the server's account creation requirements and capabilities. Implemented by PDS.
-/// 
+/// Describes the server's account creation requirements and capabilities.
+/// Implemented by PDS.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 pub async fn describe_server(
@@ -282,7 +282,6 @@ pub async fn describe_server(
         host_name
     );
 
-    
     let response = client
         .get(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -299,14 +298,18 @@ pub async fn describe_server(
     }
 }
 
-/// Get a signed token on behalf of the requesting DID for the requested service.
-/// 
+/// Get a signed token on behalf of the requesting DID for the requested
+/// service.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
-/// * `did` - The DID of the service that the token will be used to authenticate with
-/// * `expiry` - The time in Unix Epoch seconds that the JWT expires. Defaults to 60 seconds in the future. The service may enforce certain time bounds on tokens depending on the requested scope.
+/// * `did` - The DID of the service that the token will be used to authenticate
+///   with
+/// * `expiry` - The time in Unix Epoch seconds that the JWT expires. Defaults
+///   to 60 seconds in the future. The service may enforce certain time bounds
+///   on tokens depending on the requested scope.
 /// * `lexicon` - Lexicon (XRPC) method to bind the requested token to
 pub async fn get_service_auth(
     host_name: &str,
@@ -315,7 +318,7 @@ pub async fn get_service_auth(
     did: &str,
     expiry: i64,
     lexicon: Option<&str>
-) -> Result<GetServiceAuthResponse, Box<dyn std::error::Error>> {
+) -> Result<ServiceAuthResponse, Box<dyn std::error::Error>> {
     let api_url = format!(
         "https://{}/xrpc/com.atproto.server.getServiceAuth",
         host_name
@@ -331,7 +334,6 @@ pub async fn get_service_auth(
         query_params.push(("lxm", lexicon));
     }
 
-    
     let response = client
         .get(&api_url)
         .query(&query_params)
@@ -342,7 +344,7 @@ pub async fn get_service_auth(
 
     match response.error_for_status() {
         Ok(response) => {
-            let response_body: GetServiceAuthResponse = response.json().await?;
+            let response_body: ServiceAuthResponse = response.json().await?;
             Ok(response_body)
         }
         Err(err) => Err(Box::new(err))
@@ -350,19 +352,18 @@ pub async fn get_service_auth(
 }
 
 /// Get information about the current auth session. Requires auth.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 pub async fn get_session(
     host_name: &str,
     client: reqwest::Client,
     api_auth_config: &ApiAuthConfig
-) -> Result<GetSessionResponse, Box<dyn std::error::Error>> {
+) -> Result<SessionResponse, Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.server.getSession", host_name);
 
-    
     let response = client
         .get(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -372,7 +373,7 @@ pub async fn get_session(
 
     match response.status() {
         reqwest::StatusCode::OK => {
-            let response_body: GetSessionResponse = response.json().await?;
+            let response_body: SessionResponse = response.json().await?;
             Ok(response_body)
         }
         _ => Err(Box::new(ApiError::new(response).await?))
@@ -380,9 +381,9 @@ pub async fn get_session(
 }
 
 /// List all App Passwords.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 pub async fn list_app_passwords(
@@ -395,7 +396,6 @@ pub async fn list_app_passwords(
         host_name
     );
 
-    
     let response = client
         .get(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -412,10 +412,11 @@ pub async fn list_app_passwords(
     }
 }
 
-/// Refresh an authentication session. Requires auth using the 'refreshJwt' (not the 'accessJwt').
-/// 
+/// Refresh an authentication session. Requires auth using the 'refreshJwt' (not
+/// the 'accessJwt').
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 pub async fn refresh_session(
@@ -428,7 +429,6 @@ pub async fn refresh_session(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -446,9 +446,9 @@ pub async fn refresh_session(
 }
 
 /// Request a token in order to update email.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `email` - The new email address.
@@ -463,7 +463,6 @@ pub async fn request_email_update(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -481,11 +480,10 @@ pub async fn request_email_update(
     }
 }
 
-
 /// Initiate a user account password reset via email.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to reset the password.
@@ -500,7 +498,6 @@ pub async fn request_password_reset(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -515,10 +512,13 @@ pub async fn request_password_reset(
     }
 }
 
-/// Reserve a repo signing key, for use with account creation. Necessary so that a DID PLC update operation can be constructed during an account migraiton. Public and does not require auth; implemented by PDS. NOTE: this endpoint may change when full account migration is implemented.
-/// 
+/// Reserve a repo signing key, for use with account creation. Necessary so that
+/// a DID PLC update operation can be constructed during an account migraiton.
+/// Public and does not require auth; implemented by PDS. NOTE: this endpoint
+/// may change when full account migration is implemented.
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to reserve the signing key.
@@ -533,7 +533,6 @@ pub async fn reserve_signing_key(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -552,9 +551,9 @@ pub async fn reserve_signing_key(
 }
 
 /// Reset a user account password using a token.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to reset the password.
@@ -569,7 +568,6 @@ pub async fn reset_password(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -585,9 +583,9 @@ pub async fn reset_password(
 }
 
 /// Revoke an App Password by name.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to revoke the App Password.
@@ -602,7 +600,6 @@ pub async fn revoke_app_password(
         host_name
     );
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())
@@ -618,9 +615,9 @@ pub async fn revoke_app_password(
 }
 
 /// Update an account's email.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `host_name` - The host name of the server.
 /// * `api_auth_config` - The API authentication configuration.
 /// * `request` - The request to update the email.
@@ -632,7 +629,6 @@ pub async fn update_email(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let api_url = format!("https://{}/xrpc/com.atproto.server.updateEmail", host_name);
 
-    
     let response = client
         .post(&api_url)
         .add_api_auth(api_auth_config.clone())

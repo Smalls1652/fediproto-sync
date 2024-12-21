@@ -1,3 +1,9 @@
+#[cfg(feature = "apicalls")]
+pub mod api_calls;
+
+pub mod api_requests;
+pub mod api_responses;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -98,4 +104,52 @@ pub struct DidDocServiceAtprotoPersonalDataServer {
 
     #[serde(rename = "serviceEndpoint")]
     pub service_endpoint: String
+}
+
+/// Represents invite codes generated for an account.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AccountCodes {
+    /// The account DID.
+    #[serde(rename = "account")]
+    pub account: String,
+
+    /// The invite codes generated.
+    #[serde(rename = "codes")]
+    pub codes: Vec<String>
+}
+
+/// Represents links to the server's privacy policy and terms of service.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ServerLinks {
+    /// A link to the server's privacy policy.
+    #[serde(rename = "privacyPolicy", skip_serializing_if = "Option::is_none")]
+    pub privacy_policy: Option<String>,
+
+    /// A link to the server's terms of service.
+    #[serde(rename = "termsOfService", skip_serializing_if = "Option::is_none")]
+    pub terms_of_service: Option<String>
+}
+
+/// Represents contact information for the server.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ServerContact {
+    /// The email address for the contact.
+    #[serde(rename = "email", skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>
+}
+
+/// Represents an App Password.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AppPassword {
+    /// A short name for the App Password, to help distinguish them.
+    #[serde(rename = "name")]
+    pub name: String,
+
+    /// The date and time the app password was created.
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+
+    /// If an app password has 'privileged' access to possibly sensitive account data.
+    #[serde(rename = "privileged", default)]
+    pub privileged: bool
 }
