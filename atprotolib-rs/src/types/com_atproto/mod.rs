@@ -8,17 +8,7 @@ pub mod identity;
 pub mod label;
 
 /// Contains types for the `com.atproto.moderation` namespace.
-pub mod moderation {
-    mod create_report;
-
-    pub use self::create_report::*;
-
-    #[cfg(feature = "apicalls")]
-    mod api_calls;
-
-    #[cfg(feature = "apicalls")]
-    pub use self::api_calls::*;
-}
+pub mod moderation;
 
 /// Contains types for the `com.atproto.repo` namespace.
 pub mod repo {
