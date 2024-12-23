@@ -7,18 +7,21 @@ use atrium_api::{
     com,
     types::{
         string::{Did, Nsid},
+        CidLink,
         Object,
         Union
     }
 };
 use fediproto_sync_db::models::NewCachedFile;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
-use ipld_core::ipld::Ipld;
+use ipld_core::cid::Cid;
 use rand::distributions::DistString;
+use reqwest::header::CONTENT_TYPE;
+use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils};
-use crate::core::create_atp_service_client;
+use crate::{core::create_http_client, img_utils::ImageCompressionUtils};
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -126,8 +129,11 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                 .download_mastodon_media_attachment_to_file(image_attachment)
                 .await?;
 
-            let media_attachment_bytes = tokio::fs::read(&media_attachment_temp_path).await?;
+            let media_attachment_bytes = tokio::fs::read(&media_attachment_temp_path)
+                .await?
+                .compress_image()?;
 
+            tracing::info!("Uploading {} bytes", media_attachment_bytes.len());
             let blob_upload_response = self
                 .atp_agent
                 .api
@@ -139,6 +145,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
             tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
+            tracing::info!("Uploaded");
             // Create an image embed and add it to the list of image attachments.
             image_attachments.push(
                 app::bsky::embed::images::ImageData {
@@ -240,7 +247,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             match video_link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
                 true => {
                     let compressed_image =
-                        crate::img_utils::compress_image(&video_link_thumbnail_bytes)?;
+                        crate::img_utils::compress_image_from_bytes(&video_link_thumbnail_bytes)?;
 
                     tracing::info!(
                         "Compressed video link thumbnail from {} bytes to {} bytes",
@@ -274,7 +281,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
                 app::bsky::embed::external::MainData {
                     external: app::bsky::embed::external::ExternalData {
-                        uri: media_attachment.url.clone(),
+                        uri: self.mastodon_status.uri.clone(),
                         title: "View video on Mastodon".to_string(),
                         description: format!(
                             "Check out this video posted by @{}!",
@@ -299,6 +306,8 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         media_attachment: &megalodon::entities::attachment::Attachment,
         temp_path: &std::path::PathBuf
     ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+        tracing::info!("Creating video upload service auth token");
+        tracing::info!("{}", self.pds_service_endpoint);
         let service_auth_response = self
             .atp_agent
             .api
@@ -315,12 +324,6 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             )
             .await?;
 
-        let video_upload_client = create_atp_service_client(
-            "video.bsky.app",
-            Some(&service_auth_response.token),
-            &self.config
-        )?;
-
         let random_video_name = format!(
             "{}.mp4",
             rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14)
@@ -333,37 +336,34 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             random_video_name
         );
 
-        let temp_file = tokio::fs::read(temp_path).await?;
+        let temp_file = tokio::fs::File::open(temp_path).await?;
 
+        let video_upload_client = create_http_client(&self.config)?;
         let upload_video_job_response = video_upload_client
-            .service
-            .app
-            .bsky
-            .video
-            .upload_video(temp_file)
+            .post("https://video.bsky.app/xrpc/app.bsky.video.uploadVideo")
+            .query(&[("did", self.did.as_str()), ("name", &random_video_name)])
+            .bearer_auth(&service_auth_response.token)
+            .header(CONTENT_TYPE, "video/mp4")
+            .body(temp_file)
+            .send()
+            .await?
+            .json::<JobStatus>()
             .await?;
 
         tracing::info!(
             "Waiting for video upload job '{}' to complete",
-            upload_video_job_response.job_status.job_id
+            upload_video_job_response.job_id
         );
 
-        let job_client = create_atp_service_client("video.bsky.app", None, &self.config)?;
-
-        let mut job_status = upload_video_job_response.job_status.clone();
+        let mut job_status = upload_video_job_response.clone();
 
         while job_status.state != "JOB_STATE_FAILED" {
-            job_status = job_client
-                .service
-                .app
-                .bsky
-                .video
-                .get_job_status(app::bsky::video::get_job_status::Parameters {
-                    data: app::bsky::video::get_job_status::ParametersData {
-                        job_id: job_status.job_id.clone()
-                    },
-                    extra_data: Ipld::Null
-                })
+            job_status = video_upload_client
+                .get("https://video.bsky.app/xrpc/app.bsky.video.getJobStatus")
+                .query(&[("jobId", &job_status.job_id)])
+                .send()
+                .await?
+                .json::<JobStatusResponse>()
                 .await?
                 .job_status
                 .clone();
@@ -398,10 +398,18 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                     media_attachment.url
                 );
 
+                let blob = job_status.blob.clone().unwrap();
+
                 return Ok(Some(Union::Refs(RecordEmbedRefs::AppBskyEmbedVideoMain(
                     Box::new(
                         app::bsky::embed::video::MainData {
-                            video: job_status.blob.clone().unwrap(),
+                            video: atrium_api::types::BlobRef::Typed(
+                                atrium_api::types::TypedBlobRef::Blob(atrium_api::types::Blob {
+                                    r#ref: CidLink(Cid::try_from(blob.item_ref.link.as_str())?),
+                                    mime_type: blob.mime_type,
+                                    size: blob.size as usize
+                                })
+                            ),
                             alt: Some(
                                 media_attachment
                                     .description
@@ -466,4 +474,73 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
         Ok(temp_path)
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct BlobItem {
+    #[serde(rename = "$type")]
+    pub item_type: String,
+
+    #[serde(rename = "mimeType")]
+    pub mime_type: String,
+
+    #[serde(rename = "ref")]
+    pub item_ref: BlobItemRef,
+
+    #[serde(rename = "size")]
+    pub size: u64
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct BlobItemRef {
+    #[serde(rename = "$link")]
+    pub link: String
+}
+
+/// Represents the status of a video upload job.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct JobStatus {
+    /// The ID of the job.
+    #[serde(rename = "jobId")]
+    pub job_id: String,
+
+    /// The DID of the job.
+    #[serde(rename = "did")]
+    pub did: String,
+
+    /// The state of the job.
+    #[serde(rename = "state")]
+    pub state: String,
+
+    /// The progress of the job.
+    #[serde(rename = "progress", default)]
+    pub progress: i32,
+
+    /// The blob of the job.
+    #[serde(rename = "blob", skip_serializing_if = "Option::is_none")]
+    pub blob: Option<BlobItem>,
+
+    /// The error of the job.
+    #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+
+    /// The message of the job.
+    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>
+}
+
+/// The response to a request for the status of a video upload job.
+#[derive(Serialize, Deserialize, Debug)]
+struct JobStatusResponse {
+    /// The status of the job.
+    #[serde(rename = "jobStatus")]
+    pub job_status: JobStatus
+}
+
+/// The response to a request to upload a video.
+#[derive(Serialize, Deserialize, Debug)]
+struct UploadVideoResponse {
+    /// The status of the job.
+    #[serde(rename = "jobStatus")]
+    pub job_status: JobStatus
 }

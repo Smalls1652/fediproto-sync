@@ -156,7 +156,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
                 true => {
                     let compressed_image =
-                        crate::img_utils::compress_image(link_thumbnail_bytes.as_ref())?;
+                        crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
 
                     tracing::info!(
                         "Compressed link thumbnail from {} bytes to {} bytes",

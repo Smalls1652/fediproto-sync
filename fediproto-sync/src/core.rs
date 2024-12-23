@@ -1,10 +1,7 @@
 use atrium_api::{
     agent::{store::MemorySessionStore, AtpAgent},
     client::AtpServiceClient,
-    types::{
-        string::{Datetime, Did},
-        TryFromUnknown
-    }
+    types::string::{Datetime, Did}
 };
 use atrium_xrpc_client::reqwest::{ReqwestClient, ReqwestClientBuilder};
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -53,33 +50,8 @@ impl FediProtoSyncLoop {
         let atproto_auth_data = create_atp_agent(&config).await?;
 
         let atp_agent = atproto_auth_data.0;
-        let did_doc_value = atproto_auth_data.1;
+        let pds_service_endpoint = atproto_auth_data.1.replace("https://", "");
         let did = atproto_auth_data.2;
-
-        let pds_service_endpoint = match &did_doc_value.service {
-            Some(services) => {
-                let pds_service = services
-                    .iter()
-                    .find(|service| service.r#type == "AtprotoPersonalDataServer");
-
-                match pds_service {
-                    Some(pds_service) => pds_service.service_endpoint.clone(),
-                    None => {
-                        return Err(FediProtoSyncError::new(
-                            "No PDS service found in Bluesky session.",
-                            FediProtoSyncErrorKind::AuthenticationError
-                        ));
-                    }
-                }
-            }
-
-            None => {
-                return Err(FediProtoSyncError::new(
-                    "No services found in Bluesky session.",
-                    FediProtoSyncErrorKind::AuthenticationError
-                ));
-            }
-        };
 
         Ok(Self {
             config,
@@ -396,14 +368,7 @@ impl FediProtoSyncLoop {
 
 pub async fn create_atp_agent(
     config: &FediProtoSyncConfig
-) -> Result<
-    (
-        AtpAgent<MemorySessionStore, ReqwestClient>,
-        atrium_api::did_doc::DidDocument,
-        Did
-    ),
-    FediProtoSyncError
-> {
+) -> Result<(AtpAgent<MemorySessionStore, ReqwestClient>, String, Did), FediProtoSyncError> {
     let client = ReqwestClientBuilder::new(format!("https://{}", &config.bluesky_pds_server))
         .client(create_http_client(config)?)
         .build();
@@ -421,31 +386,17 @@ pub async fn create_atp_agent(
             )
         })?;
 
-    let did_doc_value = match &auth_result.did_doc {
-        Some(did_doc) => atrium_api::did_doc::DidDocument::try_from_unknown(did_doc.clone())
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
-                    "Failed to parse DID document from BlueSky authentication.",
-                    FediProtoSyncErrorKind::AuthenticationError,
-                    Box::new(e)
-                )
-            })?,
-        None => {
-            return Err(FediProtoSyncError::new(
-                "No DID document returned from BlueSky authentication.",
-                FediProtoSyncErrorKind::AuthenticationError
-            ));
-        }
-    };
-
     tracing::info!(
         "Authenticated to BlueSky as '{}'",
         auth_result.handle.as_str()
     );
 
-    Ok((atp_agent, did_doc_value, auth_result.did.clone()))
+    let pds_endpoint = atp_agent.get_endpoint().await;
+
+    Ok((atp_agent, pds_endpoint, auth_result.did.clone()))
 }
 
+#[allow(dead_code)]
 pub fn create_atp_service_client(
     hostname: &str,
     auth_token: Option<&str>,

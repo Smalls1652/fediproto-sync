@@ -1029,6 +1029,7 @@ dependencies = [
  "megalodon",
  "rand",
  "reqwest 0.12.9",
+ "serde",
  "serde_json",
  "tokio",
  "toml_edit",
