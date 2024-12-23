@@ -3,12 +3,14 @@ use std::io::Cursor;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use image::{codecs::jpeg::JpegEncoder, ImageReader};
 
+use crate::bsky::MAX_IMAGE_SIZE;
+
 /// Compress an image using the JPEG format.
 /// 
 /// ## Arguments
 /// 
 /// * `image` - The image to compress.
-pub fn compress_image(image: &[u8]) -> Result<bytes::Bytes, FediProtoSyncError> {
+pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes, FediProtoSyncError> {
     tracing::info!("Decoding image for compression.");
 
     let image_reader = ImageReader::new(Cursor::new(image))
@@ -51,7 +53,20 @@ pub fn compress_image(image: &[u8]) -> Result<bytes::Bytes, FediProtoSyncError> 
         )
     })?;
 
-    image_buffer.clear();
-
     Ok(bytes::Bytes::from(image_buffer))
+}
+
+pub trait ImageCompressionUtils {
+    fn compress_image(self) -> Result<Vec<u8>, FediProtoSyncError>;
+}
+
+impl<'a> ImageCompressionUtils for Vec<u8> {
+    fn compress_image(self) -> Result<Self, FediProtoSyncError> {
+        if self.len() > MAX_IMAGE_SIZE as usize {
+            Ok(compress_image_from_bytes(&self)?.to_vec())
+        }
+        else {
+            Ok(self)
+        }
+    }
 }

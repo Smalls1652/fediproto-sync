@@ -1,4 +1,9 @@
-use atprotolib_rs::types::app_bsky;
+use atrium_api::{
+    agent::{store::MemorySessionStore, AtpAgent},
+    client::AtpServiceClient,
+    types::string::{Datetime, Did}
+};
+use atrium_xrpc_client::reqwest::{ReqwestClient, ReqwestClientBuilder};
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
     models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem},
@@ -19,8 +24,14 @@ pub struct FediProtoSyncLoop {
     /// The database connection for the FediProto Sync application.
     db_connection: Pool<ConnectionManager<AnyConnection>>,
 
-    /// The BlueSky authentication session.
-    bsky_auth: bsky::BlueSkyAuthentication
+    /// The ATProto agent for the FediProto Sync application.
+    atp_agent: AtpAgent<MemorySessionStore, ReqwestClient>,
+
+    /// The DID for the authenticated ATProto session.
+    did: Did,
+
+    /// The PDS service endpoint for the authenticated ATProto session.
+    pds_service_endpoint: String
 }
 
 impl FediProtoSyncLoop {
@@ -33,22 +44,21 @@ impl FediProtoSyncLoop {
     pub async fn new(
         config: &FediProtoSyncConfig,
         db_connection: Pool<ConnectionManager<AnyConnection>>
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, FediProtoSyncError> {
         let config = config.clone();
 
-        tracing::info!("Connected to database.");
+        let atproto_auth_data = create_atp_agent(&config).await?;
 
-        let client = create_http_client(&config)?;
-        let bsky_auth = bsky::BlueSkyAuthentication::new(&config, client).await?;
-        tracing::info!(
-            "Authenticated to BlueSky as '{}'.",
-            &bsky_auth.session.handle
-        );
+        let atp_agent = atproto_auth_data.0;
+        let pds_service_endpoint = atproto_auth_data.1.replace("https://", "");
+        let did = atproto_auth_data.2;
 
         Ok(Self {
             config,
             db_connection,
-            bsky_auth
+            atp_agent,
+            did,
+            pds_service_endpoint
         })
     }
 
@@ -139,8 +149,13 @@ impl FediProtoSyncLoop {
             })?;
         tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
 
-        let client = create_http_client(&self.config)?;
-        self.bsky_auth.refresh_session_token(client).await?;
+        self.atp_agent
+            .api
+            .com
+            .atproto
+            .server
+            .refresh_session()
+            .await?;
         tracing::info!("Refreshed BlueSky session token.");
 
         // Get the last synced post ID, if any.
@@ -210,9 +225,7 @@ impl FediProtoSyncLoop {
             );
 
             for retry_item in posts_to_retry {
-                let fetched_post = mastodon_client
-                    .get_status(retry_item.id.to_string())
-                    .await;
+                let fetched_post = mastodon_client.get_status(retry_item.id.to_string()).await;
 
                 match fetched_post {
                     Ok(post) => {
@@ -222,20 +235,29 @@ impl FediProtoSyncLoop {
                         let mut post_sync = bsky::BlueSkyPostSync {
                             config: self.config.clone(),
                             db_connection_pool: self.db_connection.clone(),
-                            bsky_auth: self.bsky_auth.clone(),
+                            atp_agent: &self.atp_agent,
+                            pds_service_endpoint: self.pds_service_endpoint.clone(),
+                            did: self.did.clone(),
                             mastodon_account: account.json.clone(),
                             mastodon_status: post.clone(),
-                            post_item: app_bsky::feed::Post::new("", post.created_at.clone(), None)
+                            post_item: atrium_api::app::bsky::feed::post::RecordData {
+                                created_at: Datetime::now(),
+                                text: "".to_string(),
+                                embed: None,
+                                entities: None,
+                                facets: None,
+                                labels: None,
+                                langs: None,
+                                reply: None,
+                                tags: None
+                            }
                         };
 
                         let sync_result = post_sync.sync_post().await;
 
                         match sync_result {
                             Ok(_) => {
-                                tracing::info!(
-                                    "Post '{}' processed successfully.",
-                                    retry_item.id
-                                );
+                                tracing::info!("Post '{}' processed successfully.", retry_item.id);
                                 fediproto_sync_db::operations::delete_mastodon_post_retry_queue_item(
                                     db_connection,
                                     &retry_item
@@ -261,11 +283,7 @@ impl FediProtoSyncLoop {
                     }
 
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to fetch post '{}': {:#?}",
-                            retry_item.id,
-                            e
-                        );
+                        tracing::warn!("Failed to fetch post '{}': {:#?}", retry_item.id, e);
                         tracing::warn!("Removing post from retry queue.");
 
                         fediproto_sync_db::operations::delete_mastodon_post_retry_queue_item(
@@ -286,10 +304,22 @@ impl FediProtoSyncLoop {
             let mut post_sync = bsky::BlueSkyPostSync {
                 config: self.config.clone(),
                 db_connection_pool: self.db_connection.clone(),
-                bsky_auth: self.bsky_auth.clone(),
+                atp_agent: &self.atp_agent,
+                pds_service_endpoint: self.pds_service_endpoint.clone(),
+                did: self.did.clone(),
                 mastodon_account: account.json.clone(),
                 mastodon_status: post_item.clone(),
-                post_item: app_bsky::feed::Post::new("", post_item.created_at.clone(), None)
+                post_item: atrium_api::app::bsky::feed::post::RecordData {
+                    created_at: Datetime::now(),
+                    text: "".to_string(),
+                    embed: None,
+                    entities: None,
+                    facets: None,
+                    labels: None,
+                    langs: None,
+                    reply: None,
+                    tags: None
+                }
             };
 
             let sync_result = post_sync.sync_post().await;
@@ -307,8 +337,10 @@ impl FediProtoSyncLoop {
                         tracing::error!("Source error: {:#?}", source_error);
                     }
 
-                    let new_retry_item =
-                        NewMastodonPostRetryQueueItem::new(&post_item.id.parse::<i64>()?, e.to_string().as_str());
+                    let new_retry_item = NewMastodonPostRetryQueueItem::new(
+                        &post_item.id.parse::<i64>()?,
+                        e.to_string().as_str()
+                    );
 
                     fediproto_sync_db::operations::insert_mastodon_post_retry_queue_item(
                         db_connection,
@@ -334,6 +366,79 @@ impl FediProtoSyncLoop {
     }
 }
 
+pub async fn create_atp_agent(
+    config: &FediProtoSyncConfig
+) -> Result<(AtpAgent<MemorySessionStore, ReqwestClient>, String, Did), FediProtoSyncError> {
+    let client = ReqwestClientBuilder::new(format!("https://{}", &config.bluesky_pds_server))
+        .client(create_http_client(config)?)
+        .build();
+
+    let atp_agent = AtpAgent::new(client, MemorySessionStore::default());
+
+    let auth_result = atp_agent
+        .login(&config.bluesky_handle, &config.bluesky_app_password)
+        .await
+        .map_err(|e| {
+            FediProtoSyncError::with_source(
+                "Failed to authenticate to BlueSky.",
+                FediProtoSyncErrorKind::AuthenticationError,
+                Box::new(e)
+            )
+        })?;
+
+    tracing::info!(
+        "Authenticated to BlueSky as '{}'",
+        auth_result.handle.as_str()
+    );
+
+    let pds_endpoint = atp_agent.get_endpoint().await;
+
+    Ok((atp_agent, pds_endpoint, auth_result.did.clone()))
+}
+
+#[allow(dead_code)]
+pub fn create_atp_service_client(
+    hostname: &str,
+    auth_token: Option<&str>,
+    config: &FediProtoSyncConfig
+) -> Result<AtpServiceClient<ReqwestClient>, FediProtoSyncError> {
+    let mut headers = reqwest::header::HeaderMap::new();
+    if let Some(auth_token) = auth_token {
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            reqwest::header::HeaderValue::from_str(format!("Bearer {}", auth_token).as_str())
+                .map_err(|e| {
+                    FediProtoSyncError::with_source(
+                        "Failed to create HTTP header for ATProto service client.",
+                        FediProtoSyncErrorKind::HttpClientCreationError,
+                        Box::new(e)
+                    )
+                })?
+        );
+    }
+
+    let client = ReqwestClientBuilder::new(format!("https://{}", hostname))
+        .client(
+            reqwest::Client::builder()
+                .user_agent(config.user_agent.clone())
+                .use_rustls_tls()
+                .default_headers(headers)
+                .build()
+                .map_err(|e| {
+                    FediProtoSyncError::with_source(
+                        "Failed to create HTTP client for ATProto service client.",
+                        FediProtoSyncErrorKind::HttpClientCreationError,
+                        Box::new(e)
+                    )
+                })?
+        )
+        .build();
+
+    let service_client = AtpServiceClient::new(client);
+
+    Ok(service_client)
+}
+
 /// Create a new HTTP client for the FediProto Sync application.
 ///
 /// ## Arguments
@@ -344,6 +449,7 @@ pub fn create_http_client(
 ) -> Result<reqwest::Client, FediProtoSyncError> {
     reqwest::Client::builder()
         .user_agent(config.user_agent.clone())
+        .use_rustls_tls()
         .build()
         .map_err(|e| {
             FediProtoSyncError::with_source(

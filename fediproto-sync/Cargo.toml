@@ -11,7 +11,8 @@ license-file.workspace = true
 build = "build.rs"
 
 [dependencies]
-atprotolib-rs = { path = "../atprotolib-rs", features = ["apicalls"] }
+atrium-api = "0.24.9"
+atrium-xrpc-client = "0.5.10"
 bytes = "1.9.0"
 chrono = { version = "0.4.39", features = ["serde"] }
 diesel = { version = "2.2.6", features = [
@@ -30,12 +31,15 @@ fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 image = "0.25.5"
+ipld-core = "0.4.1"
+libipld = { version = "0.16.0", features = ["serde-codec"] }
 megalodon = "0.14.1"
 rand = "0.8.5"
 reqwest = { version = "0.12.9", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
+serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.134"
 tokio = { version = "1.42.0", features = ["full"] }
 tracing = "0.1.41"

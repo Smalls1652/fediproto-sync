@@ -3,8 +3,7 @@ members = [
     "fediproto-sync",
     "fediproto-sync-auth-ui",
     "fediproto-sync-db",
-    "fediproto-sync-lib",
-    "atprotolib-rs"
+    "fediproto-sync-lib"
 ]
 resolver = "2"
 

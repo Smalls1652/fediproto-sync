@@ -1,8 +1,10 @@
-use atprotolib_rs::types::{
-    app_bsky::{self, richtext::RichTextFacet},
-    com_atproto
+use atrium_api::{
+    self,
+    app,
+    types::{Object, Union}
 };
 use bytes::Bytes;
+use ipld_core::ipld::Ipld;
 
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils, MAX_IMAGE_SIZE};
 
@@ -16,7 +18,7 @@ pub trait BlueSkyPostSyncRichText {
     fn generate_rich_text_tags(
         &self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>>;
 
     /// Generate rich text links for the post item.
     ///
@@ -26,10 +28,10 @@ pub trait BlueSkyPostSyncRichText {
     async fn generate_rich_text_links(
         &mut self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncRichText for BlueSkyPostSync {
+impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     /// Generate rich text tags for the post item.
     ///
     /// ## Arguments
@@ -38,8 +40,8 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
     fn generate_rich_text_tags(
         &self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>> {
-        let mut richtext_facets = Vec::<RichTextFacet>::new();
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>> {
+        let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
         for tag in parsed_status.found_tags.clone() {
             // Find the start and end index of the tag in the post content to
@@ -47,21 +49,25 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
             let tag_start_index = parsed_status.stripped_html.find(tag.as_str()).unwrap();
             let tag_end_index = tag_start_index + tag.len();
 
-            // Create a richtext facet for the tag and add it to the list of richtext
-            // facets.
-            let richtext_facet_tag = RichTextFacet {
-                index: app_bsky::richtext::ByteSlice {
-                    byte_start: tag_start_index as i64,
-                    byte_end: tag_end_index as i64
-                },
-                features: vec![app_bsky::richtext::RichTextFacetFeature::Tag(
-                    app_bsky::richtext::RichTextFacetTag {
-                        tag: tag.trim_start_matches("#").to_string()
-                    }
+            let richtext_facet_tag = app::bsky::richtext::facet::MainData {
+                index: app::bsky::richtext::facet::ByteSliceData {
+                    byte_start: tag_start_index,
+                    byte_end: tag_end_index
+                }
+                .into(),
+                features: vec![Union::Refs(
+                    app::bsky::richtext::facet::MainFeaturesItem::Tag(Box::new(
+                        app::bsky::richtext::facet::Tag {
+                            data: app::bsky::richtext::facet::TagData {
+                                tag: tag.trim_start_matches("#").to_string()
+                            },
+                            extra_data: Ipld::Null
+                        }
+                    ))
                 )]
             };
 
-            richtext_facets.push(richtext_facet_tag);
+            richtext_facets.push(richtext_facet_tag.into());
         }
 
         Ok(richtext_facets)
@@ -75,8 +81,8 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
     async fn generate_rich_text_links(
         &mut self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<RichTextFacet>, Box<dyn std::error::Error>> {
-        let mut richtext_facets = Vec::<RichTextFacet>::new();
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>> {
+        let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
         for link in parsed_status.found_links.clone() {
             // Find the start and end index of the first link in the post content to
@@ -103,17 +109,23 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
 
             let link_end_index = link_start_index + &link.len();
 
-            let richtext_facet_link = RichTextFacet {
-                index: app_bsky::richtext::ByteSlice {
-                    byte_start: link_start_index as i64,
-                    byte_end: link_end_index as i64
-                },
-                features: vec![app_bsky::richtext::RichTextFacetFeature::Link(
-                    app_bsky::richtext::RichTextFacetLink { uri: link.clone() }
+            let richtext_facet_link = app::bsky::richtext::facet::MainData {
+                index: app::bsky::richtext::facet::ByteSliceData {
+                    byte_start: link_start_index,
+                    byte_end: link_end_index
+                }
+                .into(),
+                features: vec![Union::Refs(
+                    app::bsky::richtext::facet::MainFeaturesItem::Link(Box::new(
+                        app::bsky::richtext::facet::Link {
+                            data: app::bsky::richtext::facet::LinkData { uri: link.clone() },
+                            extra_data: Ipld::Null
+                        }
+                    ))
                 )]
             };
 
-            richtext_facets.push(richtext_facet_link);
+            richtext_facets.push(richtext_facet_link.into());
         }
 
         // Check if the post has an embed and add an external embed for the first link
@@ -144,7 +156,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
             let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
                 true => {
                     let compressed_image =
-                        crate::img_utils::compress_image(link_thumbnail_bytes.as_ref())?;
+                        crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
 
                     tracing::info!(
                         "Compressed link thumbnail from {} bytes to {} bytes",
@@ -159,34 +171,34 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync {
             };
 
             let blob_item = match link_thumbnail_bytes.len() > 0 {
-                true => {
-                    let blob_upload_client = crate::core::create_http_client(&self.config)?;
-                    Some(
-                        com_atproto::repo::api_calls::upload_blob(
-                            &self.bsky_auth.host_name,
-                            blob_upload_client,
-                            &self.bsky_auth.auth_config,
-                            link_thumbnail_bytes,
-                            Some("image/jpeg")
-                        )
+                true => Some(
+                    self.atp_agent
+                        .api
+                        .com
+                        .atproto
+                        .repo
+                        .upload_blob(link_thumbnail_bytes.to_vec())
                         .await?
                         .blob
-                    )
-                }
-
+                        .clone()
+                ),
                 _ => None
             };
 
-            // Create an external embed for the link and add it to the post item.
-            self.post_item.embed = Some(app_bsky::feed::PostEmbeds::External(
-                app_bsky::feed::PostEmbedExternal {
-                    external: app_bsky::embed::external::ExternalEmbed {
-                        uri: link_metadata["url"].as_str().unwrap().to_string(),
-                        title: link_metadata["title"].as_str().unwrap().to_string(),
-                        description: link_metadata["description"].as_str().unwrap().to_string(),
-                        thumb: blob_item
-                    }
-                }
+            self.post_item.embed = Some(Union::Refs(
+                app::bsky::feed::post::RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
+                    app::bsky::embed::external::Main {
+                        data: app::bsky::embed::external::MainData {
+                            external: app::bsky::embed::external::ExternalData {
+                                uri: link_metadata["url"].as_str().unwrap().to_string(),
+                                title: link_metadata["title"].as_str().unwrap().to_string(),
+                                description: link_metadata["description"].as_str().unwrap().to_string(),
+                                thumb: blob_item
+                            }.into()
+                        },
+                        extra_data: Ipld::Null
+                    }.into()
+                ))
             ));
         }
 

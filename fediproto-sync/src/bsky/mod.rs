@@ -2,19 +2,17 @@ mod media;
 mod rich_text;
 mod utils;
 
-use atprotolib_rs::{
-    api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
-    types::{
-        app_bsky,
-        com_atproto::{self, server::api_requests::CreateSessionRequest}
-    }
-};
+use std::str::FromStr;
+
+use atrium_api::{agent::{store::MemorySessionStore, AtpAgent}, app, com, types::{string::{Cid, Datetime, Nsid}, TryIntoUnknown}};
+use atrium_xrpc_client::reqwest::ReqwestClient;
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
     models::{NewMastodonPost, NewSyncedPostBlueSkyData},
     AnyConnection
 };
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
+use ipld_core::ipld::Ipld;
 
 #[allow(unused_imports)]
 pub use self::{
@@ -24,118 +22,19 @@ pub use self::{
 };
 use crate::FediProtoSyncConfig;
 
-/// Holds the authentication information for a Bluesky session.
-#[derive(Debug, Clone)]
-pub struct BlueSkyAuthentication {
-    /// The hostname of the BlueSky/ATProto PDS.
-    pub host_name: String,
-
-    /// The API authentication configuration for the session.
-    pub auth_config: ApiAuthConfig,
-
-    /// The session information for the authenticated BlueSky session.
-    pub session: com_atproto::server::api_responses::CreateSessionResponse
-}
-
-impl BlueSkyAuthentication {
-    /// Creates a new `BlueSkyAuthentication` instance.
-    ///
-    /// ## Arguments
-    ///
-    /// * `config` - The environment variables for the FediProto Sync
-    ///   application.
-    /// * `client` - The reqwest client to use for the API request.
-    pub async fn new(
-        config: &FediProtoSyncConfig,
-        client: reqwest::Client
-    ) -> Result<Self, FediProtoSyncError> {
-        let config = config.clone();
-
-        let initial_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::None
-        };
-
-        let bsky_create_session = com_atproto::server::api_calls::create_session(
-            &config.bluesky_pds_server,
-            client,
-            &initial_auth_config,
-            CreateSessionRequest {
-                identifier: config.bluesky_handle.clone(),
-                password: config.bluesky_app_password.clone(),
-                auth_factor_token: None
-            }
-        )
-        .await
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
-                "Failed to create Bluesky session.",
-                FediProtoSyncErrorKind::AuthenticationError,
-                e
-            )
-        })?;
-
-        let bsky_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-                token: bsky_create_session.access_jwt.clone()
-            })
-        };
-
-        Ok(Self {
-            host_name: config.bluesky_pds_server.clone(),
-            auth_config: bsky_auth_config,
-            session: bsky_create_session
-        })
-    }
-
-    /// Refresh the Bluesky session token.
-    ///
-    /// ## Arguments
-    ///
-    /// * `client` - The reqwest client to use for the API request.
-    pub async fn refresh_session_token(
-        &mut self,
-        client: reqwest::Client
-    ) -> Result<(), FediProtoSyncError> {
-        let refresh_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-                token: self.session.refresh_jwt.clone()
-            })
-        };
-
-        let bsky_refresh_session = com_atproto::server::api_calls::refresh_session(
-            &self.host_name,
-            client,
-            &refresh_auth_config
-        )
-        .await
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
-                "Failed to refresh Bluesky session.",
-                FediProtoSyncErrorKind::AuthenticationError,
-                e
-            )
-        })?;
-
-        let bsky_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-                token: bsky_refresh_session.access_jwt.clone()
-            })
-        };
-
-        self.auth_config = bsky_auth_config;
-        self.session = bsky_refresh_session;
-
-        Ok(())
-    }
-}
-
 /// Struct to hold the data and logic for syncing a Mastodon post to BlueSky.
-pub struct BlueSkyPostSync {
+pub struct BlueSkyPostSync<'a> {
     /// The environment variables for the FediProto Sync application.
     pub config: FediProtoSyncConfig,
 
     /// The authentication session for BlueSky.
-    pub bsky_auth: BlueSkyAuthentication,
+    pub atp_agent: &'a AtpAgent<MemorySessionStore, ReqwestClient>,
+
+    /// The DID of the BlueSky session.
+    pub did: atrium_api::types::string::Did,
+
+    /// The PDS service endpoint for the BlueSky session.
+    pub pds_service_endpoint: String,
 
     /// The database connection for the FediProto Sync application.
     pub db_connection_pool: Pool<ConnectionManager<AnyConnection>>,
@@ -147,10 +46,10 @@ pub struct BlueSkyPostSync {
     pub mastodon_status: megalodon::entities::Status,
 
     /// The post generated from the Mastodon status to sync to BlueSky.
-    pub post_item: app_bsky::feed::Post
+    pub post_item: atrium_api::app::bsky::feed::post::RecordData
 }
 
-impl BlueSkyPostSync {
+impl BlueSkyPostSync<'_> {
     /// Sync a Mastodon post to Bluesky.
     pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let db_connection = &mut self.db_connection_pool.get()?;
@@ -211,7 +110,8 @@ impl BlueSkyPostSync {
                         db_connection,
                         &root_mastodon_post_id
                     )?
-                }
+                },
+
                 None => {
                     // Set the previous post ID to the previous post ID.
                     previous_post_id = Some(in_reply_to_id.clone());
@@ -221,49 +121,47 @@ impl BlueSkyPostSync {
             };
 
             // Set the reply reference for the post item.
-            self.post_item.reply_ref = Some(app_bsky::feed::PostReplyRef {
-                root: com_atproto::repo::StrongRef {
-                    cid: previous_synced_post_root.bsky_post_cid.clone(),
+            self.post_item.reply = Some(app::bsky::feed::post::ReplyRefData {
+                root: com::atproto::repo::strong_ref::MainData {
+                    cid: Cid::from_str(&previous_synced_post_root.bsky_post_cid)?,
                     uri: previous_synced_post_root.bsky_post_uri.clone()
-                },
-                parent: com_atproto::repo::StrongRef {
-                    cid: previous_synced_post.bsky_post_cid.clone(),
+                }.into(),
+                parent: com::atproto::repo::strong_ref::MainData {
+                    cid: Cid::from_str(&previous_synced_post.bsky_post_cid)?,
                     uri: previous_synced_post.bsky_post_uri.clone()
-                }
-            });
+                }.into()
+            }.into());
         }
 
         // -- Send the post item to BlueSky through the 'com.atproto.repo.applyWrites'
         // API. --
-        let apply_write_request = com_atproto::repo::api_requests::ApplyWritesRequest {
-            repo: self.bsky_auth.session.did.clone(),
-            validate: true,
-            writes: vec![com_atproto::repo::RequestWrites::Create(
-                com_atproto::repo::WriteCreate::new(
-                    "app.bsky.feed.post",
-                    com_atproto::repo::WritesValue::Post(self.post_item.clone())
-                )
-            )],
-            swap_commit: None
-        };
-
-        let apply_write_client = crate::core::create_http_client(&self.config)?;
-
-        let apply_write_result = com_atproto::repo::api_calls::apply_writes(
-            &self.bsky_auth.host_name,
-            apply_write_client,
-            &self.bsky_auth.auth_config,
-            apply_write_request
+        let apply_writes_result = self.atp_agent.api.com.atproto.repo.apply_writes(
+            com::atproto::repo::apply_writes::InputData {
+                repo: atrium_api::types::string::AtIdentifier::Did(self.did.clone()),
+                writes: vec![com::atproto::repo::apply_writes::InputWritesItem::Create(
+                    Box::new(com::atproto::repo::apply_writes::Create {
+                        data: com::atproto::repo::apply_writes::CreateData {
+                            collection: Nsid::new("app.bsky.feed.post".to_string())?,
+                            rkey: None,
+                            value: self.post_item.clone().try_into_unknown()?
+                        },
+                        extra_data: Ipld::Null
+                    }.into())
+                )],
+                swap_commit: None,
+                validate: Some(true)
+            }.into()
         )
         .await;
 
         // -- Handle the response from the 'com.atproto.repo.applyWrites' API. --
-        match apply_write_result {
+        match apply_writes_result {
             Ok(result) => {
                 // If no HTTP errors occurred, get the results from the response.
                 // We need the CID and URI of the post that was created from it.
-                let post_result = match result.results.first().unwrap() {
-                    com_atproto::repo::api_responses::ApplyWritesResponseResults::CreateResult(
+                let post_result = result.results.clone().unwrap();
+                let post_result = match post_result.first().unwrap() {
+                    com::atproto::repo::apply_writes::OutputResultsItem::CreateResult(
                         create_result
                     ) => create_result,
 
@@ -272,13 +170,13 @@ impl BlueSkyPostSync {
 
                 let new_mastodon_post = NewMastodonPost::new(
                     &self.mastodon_status,
-                    Some(post_result.cid.clone()),
+                    Some(post_result.cid.clone().as_ref().to_string()),
                     previous_post_id
                 );
 
                 let new_synced_post = NewSyncedPostBlueSkyData::new(
                     &self.mastodon_status.id,
-                    &post_result.cid,
+                    &post_result.cid.clone().as_ref().to_string(),
                     &post_result.uri
                 );
 
@@ -306,7 +204,7 @@ impl BlueSkyPostSync {
                     &self.mastodon_status.id,
                     error
                 );
-                Err(error)
+                Err(Box::new(error))
             }
         }
     }
@@ -322,12 +220,17 @@ impl BlueSkyPostSync {
         // Truncate the post content to fit within the 300 character limit of Bluesky.
         parsed_status.truncate_post_content()?;
 
-        // Create the post item with the parsed post content and metadata.
-        self.post_item = app_bsky::feed::Post::new(
-            &parsed_status.stripped_html,
-            parsed_status.mastodon_status.created_at,
-            None
-        );
+        self.post_item = atrium_api::app::bsky::feed::post::RecordData {
+            created_at: Datetime::new(parsed_status.mastodon_status.created_at.fixed_offset()),
+            text: parsed_status.stripped_html.clone(),
+            langs: None,
+            embed: None,
+            facets: None,
+            entities: None,
+            labels: None,
+            reply: None,
+            tags: None
+        };
 
         // Check if the post has any media attachments and upload them to Bluesky.
         if parsed_status.mastodon_status.media_attachments.len() > 0 {
