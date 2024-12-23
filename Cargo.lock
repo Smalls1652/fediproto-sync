@@ -143,16 +143,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atprotolib-rs"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "atrium-api"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
