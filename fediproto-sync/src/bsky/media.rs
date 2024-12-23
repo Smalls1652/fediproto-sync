@@ -1,13 +1,24 @@
-use atprotolib_rs::{
-    api_calls::{ApiAuthBearerToken, ApiAuthConfig, ApiAuthConfigData},
-    types::{app_bsky, com_atproto}
+use atrium_api::{
+    self,
+    app::{
+        self,
+        bsky::{embed::images::ImageData, feed::post::RecordEmbedRefs}
+    },
+    com,
+    types::{
+        string::{Did, Nsid},
+        Object,
+        Union
+    }
 };
 use fediproto_sync_db::models::NewCachedFile;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
+use ipld_core::ipld::Ipld;
 use rand::distributions::DistString;
 use tokio::io::AsyncWriteExt;
 
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils};
+use crate::core::create_atp_service_client;
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -36,7 +47,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_image_embed(
         &mut self,
         media_attachments: &Vec<megalodon::entities::attachment::Attachment>
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
 
     /// Generate a video embed for a BlueSky post from a media attachment from
     /// a Mastodon status.
@@ -48,7 +59,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_video_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
 
     /// Create a video link embed for a BlueSky post from a media attachment
     /// from a Mastodon status.
@@ -60,7 +71,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_video_link_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
 
     /// Upload a video attachment to BlueSky.
     ///
@@ -72,7 +83,7 @@ pub trait BlueSkyPostSyncMedia {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment,
         file_path: &std::path::PathBuf
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
 
     /// Download a media attachment from a Mastodon status.
     ///
@@ -95,7 +106,7 @@ pub trait BlueSkyPostSyncMedia {
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
 }
 
-impl BlueSkyPostSyncMedia for BlueSkyPostSync {
+impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     /// Generate an image embed for a BlueSky post from media attachments from
     /// a Mastodon status.
     ///
@@ -106,8 +117,8 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
     async fn generate_image_embed(
         &mut self,
         media_attachments: &Vec<megalodon::entities::attachment::Attachment>
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
-        let mut image_attachments = Vec::<app_bsky::embed::image::ImageEmbed>::new();
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+        let mut image_attachments = Vec::<Object<ImageData>>::new();
 
         for image_attachment in media_attachments {
             // Download the media attachment from the Mastodon server.
@@ -115,31 +126,31 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
                 .download_mastodon_media_attachment_to_file(image_attachment)
                 .await?;
 
-            let media_attachment_temp_file =
-                tokio::fs::File::open(&media_attachment_temp_path).await?;
+            let media_attachment_bytes = tokio::fs::read(&media_attachment_temp_path).await?;
 
-            let blob_upload_client = crate::core::create_http_client(&self.config)?;
-            // Upload the media attachment to Bluesky.
-            let blob_upload_response = com_atproto::repo::api_calls::upload_blob(
-                &self.bsky_auth.host_name,
-                blob_upload_client,
-                &self.bsky_auth.auth_config,
-                media_attachment_temp_file,
-                Some("image/jpeg")
-            )
-            .await?;
+            let blob_upload_response = self
+                .atp_agent
+                .api
+                .com
+                .atproto
+                .repo
+                .upload_blob(media_attachment_bytes)
+                .await?;
 
             tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
             // Create an image embed and add it to the list of image attachments.
-            image_attachments.push(app_bsky::embed::image::ImageEmbed {
-                image: blob_upload_response.blob,
-                alt: image_attachment
-                    .description
-                    .clone()
-                    .unwrap_or_else(|| "".to_string()),
-                aspect_ratio: None
-            });
+            image_attachments.push(
+                app::bsky::embed::images::ImageData {
+                    image: blob_upload_response.blob.clone(),
+                    alt: image_attachment
+                        .description
+                        .clone()
+                        .unwrap_or_else(|| "".to_string()),
+                    aspect_ratio: None
+                }
+                .into()
+            );
 
             tracing::info!(
                 "Uploaded media attachment '{}' to Bluesky",
@@ -147,11 +158,14 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             );
         }
 
-        Ok(Some(app_bsky::feed::PostEmbeds::Images(
-            app_bsky::feed::PostEmbedImage {
-                images: image_attachments
-            }
-        )))
+        Ok(Some(Union::Refs(RecordEmbedRefs::AppBskyEmbedImagesMain(
+            Box::new(
+                app::bsky::embed::images::MainData {
+                    images: image_attachments
+                }
+                .into()
+            )
+        ))))
     }
 
     /// Generate a video embed for a BlueSky post from a media attachment from
@@ -164,7 +178,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
     async fn generate_video_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
         let db_connection = &mut self.db_connection_pool.get()?;
 
         #[allow(unused_assignments)]
@@ -217,7 +231,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
     async fn generate_video_link_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
         let video_link_thumbnail_bytes = self
             .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
             .await?;
@@ -241,36 +255,37 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             };
 
         let blob_item = match video_link_thumbnail_bytes.len() > 0 {
-            true => {
-                let blob_upload_client = crate::core::create_http_client(&self.config)?;
-                Some(
-                    com_atproto::repo::api_calls::upload_blob(
-                        &self.bsky_auth.host_name,
-                        blob_upload_client,
-                        &self.bsky_auth.auth_config,
-                        video_link_thumbnail_bytes,
-                        Some("image/jpeg")
-                    )
+            true => Some(
+                self.atp_agent
+                    .api
+                    .com
+                    .atproto
+                    .repo
+                    .upload_blob(video_link_thumbnail_bytes.to_vec())
                     .await?
                     .blob
-                )
-            }
+                    .clone()
+            ),
 
             _ => None
         };
 
-        Ok(Some(app_bsky::feed::PostEmbeds::External(
-            app_bsky::feed::PostEmbedExternal {
-                external: app_bsky::embed::external::ExternalEmbed {
-                    uri: self.mastodon_status.url.clone().unwrap(),
-                    title: "View video on Mastodon".to_string(),
-                    description: format!(
-                        "Check out this video posted by @{}!",
-                        self.mastodon_status.account.username.clone()
-                    ),
-                    thumb: blob_item
+        Ok(Some(Union::Refs(
+            RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
+                app::bsky::embed::external::MainData {
+                    external: app::bsky::embed::external::ExternalData {
+                        uri: media_attachment.url.clone(),
+                        title: "View video on Mastodon".to_string(),
+                        description: format!(
+                            "Check out this video posted by @{}!",
+                            self.mastodon_status.account.username.clone()
+                        ),
+                        thumb: blob_item
+                    }
+                    .into()
                 }
-            }
+                .into()
+            ))
         )))
     }
 
@@ -283,26 +298,28 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment,
         temp_path: &std::path::PathBuf
-    ) -> Result<Option<app_bsky::feed::PostEmbeds>, Box<dyn std::error::Error>> {
-        let service_endpoint = self.get_pds_service_endpoint()?;
-        let service_endpoint = service_endpoint.replace("https://", "");
+    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+        let service_auth_response = self
+            .atp_agent
+            .api
+            .com
+            .atproto
+            .server
+            .get_service_auth(
+                com::atproto::server::get_service_auth::ParametersData {
+                    aud: Did::new(format!("did:web:{}", self.pds_service_endpoint))?,
+                    exp: Some((chrono::Utc::now() + chrono::Duration::minutes(30)).timestamp()),
+                    lxm: Some(Nsid::new("com.atproto.repo.uploadBlob".to_string())?)
+                }
+                .into()
+            )
+            .await?;
 
-        let service_auth_client = crate::core::create_http_client(&self.config)?;
-        let service_auth_token = com_atproto::server::api_calls::get_service_auth(
-            &service_endpoint,
-            service_auth_client,
-            &self.bsky_auth.auth_config,
-            format!("did:web:{}", &service_endpoint).as_str(),
-            (chrono::Utc::now() + chrono::Duration::minutes(30)).timestamp(),
-            Some("com.atproto.repo.uploadBlob")
-        )
-        .await?;
-
-        let upload_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::BearerToken(ApiAuthBearerToken {
-                token: service_auth_token.token.clone()
-            })
-        };
+        let video_upload_client = create_atp_service_client(
+            "video.bsky.app",
+            Some(&service_auth_response.token),
+            &self.config
+        )?;
 
         let random_video_name = format!(
             "{}.mp4",
@@ -316,46 +333,44 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
             random_video_name
         );
 
-        let temp_file = tokio::fs::File::open(&temp_path).await?;
+        let temp_file = tokio::fs::read(temp_path).await?;
 
-        let upload_video_client = crate::core::create_http_client(&self.config)?;
-        let upload_video_job_response = app_bsky::video::api_calls::upload_video(
-            "video.bsky.app",
-            upload_video_client,
-            &upload_auth_config,
-            temp_file,
-            &self.bsky_auth.session.did,
-            &random_video_name
-        )
-        .await?;
+        let upload_video_job_response = video_upload_client
+            .service
+            .app
+            .bsky
+            .video
+            .upload_video(temp_file)
+            .await?;
 
         tracing::info!(
             "Waiting for video upload job '{}' to complete",
-            upload_video_job_response.job_id
+            upload_video_job_response.job_status.job_id
         );
 
-        let no_auth_config = ApiAuthConfig {
-            data: ApiAuthConfigData::None
-        };
+        let job_client = create_atp_service_client("video.bsky.app", None, &self.config)?;
 
-        let mut job_status = upload_video_job_response.clone();
+        let mut job_status = upload_video_job_response.job_status.clone();
 
         while job_status.state != "JOB_STATE_FAILED" {
-            let job_client = crate::core::create_http_client(&self.config)?;
-            job_status = app_bsky::video::api_calls::get_job_status(
-                "video.bsky.app",
-                job_client,
-                &no_auth_config,
-                &upload_video_job_response.job_id.as_str()
-            )
-            .await?
-            .job_status;
+            job_status = job_client
+                .service
+                .app
+                .bsky
+                .video
+                .get_job_status(app::bsky::video::get_job_status::Parameters {
+                    data: app::bsky::video::get_job_status::ParametersData {
+                        job_id: job_status.job_id.clone()
+                    },
+                    extra_data: Ipld::Null
+                })
+                .await?
+                .job_status
+                .clone();
 
             if job_status.state == "JOB_STATE_COMPLETED" {
                 break;
             }
-
-            tracing::info!("Video upload progress: {}%", job_status.progress);
 
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         }
@@ -365,7 +380,10 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
                 tracing::error!(
                     "Failed to upload video attachment '{}'. Error message: '{}'",
                     media_attachment.url,
-                    job_status.error.unwrap_or_else(|| "N/A".to_string())
+                    job_status
+                        .error
+                        .clone()
+                        .unwrap_or_else(|| "N/A".to_string())
                 );
 
                 return Err(Box::new(FediProtoSyncError::new(
@@ -380,12 +398,22 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync {
                     media_attachment.url
                 );
 
-                return Ok(Some(app_bsky::feed::PostEmbeds::Video(
-                    app_bsky::feed::PostEmbedVideo {
-                        aspect_ratio: None,
-                        video: job_status.blob.unwrap()
-                    }
-                )));
+                return Ok(Some(Union::Refs(RecordEmbedRefs::AppBskyEmbedVideoMain(
+                    Box::new(
+                        app::bsky::embed::video::MainData {
+                            video: job_status.blob.clone().unwrap(),
+                            alt: Some(
+                                media_attachment
+                                    .description
+                                    .clone()
+                                    .unwrap_or_else(|| "".to_string())
+                            ),
+                            aspect_ratio: None,
+                            captions: None
+                        }
+                        .into()
+                    )
+                ))));
             }
         }
     }
