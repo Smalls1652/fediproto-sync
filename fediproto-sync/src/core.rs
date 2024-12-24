@@ -149,15 +149,6 @@ impl FediProtoSyncLoop {
             })?;
         tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
 
-        self.atp_agent
-            .api
-            .com
-            .atproto
-            .server
-            .refresh_session()
-            .await?;
-        tracing::info!("Refreshed BlueSky session token.");
-
         // Get the last synced post ID, if any.
         tracing::info!("Getting last synced post...");
         let last_synced_post_id =
