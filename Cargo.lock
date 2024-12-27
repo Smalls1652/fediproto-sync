@@ -183,7 +183,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd9946c18301eee62e8bd0ade5ac2750c9a0778fadf097ac60024b2a79485603"
 dependencies = [
  "atrium-xrpc",
- "reqwest 0.12.9",
+ "reqwest 0.12.10",
 ]
 
 [[package]]
@@ -1018,7 +1018,7 @@ dependencies = [
  "libipld",
  "megalodon",
  "rand",
- "reqwest 0.12.9",
+ "reqwest 0.12.10",
  "serde",
  "serde_json",
  "tokio",
@@ -2057,7 +2057,7 @@ dependencies = [
  "oauth2",
  "rand",
  "regex",
- "reqwest 0.12.9",
+ "reqwest 0.12.10",
  "serde",
  "serde_json",
  "sha1",
@@ -2930,9 +2930,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.9"
+version = "0.12.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a77c62af46e79de0a562e1a9849205ffcb7fc1238876e9bd743357570e04046f"
+checksum = "3d3536321cfc54baa8cf3e273d5e1f63f889067829c4b410fcdbac8ca7b80994"
 dependencies = [
  "async-compression",
  "base64 0.22.1",
@@ -2967,6 +2967,7 @@ dependencies = [
  "tokio-native-tls",
  "tokio-rustls 0.26.1",
  "tokio-util",
+ "tower",
  "tower-service",
  "url",
  "wasm-bindgen",
