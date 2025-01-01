@@ -35,7 +35,7 @@ ipld-core = "0.4.1"
 libipld = { version = "0.16.0", features = ["serde-codec"] }
 megalodon = "0.14.1"
 rand = "0.8.5"
-reqwest = { version = "0.12.11", features = [
+reqwest = { version = "0.12.12", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
