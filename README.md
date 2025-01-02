@@ -56,45 +56,9 @@ I'm making this because I wanted to have a way to sync any posts I make on my Ma
 > [!NOTE]
 > No pre-built binaries are available at this time. You will need to [build from source](#️-building-from-source).
 
-### Requirements
+### Setup
 
-### Mastodon - Access Token
-
-You can create an application and get an access token for your account by:
-
-1. Going to your Mastodon server's settings.
-2. Clicking on the **"Development"** tab.
-3. Clicking on the **"New application"** button.
-4. Fill out a name for the application.
-5. Check the `read:statuses` scope.
-6. Click the **"Submit"** button at the bottom.
-7. Copying the access token that is generated.
-
-### BlueSky - App Password
-
-- You can generate an app password [here](https://bsky.app/settings/app-passwords).
-  - The **Allow access to your direct messages** checkbox **is not needed**.
-
-### Configuration
-
-The following environment variables are required to run the daemon:
-
-| Name | Description |
-| --- | --- |
-| `DATABASE_URL` | The URL to the PostgreSQL database to use. |
-| `MASTODON_SERVER` | The hostname of your Mastodon server. |
-| `MASTODON_ACCESS_TOKEN` | The access token for the application on Mastodon. [See more](#mastodon---access-token) |
-| `BLUESKY_PDS_SERVER` | The hostname of your BlueSky PDS. If you don't host your own PDS, it's typically `bsky.social`. |
-| `BLUESKY_HANDLE` | Your handle on BlueSky without the `@`. |
-| `BLUESKY_APP_PASSWORD` | The app password for your account on BlueSky. [See more](#bluesky---app-password) |
-| `SYNC_INTERVAL_SECONDS` | The interval in seconds to sync posts. Defaults to `300` seconds. |
-
-You can:
-
-1. Create a `production.env` file, with these values defined, in the directory you run the daemon in.
-2. Define these environment variables in your shell before running the daemon.
-3. Define the environment variables with Docker or Docker Compose.
-4. Define the environment variables with Kubernetes using a mix of `ConfigMap` and `Secret` resources.
+For detailed setup instructions, see the [setup guide](docs/setup.md).
 
 ### Running the daemon
 
