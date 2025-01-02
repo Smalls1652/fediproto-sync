@@ -8,54 +8,88 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct FediProtoSyncConfig {
     /// The mode to run the application in.
+    /// 
+    /// **Environment variable:** `FEDIPROTO_SYNC_MODE`
     pub mode: FediProtoSyncMode,
 
     /// The address to bind the auth server to.
+    /// 
+    /// **Environment variable:** `AUTH_SERVER_ADDRESS`
     pub auth_server_address: Option<String>,
 
     /// The port to bind the auth server to.
+    /// 
+    /// **Environment variable:** `AUTH_SERVER_PORT`
     pub auth_server_port: Option<u16>,
 
     /// The type of database to use.
+    /// 
+    /// **Environment variable:** `DATABASE_TYPE`
     pub database_type: DatabaseType,
 
     /// The URL/path to the database.
+    /// 
+    /// **Environment variable:** `DATABASE_URL`
     pub database_url: String,
 
-    /// The encryption key to use for token encryption.
+    /// The private key to use for token encryption.
+    /// 
+    /// **Environment variable:** `TOKEN_ENCRYPTION_PRIVATE_KEY`
     pub token_encryption_private_key: openssl::rsa::Rsa<openssl::pkey::Private>,
 
-    /// The encryption IV to use for token encryption.
+    /// The public key to use for token encryption.
+    /// 
+    /// **Environment variable:** `TOKEN_ENCRYPTION_PUBLIC_KEY`
     pub token_encryption_public_key: openssl::rsa::Rsa<openssl::pkey::Public>,
 
     /// User-Agent string to use for HTTP requests.
+    /// 
+    /// **Environment variable:** `USER_AGENT`
     pub user_agent: String,
 
     /// The Mastodon server URL to connect to.
+    /// 
+    /// **Environment variable:** `MASTODON_SERVER`
     pub mastodon_server: String,
 
     /// The client ID for the Mastodon application.
+    /// 
+    /// **Environment variable:** `MASTODON_CLIENT_ID`
     pub mastodon_client_id: String,
 
     /// The client secret for the Mastodon application.
+    /// 
+    /// **Environment variable:** `MASTODON_CLIENT_SECRET`
     pub mastodon_client_secret: String,
 
     /// The redirect URI for the Mastodon application.
+    /// 
+    /// **Environment variable:** `MASTODON_REDIRECT_URI`
     pub mastodon_redirect_uri: String,
 
     /// The BlueSky PDS URL to connect to.
+    /// 
+    /// **Environment variable:** `BLUESKY_PDS_SERVER`
     pub bluesky_pds_server: String,
 
     /// The BlueSky handle to use for authentication.
+    /// 
+    /// **Environment variable:** `BLUESKY_HANDLE`
     pub bluesky_handle: String,
 
     /// The BlueSky app password to use for authentication.
+    /// 
+    /// **Environment variable:** `BLUESKY_APP_PASSWORD`
     pub bluesky_app_password: String,
 
     /// The interval, in seconds, to sync posts.
+    /// 
+    /// **Environment variable:** `SYNC_INTERVAL_SECONDS`
     pub sync_interval: std::time::Duration,
 
     /// Whether to always fallback to the video URL for BlueSky posts.
+    /// 
+    /// **Environment variable:** `BLUESKY_VIDEO_ALWAYS_FALLBACK`
     pub bluesky_video_always_fallback: bool
 }
 
