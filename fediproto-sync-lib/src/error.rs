@@ -1,15 +1,14 @@
+use thiserror::Error;
+
 /// Error value for FediProtoSync.
-#[derive(Debug)]
+#[derive(Error, Debug)]
 #[allow(dead_code)]
 pub struct FediProtoSyncError {
     /// A message describing the error.
     pub message: String,
 
     /// The kind of error that occurred.
-    pub kind: FediProtoSyncErrorKind,
-
-    /// The source of the error, if any.
-    pub source: Option<Box<dyn std::error::Error>>
+    pub kind: FediProtoSyncErrorKind
 }
 
 #[allow(dead_code)]
@@ -26,27 +25,7 @@ impl FediProtoSyncError {
     ) -> Self {
         Self {
             message: message.to_string(),
-            kind,
-            source: None
-        }
-    }
-
-    /// Create a new error with a source.
-    ///
-    /// ## Arguments
-    ///
-    /// * `message` - A message describing the error.
-    /// * `kind` - The kind of error that occurred.
-    /// * `source` - The source of the error.
-    pub fn with_source(
-        message: &str,
-        kind: FediProtoSyncErrorKind,
-        source: Box<dyn std::error::Error>
-    ) -> Self {
-        Self {
-            message: message.to_string(),
-            kind,
-            source: Some(source)
+            kind
         }
     }
 }
@@ -57,12 +36,6 @@ impl std::fmt::Display for FediProtoSyncError {
         f: &mut std::fmt::Formatter
     ) -> std::fmt::Result {
         write!(f, "{}", self.message)
-    }
-}
-
-impl std::error::Error for FediProtoSyncError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| &**e)
     }
 }
 
