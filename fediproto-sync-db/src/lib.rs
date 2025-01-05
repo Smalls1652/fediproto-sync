@@ -16,6 +16,9 @@ mod schema_postgres;
 #[cfg(feature = "local_dev")]
 mod schema_sqlite;
 
+use std::time::Duration;
+
+use anyhow::{Context, Result};
 use diesel::{
     backend::Backend,
     connection::Connection,
@@ -25,7 +28,6 @@ use diesel::{
     sql_types::HasSqlType,
     QueryResult
 };
-use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use type_impls::{MultiBackendUuid, UuidProxy};
 
 /// A multi-backend enum to use with Diesel. Supports PostgreSQL and SQLite.
@@ -40,19 +42,18 @@ pub enum AnyConnection {
 
 pub fn create_database_connection(
     database_url: &str
-) -> Result<Pool<ConnectionManager<AnyConnection>>, FediProtoSyncError> {
+) -> Result<Pool<ConnectionManager<AnyConnection>>> {
+    tracing::info!("Creating database connection pool.");
     let connection_manager = ConnectionManager::<AnyConnection>::new(database_url);
 
+    tracing::info!("Building database connection pool.");
     let pool = Pool::builder()
         .test_on_check_out(true)
+        .connection_timeout(Duration::from_secs(15))
+        .min_idle(Some(1))
+        .max_size(10)
         .build(connection_manager)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
-                "Failed to create database connection pool.",
-                FediProtoSyncErrorKind::DatabaseConnectionError,
-                Box::new(e)
-            )
-        })?;
+        .context("Failed to create database connection pool.")?;
 
     Ok(pool)
 }

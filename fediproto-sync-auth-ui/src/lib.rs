@@ -70,11 +70,10 @@ impl FediProtoSyncWebServer {
         tracing::info!("Starting the web server on '{}'...", full_bind_address);
         let listener = tokio::net::TcpListener::bind(&full_bind_address)
             .await
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
+            .map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to bind to the port.",
-                    FediProtoSyncErrorKind::WebServerError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::WebServerError
                 )
             })?;
 
@@ -101,11 +100,10 @@ impl FediProtoSyncWebServer {
             .into_make_service();
 
         // Serve the web server.
-        axum::serve(listener, router).await.map_err(|e| {
-            FediProtoSyncError::with_source(
+        axum::serve(listener, router).await.map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to serve the web server.",
-                FediProtoSyncErrorKind::WebServerError,
-                Box::new(e)
+                FediProtoSyncErrorKind::WebServerError
             )
         })?;
 

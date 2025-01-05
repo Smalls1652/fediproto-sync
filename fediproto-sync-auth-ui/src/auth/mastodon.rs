@@ -23,11 +23,10 @@ pub fn get_mastodon_oauth_client(
         "https://{}/oauth/authorize",
         config.mastodon_server.clone()
     ))
-    .map_err(|e| {
-        FediProtoSyncError::with_source(
+    .map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to create Mastodon auth URL.",
-            FediProtoSyncErrorKind::AuthenticationError,
-            Box::new(e)
+            FediProtoSyncErrorKind::AuthenticationError
         )
     })?;
 
@@ -36,20 +35,18 @@ pub fn get_mastodon_oauth_client(
             "https://{}/oauth/token",
             config.mastodon_server.clone()
         ))
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to create Mastodon token URL.",
-                FediProtoSyncErrorKind::AuthenticationError,
-                Box::new(e)
+                FediProtoSyncErrorKind::AuthenticationError
             )
         })?
     );
 
-    let redirect_url = oauth2::RedirectUrl::new(redirect_uri.to_string()).map_err(|e| {
-        FediProtoSyncError::with_source(
+    let redirect_url = oauth2::RedirectUrl::new(redirect_uri.to_string()).map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to create Mastodon redirect URL.",
-            FediProtoSyncErrorKind::AuthenticationError,
-            Box::new(e)
+            FediProtoSyncErrorKind::AuthenticationError
         )
     })?;
 

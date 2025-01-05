@@ -1,6 +1,8 @@
 use diesel::prelude::*;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
+use anyhow::Result;
+
 /// Get a synced Mastodon post by its ID from the database.
 ///
 /// ## Arguments
@@ -14,11 +16,10 @@ pub fn get_synced_mastodon_post_by_id(
     let post = crate::schema::mastodon_posts::table
         .filter(crate::schema::mastodon_posts::post_id.eq(mastodon_post_id))
         .first::<crate::models::MastodonPost>(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get Mastodon post by ID.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -58,11 +59,10 @@ pub fn get_last_synced_mastodon_post_id(
         .select(crate::schema::mastodon_posts::post_id)
         .first::<String>(db_connection)
         .optional()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get the last synced Mastodon post ID.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -82,11 +82,10 @@ pub fn insert_new_synced_mastodon_post(
     diesel::insert_into(crate::schema::mastodon_posts::table)
         .values(new_post)
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to insert new synced Mastodon post.",
-                FediProtoSyncErrorKind::DatabaseInsertError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseInsertError
             )
         })?;
 
@@ -106,11 +105,10 @@ pub fn get_bluesky_data_by_mastodon_post_id(
     let synced_post = crate::schema::synced_posts_bluesky_data::table
         .filter(crate::schema::synced_posts_bluesky_data::mastodon_post_id.eq(mastodon_post_id))
         .first::<crate::models::SyncedPostBlueSkyData>(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get synced post by post ID.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -130,11 +128,10 @@ pub fn insert_new_bluesky_data_for_synced_mastodon_post(
     diesel::insert_into(crate::schema::synced_posts_bluesky_data::table)
         .values(synced_post_data)
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to insert new synced post.",
-                FediProtoSyncErrorKind::DatabaseInsertError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseInsertError
             )
         })?;
 
@@ -152,11 +149,10 @@ pub fn get_cached_file_records(
     let cached_files = crate::schema::cached_files::table
         .select(crate::models::CachedFile::as_select())
         .load(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get cached files.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -176,11 +172,10 @@ pub fn insert_cached_file_record(
     diesel::insert_into(crate::schema::cached_files::table)
         .values(new_cached_file)
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to insert new cached file.",
-                FediProtoSyncErrorKind::DatabaseInsertError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseInsertError
             )
         })?;
 
@@ -200,11 +195,10 @@ pub fn delete_cached_file_record(
     diesel::delete(crate::schema::cached_files::table)
         .filter(crate::schema::cached_files::id.eq(cached_file.id))
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to delete cached file record.",
-                FediProtoSyncErrorKind::DatabaseDeleteError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseDeleteError
             )
         })?;
 
@@ -225,11 +219,10 @@ pub fn get_cached_service_token_by_service_name(
         .filter(crate::schema::cached_service_tokens::service_name.eq(service_name))
         .first::<crate::models::CachedServiceToken>(db_connection)
         .optional()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get cached service token by service name.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -249,11 +242,10 @@ pub fn insert_cached_service_token(
     diesel::insert_into(crate::schema::cached_service_tokens::table)
         .values(new_token)
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to insert new cached service token.",
-                FediProtoSyncErrorKind::DatabaseInsertError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseInsertError
             )
         })?;
 
@@ -271,11 +263,10 @@ pub fn get_mastodon_post_retry_queue_items(
     let items = crate::schema::mastodon_post_retry_queue::table
         .select(crate::models::MastodonPostRetryQueueItem::as_select())
         .load(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get Mastodon post retry queue items.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -297,11 +288,10 @@ pub fn get_mastodon_post_retry_queue_item_by_post_id(
         .select(crate::models::MastodonPostRetryQueueItem::as_select())
         .first::<crate::models::MastodonPostRetryQueueItem>(db_connection)
         .optional()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to get Mastodon post retry queue item by post ID.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -321,11 +311,10 @@ pub fn insert_mastodon_post_retry_queue_item(
     diesel::insert_into(crate::schema::mastodon_post_retry_queue::table)
         .values(new_item)
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to insert new Mastodon post retry queue item.",
-                FediProtoSyncErrorKind::DatabaseInsertError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseInsertError
             )
         })?;
 
@@ -356,11 +345,10 @@ pub fn update_mastodon_post_retry_queue_item(
             retry_count.eq(retry_count + 1)
         ))
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to update Mastodon post retry queue item.",
-                FediProtoSyncErrorKind::DatabaseQueryError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseQueryError
             )
         })?;
 
@@ -380,11 +368,10 @@ pub fn delete_mastodon_post_retry_queue_item(
     diesel::delete(crate::schema::mastodon_post_retry_queue::table)
         .filter(crate::schema::mastodon_post_retry_queue::id.eq(&item.id))
         .execute(db_connection)
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to delete Mastodon post retry queue item.",
-                FediProtoSyncErrorKind::DatabaseDeleteError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DatabaseDeleteError
             )
         })?;
 

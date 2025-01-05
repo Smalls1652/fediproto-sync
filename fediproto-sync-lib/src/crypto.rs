@@ -17,11 +17,10 @@ pub fn encrypt_string(
             &mut encrypted_string,
             openssl::rsa::Padding::PKCS1
         )
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to encrypt string",
-                FediProtoSyncErrorKind::EncryptionError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EncryptionError
             )
         })?;
 
@@ -41,11 +40,10 @@ pub fn decrypt_string(
 ) -> Result<String, FediProtoSyncError> {
     let mut decrypted_string = vec![0; private_key.size() as usize];
 
-    let encrypted_string = openssl::base64::decode_block(input_string).map_err(|e| {
-        FediProtoSyncError::with_source(
+    let encrypted_string = openssl::base64::decode_block(input_string).map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to decode base64 string",
-            FediProtoSyncErrorKind::DecryptionError,
-            Box::new(e)
+            FediProtoSyncErrorKind::DecryptionError
         )
     })?;
 
@@ -55,20 +53,18 @@ pub fn decrypt_string(
             &mut decrypted_string,
             openssl::rsa::Padding::PKCS1
         )
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to decrypt string",
-                FediProtoSyncErrorKind::DecryptionError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DecryptionError
             )
         })?;
 
     let decrypted_string = String::from_utf8(decrypted_string[..decrypted_length].to_vec())
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to convert decrypted bytes to string",
-                FediProtoSyncErrorKind::DecryptionError,
-                Box::new(e)
+                FediProtoSyncErrorKind::DecryptionError
             )
         })?;
 

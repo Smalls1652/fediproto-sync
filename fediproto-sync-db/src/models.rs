@@ -205,11 +205,10 @@ impl CachedFile {
         let file_path = std::path::Path::new(&self.file_path);
 
         if file_path.exists() {
-            tokio::fs::remove_file(&file_path).await.map_err(|e| {
-                FediProtoSyncError::with_source(
+            tokio::fs::remove_file(&file_path).await.map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to remove cached file.",
-                    FediProtoSyncErrorKind::TempFileRemovalError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::TempFileRemovalError
                 )
             })?;
         }

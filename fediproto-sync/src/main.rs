@@ -7,6 +7,7 @@ mod img_utils;
 /// Mastodon operations.
 mod mastodon;
 
+use anyhow::Result;
 use fediproto_sync_lib::{
     config::{FediProtoSyncConfig, FediProtoSyncMode},
     GIT_VERSION
@@ -14,7 +15,7 @@ use fediproto_sync_lib::{
 
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     let rust_log_result = std::env::var("RUST_LOG");
 
     match rust_log_result {

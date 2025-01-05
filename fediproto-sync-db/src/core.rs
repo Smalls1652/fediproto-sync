@@ -1,3 +1,4 @@
+use anyhow::Result;
 use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 
 /// Embedded database migrations for PostgreSQL.
@@ -44,11 +45,10 @@ fn apply_migrations<T: diesel::backend::Backend + 'static>(
     connection: &mut impl diesel_migrations::MigrationHarness<T>,
     migrations: diesel_migrations::EmbeddedMigrations
 ) -> Result<(), FediProtoSyncError> {
-    let pending_migrations = connection.pending_migrations(migrations).map_err(|e| {
-        FediProtoSyncError::with_source(
+    let pending_migrations = connection.pending_migrations(migrations).map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to get pending database migrations.",
-            FediProtoSyncErrorKind::DatabaseMigrationError,
-            e
+            FediProtoSyncErrorKind::DatabaseMigrationError
         )
     })?;
 
@@ -63,11 +63,10 @@ fn apply_migrations<T: diesel::backend::Backend + 'static>(
     );
 
     for migration_item in pending_migrations {
-        connection.run_migration(&migration_item).map_err(|e| {
-            FediProtoSyncError::with_source(
+        connection.run_migration(&migration_item).map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to run database migration.",
-                FediProtoSyncErrorKind::DatabaseMigrationError,
-                e
+                FediProtoSyncErrorKind::DatabaseMigrationError
             )
         })?;
 

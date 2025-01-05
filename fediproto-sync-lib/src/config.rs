@@ -100,11 +100,10 @@ impl FediProtoSyncConfig {
         let mode = std::env::var("FEDIPROTO_SYNC_MODE")
             .unwrap_or("normal".to_string())
             .parse::<FediProtoSyncMode>()
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
+            .map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to parse the FEDIPROTO_SYNC_MODE environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
 
@@ -123,11 +122,10 @@ impl FediProtoSyncConfig {
                 std::env::var("AUTH_SERVER_PORT")
                     .unwrap_or_else(|_| "3000".to_string())
                     .parse::<u16>()
-                    .map_err(|e| {
-                        FediProtoSyncError::with_source(
+                    .map_err(|_| {
+                        FediProtoSyncError::new(
                             "Failed to parse the AUTH_SERVER_PORT environment variable.",
-                            FediProtoSyncErrorKind::EnvironmentVariableError,
-                            Box::new(e)
+                            FediProtoSyncErrorKind::EnvironmentVariableError
                         )
                     })?
             ),
@@ -139,74 +137,66 @@ impl FediProtoSyncConfig {
         let database_type = std::env::var("DATABASE_TYPE")
             .unwrap_or("Postgres".to_string())
             .parse::<DatabaseType>()
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
+            .map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to parse the DATABASE_TYPE environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
 
         // Read 'DATABASE_URL' environment variable.
-        let database_url = std::env::var("DATABASE_URL").map_err(|e| {
-            FediProtoSyncError::with_source(
+        let database_url = std::env::var("DATABASE_URL").map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to read DATABASE_URL environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
         // Read 'TOKEN_ENCRYPTION_PRIVATE_KEY' environment variable.
         let token_encryption_private_key =
-            std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY").map_err(|e| {
-                FediProtoSyncError::with_source(
+            std::env::var("TOKEN_ENCRYPTION_PRIVATE_KEY").map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to read TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
         let token_encryption_private_key =
-            openssl::base64::decode_block(&token_encryption_private_key).map_err(|e| {
-                FediProtoSyncError::with_source(
+            openssl::base64::decode_block(&token_encryption_private_key).map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to decode the TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
         let token_encryption_private_key = openssl::rsa::Rsa::private_key_from_pem(
             &token_encryption_private_key
         )
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to decode TOKEN_ENCRYPTION_PRIVATE_KEY environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
         // Read 'TOKEN_ENCRYPTION_PUBLIC_KEY' environment variable.
         let token_encryption_public_key =
-            std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY").map_err(|e| {
-                FediProtoSyncError::with_source(
+            std::env::var("TOKEN_ENCRYPTION_PUBLIC_KEY").map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to read TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
         let token_encryption_public_key =
-            openssl::base64::decode_block(&token_encryption_public_key).map_err(|e| {
-                FediProtoSyncError::with_source(
+            openssl::base64::decode_block(&token_encryption_public_key).map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to decode the TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
         let token_encryption_public_key =
-            openssl::rsa::Rsa::public_key_from_pem(&token_encryption_public_key).map_err(|e| {
-                FediProtoSyncError::with_source(
+            openssl::rsa::Rsa::public_key_from_pem(&token_encryption_public_key).map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to decode TOKEN_ENCRYPTION_PUBLIC_KEY environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
 
@@ -217,65 +207,58 @@ impl FediProtoSyncConfig {
         let user_agent = format!("{}/v{}", user_agent, GIT_VERSION);
 
         // Read 'MASTODON_SERVER' environment variable.
-        let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|e| {
-            FediProtoSyncError::with_source(
+        let mastodon_server = std::env::var("MASTODON_SERVER").map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to read MASTODON_SERVER environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
         // Read 'MASTODON_CLIENT_ID' environment variable.
-        let mastodon_client_id = std::env::var("MASTODON_CLIENT_ID").map_err(|e| {
-                FediProtoSyncError::with_source(
+        let mastodon_client_id = std::env::var("MASTODON_CLIENT_ID").map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to read MASTODON_CLIENT_ID environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
 
         // Read 'MASTODON_CLIENT_SECRET' environment variable.
-        let mastodon_client_secret = std::env::var("MASTODON_CLIENT_SECRET").map_err(|e| {
-                    FediProtoSyncError::with_source(
+        let mastodon_client_secret = std::env::var("MASTODON_CLIENT_SECRET").map_err(|_| {
+                    FediProtoSyncError::new(
                         "Failed to read MASTODON_CLIENT_SECRET environment variable.",
-                        FediProtoSyncErrorKind::EnvironmentVariableError,
-                        Box::new(e)
+                        FediProtoSyncErrorKind::EnvironmentVariableError
                     )
                 })?;
 
         // Read 'MASTODON_REDIRECT_URI' environment variable.
-        let mastodon_redirect_uri = std::env::var("MASTODON_REDIRECT_URI").map_err(|e| {
-                    FediProtoSyncError::with_source(
+        let mastodon_redirect_uri = std::env::var("MASTODON_REDIRECT_URI").map_err(|_| {
+                    FediProtoSyncError::new(
                         "Failed to read MASTODON_REDIRECT_URI environment variable.",
-                        FediProtoSyncErrorKind::EnvironmentVariableError,
-                        Box::new(e)
+                        FediProtoSyncErrorKind::EnvironmentVariableError
                     )
                 })?;
 
         // Read 'BLUESKY_PDS_SERVER' environment variable.
-        let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|e| {
-            FediProtoSyncError::with_source(
+        let bluesky_pds_server = std::env::var("BLUESKY_PDS_SERVER").map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to read BLUESKY_PDS_SERVER environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
         // Read 'BLUESKY_HANDLE' environment variable.
-        let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|e| {
-            FediProtoSyncError::with_source(
+        let bluesky_handle = std::env::var("BLUESKY_HANDLE").map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to read BLUESKY_HANDLE environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
         // Read 'BLUESKY_APP_PASSWORD' environment variable.
-        let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|e| {
-            FediProtoSyncError::with_source(
+        let bluesky_app_password = std::env::var("BLUESKY_APP_PASSWORD").map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to read BLUESKY_APP_PASSWORD environment variable.",
-                FediProtoSyncErrorKind::EnvironmentVariableError,
-                Box::new(e)
+                FediProtoSyncErrorKind::EnvironmentVariableError
             )
         })?;
 
@@ -284,11 +267,10 @@ impl FediProtoSyncConfig {
             std::env::var("SYNC_INTERVAL_SECONDS")
                 .unwrap_or("300".to_string())
                 .parse::<u64>()
-                .map_err(|e| {
-                    FediProtoSyncError::with_source(
+                .map_err(|_| {
+                    FediProtoSyncError::new(
                         "Failed to parse the SYNC_INTERVAL_SECONDS environment variable.",
-                        FediProtoSyncErrorKind::EnvironmentVariableError,
-                        Box::new(e)
+                        FediProtoSyncErrorKind::EnvironmentVariableError
                     )
                 })?
         );
@@ -297,11 +279,10 @@ impl FediProtoSyncConfig {
         let bluesky_video_always_fallback = std::env::var("BLUESKY_VIDEO_ALWAYS_FALLBACK")
             .unwrap_or("false".to_string())
             .parse::<bool>()
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
+            .map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to parse the BLUESKY_VIDEO_ALWAYS_FALLBACK environment variable.",
-                    FediProtoSyncErrorKind::EnvironmentVariableError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::EnvironmentVariableError
                 )
             })?;
 

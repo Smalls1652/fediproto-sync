@@ -1,3 +1,4 @@
+use anyhow::Result;
 use atrium_api::{
     agent::{store::MemorySessionStore, AtpAgent},
     client::AtpServiceClient,
@@ -100,7 +101,7 @@ impl FediProtoSyncLoop {
     /// * `config` - The environment variables for the FediProtoSync
     ///   application.
     /// * `db_connection` - The database connection to use for the sync.
-    async fn start_sync(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn start_sync(&mut self) -> Result<()> {
         let db_connection = &mut self.db_connection.get()?;
 
         let cached_mastodon_token =
@@ -112,10 +113,11 @@ impl FediProtoSyncLoop {
         let cached_mastodon_token = match cached_mastodon_token {
             Some(token) => token,
             None => {
-                return Err(Box::new(FediProtoSyncError::new(
+                return Err(FediProtoSyncError::new(
                     "Mastodon token not found in database.",
                     FediProtoSyncErrorKind::AuthenticationError
-                )));
+                )
+                .into());
             }
         };
 
@@ -129,22 +131,20 @@ impl FediProtoSyncLoop {
             Some(decrypted_mastodon_token),
             Some(self.config.user_agent.clone())
         )
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to create Mastodon client.",
-                FediProtoSyncErrorKind::AuthenticationError,
-                Box::new(e)
+                FediProtoSyncErrorKind::AuthenticationError
             )
         })?;
 
         let account = mastodon_client
             .verify_account_credentials()
             .await
-            .map_err(|e| {
-                FediProtoSyncError::with_source(
+            .map_err(|_| {
+                FediProtoSyncError::new(
                     "Failed to verify Mastodon account credentials.",
-                    FediProtoSyncErrorKind::AuthenticationError,
-                    Box::new(e)
+                    FediProtoSyncErrorKind::AuthenticationError
                 )
             })?;
         tracing::info!("Authenticated to Mastodon as '{}'", account.json.username);
@@ -369,11 +369,10 @@ pub async fn create_atp_agent(
     let auth_result = atp_agent
         .login(&config.bluesky_handle, &config.bluesky_app_password)
         .await
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to authenticate to BlueSky.",
-                FediProtoSyncErrorKind::AuthenticationError,
-                Box::new(e)
+                FediProtoSyncErrorKind::AuthenticationError
             )
         })?;
 
@@ -398,11 +397,10 @@ pub fn create_atp_service_client(
         headers.insert(
             reqwest::header::AUTHORIZATION,
             reqwest::header::HeaderValue::from_str(format!("Bearer {}", auth_token).as_str())
-                .map_err(|e| {
-                    FediProtoSyncError::with_source(
+                .map_err(|_| {
+                    FediProtoSyncError::new(
                         "Failed to create HTTP header for ATProto service client.",
-                        FediProtoSyncErrorKind::HttpClientCreationError,
-                        Box::new(e)
+                        FediProtoSyncErrorKind::HttpClientCreationError
                     )
                 })?
         );
@@ -415,11 +413,10 @@ pub fn create_atp_service_client(
                 .use_rustls_tls()
                 .default_headers(headers)
                 .build()
-                .map_err(|e| {
-                    FediProtoSyncError::with_source(
+                .map_err(|_| {
+                    FediProtoSyncError::new(
                         "Failed to create HTTP client for ATProto service client.",
-                        FediProtoSyncErrorKind::HttpClientCreationError,
-                        Box::new(e)
+                        FediProtoSyncErrorKind::HttpClientCreationError
                     )
                 })?
         )
@@ -442,11 +439,10 @@ pub fn create_http_client(
         .user_agent(config.user_agent.clone())
         .use_rustls_tls()
         .build()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to create HTTP client.",
-                FediProtoSyncErrorKind::HttpClientCreationError,
-                Box::new(e)
+                FediProtoSyncErrorKind::HttpClientCreationError
             )
         })
 }

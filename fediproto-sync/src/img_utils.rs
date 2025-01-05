@@ -15,19 +15,17 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes, FediProto
 
     let image_reader = ImageReader::new(Cursor::new(image))
         .with_guessed_format()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to guess image format.",
-                FediProtoSyncErrorKind::ImageCompressionError,
-                Box::new(e)
+                FediProtoSyncErrorKind::ImageCompressionError
             )
         })?
         .decode()
-        .map_err(|e| {
-            FediProtoSyncError::with_source(
+        .map_err(|_| {
+            FediProtoSyncError::new(
                 "Failed to decode image.",
-                FediProtoSyncErrorKind::ImageCompressionError,
-                Box::new(e)
+                FediProtoSyncErrorKind::ImageCompressionError
             )
         })?;
 
@@ -36,20 +34,18 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes, FediProto
     let mut image_buffer = vec![];
     let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 75);
 
-    jpeg_encoder.encode_image(&image_reader).map_err(|e| {
-        FediProtoSyncError::with_source(
+    jpeg_encoder.encode_image(&image_reader).map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to encode image.",
-            FediProtoSyncErrorKind::ImageCompressionError,
-            Box::new(e)
+            FediProtoSyncErrorKind::ImageCompressionError
         )
     })?;
 
     tracing::info!("Compressing image.");
-    image_reader.write_with_encoder(jpeg_encoder).map_err(|e| {
-        FediProtoSyncError::with_source(
+    image_reader.write_with_encoder(jpeg_encoder).map_err(|_| {
+        FediProtoSyncError::new(
             "Failed to compress image.",
-            FediProtoSyncErrorKind::ImageCompressionError,
-            Box::new(e)
+            FediProtoSyncErrorKind::ImageCompressionError
         )
     })?;
 
