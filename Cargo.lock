@@ -999,6 +999,7 @@ dependencies = [
 name = "fediproto-sync"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "atrium-api",
  "atrium-xrpc-client",
  "bytes",
@@ -1047,6 +1048,7 @@ dependencies = [
 name = "fediproto-sync-db"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "diesel",
  "diesel_migrations",
@@ -1064,8 +1066,10 @@ dependencies = [
 name = "fediproto-sync-lib"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "git-version",
  "openssl",
+ "thiserror 2.0.9",
  "toml_edit",
 ]
 

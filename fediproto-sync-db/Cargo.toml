@@ -11,6 +11,7 @@ license-file.workspace = true
 build = "build.rs"
 
 [dependencies]
+anyhow = "1.0.95"
 chrono = { version = "0.4.39", features = ["serde"] }
 diesel = { version = "2.2.6", features = [
     "chrono",
