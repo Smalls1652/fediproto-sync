@@ -2047,9 +2047,9 @@ dependencies = [
 
 [[package]]
 name = "megalodon"
-version = "0.14.2"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae7baf7a7544044e1467fbb05b1d8f22f51e88716907a03a8cf8af5be0ad4e26"
+checksum = "a4321f8e9b72f34f7c003820fb43e36c8078db0f31cb298af412f7aa3aeea566"
 dependencies = [
  "async-trait",
  "chrono",
