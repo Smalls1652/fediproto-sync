@@ -34,7 +34,7 @@ fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 image = "0.25.5"
 ipld-core = "0.4.1"
 libipld = { version = "0.16.0", features = ["serde-codec"] }
-megalodon = "0.14.2"
+megalodon = "0.15.0"
 rand = "0.8.5"
 reqwest = { version = "0.12.12", features = [
     "json",
