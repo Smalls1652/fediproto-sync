@@ -230,7 +230,8 @@ impl FediProtoSyncLoop {
                                 langs: None,
                                 reply: None,
                                 tags: None
-                            }
+                            },
+                            previous_post_id: None
                         };
 
                         let sync_result = post_sync.sync_post().await;
@@ -299,7 +300,8 @@ impl FediProtoSyncLoop {
                     langs: None,
                     reply: None,
                     tags: None
-                }
+                },
+                previous_post_id: None
             };
 
             let sync_result = post_sync.sync_post().await;

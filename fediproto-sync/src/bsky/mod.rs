@@ -54,7 +54,10 @@ pub struct BlueSkyPostSync<'a> {
     pub mastodon_status: megalodon::entities::Status,
 
     /// The post generated from the Mastodon status to sync to BlueSky.
-    pub post_item: atrium_api::app::bsky::feed::post::RecordData
+    pub post_item: atrium_api::app::bsky::feed::post::RecordData,
+
+    /// The ID of the previous post in a thread.
+    pub previous_post_id: Option<String>
 }
 
 impl BlueSkyPostSync<'_> {
@@ -62,88 +65,10 @@ impl BlueSkyPostSync<'_> {
     pub async fn sync_post(&mut self) -> Result<()> {
         let db_connection = &mut self.db_connection_pool.get()?;
 
-        // -- Generate a BlueSky post item from the Mastodon status. --
-        self.generate_post_item().await?;
-
-        // -- Check if the post is a reply to another post in a thread. --
-        let mut previous_post_id = None;
-
-        // If the post has a "in_reply_to_id" field and the "in_reply_to_account_id"
-        // field is the same as the account ID of the account that posted the status,
-        // then it is potentially a reply to another post in a thread.
-        if self.mastodon_status.in_reply_to_id.is_some()
-            && self
-                .mastodon_status
-                .clone()
-                .in_reply_to_account_id
-                .unwrap_or_else(|| "".to_string())
-                == self.mastodon_account.id.clone()
-        {
-            let in_reply_to_id = self.mastodon_status.in_reply_to_id.clone().unwrap();
-
-            match fediproto_sync_db::operations::check_synced_mastodon_post_exists(
-                db_connection,
-                &in_reply_to_id
-            ) {
-                true => (),
-                false => {
-                    return Err(anyhow::anyhow!(
-                        "Previous post '{}' not found in database for post '{}'",
-                        in_reply_to_id,
-                        self.mastodon_status.id
-                    ));
-                }
-            }
-
-            // Resolve the previous post in the thread and resolve it's synced post data.
-            let previous_mastodon_post =
-                fediproto_sync_db::operations::get_synced_mastodon_post_by_id(
-                    db_connection,
-                    &in_reply_to_id
-                )?;
-            let previous_synced_post =
-                fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
-                    db_connection,
-                    &in_reply_to_id
-                )?;
-
-            // If the previous post has a root post, resolve it's synced post data.
-            let previous_synced_post_root = match previous_mastodon_post.root_mastodon_post_id {
-                Some(root_mastodon_post_id) => {
-                    // Set the previous post ID to the root post ID retrieved.
-                    previous_post_id = Some(root_mastodon_post_id.clone());
-
-                    fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
-                        db_connection,
-                        &root_mastodon_post_id
-                    )?
-                }
-
-                None => {
-                    // Set the previous post ID to the previous post ID.
-                    previous_post_id = Some(in_reply_to_id.clone());
-
-                    previous_synced_post.clone()
-                }
-            };
-
-            // Set the reply reference for the post item.
-            self.post_item.reply = Some(
-                app::bsky::feed::post::ReplyRefData {
-                    root: com::atproto::repo::strong_ref::MainData {
-                        cid: Cid::from_str(&previous_synced_post_root.bsky_post_cid)?,
-                        uri: previous_synced_post_root.bsky_post_uri.clone()
-                    }
-                    .into(),
-                    parent: com::atproto::repo::strong_ref::MainData {
-                        cid: Cid::from_str(&previous_synced_post.bsky_post_cid)?,
-                        uri: previous_synced_post.bsky_post_uri.clone()
-                    }
-                    .into()
-                }
-                .into()
-            );
-        }
+        match self.mastodon_status.reblog.is_some() {
+            true => self.process_boosted_post().await?,
+            false => self.process_post(db_connection).await?
+        };
 
         let collection = Nsid::new("app.bsky.feed.post".to_string()).map_err(|_| {
             anyhow::anyhow!("Error creating NSID for collection 'app.bsky.feed.post'")
@@ -197,7 +122,7 @@ impl BlueSkyPostSync<'_> {
                 let new_mastodon_post = NewMastodonPost::new(
                     &self.mastodon_status,
                     Some(post_result.cid.clone().as_ref().to_string()),
-                    previous_post_id
+                    self.previous_post_id.clone()
                 );
 
                 let new_synced_post = NewSyncedPostBlueSkyData::new(
@@ -235,8 +160,118 @@ impl BlueSkyPostSync<'_> {
         }
     }
 
+    /// Process a Mastodon post.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `db_connection` - The database connection for the FediProto Sync application.
+    async fn process_post(
+        &mut self,
+        db_connection: &mut diesel::r2d2::PooledConnection<ConnectionManager<AnyConnection>>
+    ) -> Result<()> {
+        // -- Generate a BlueSky post item from the Mastodon status. --
+        self.generate_post_item().await?;
+
+        // If the post has a "in_reply_to_id" field and the "in_reply_to_account_id"
+        // field is the same as the account ID of the account that posted the status,
+        // then it is potentially a reply to another post in a thread.
+        if self.mastodon_status.in_reply_to_id.is_some()
+            && self
+                .mastodon_status
+                .clone()
+                .in_reply_to_account_id
+                .unwrap_or_else(|| "".to_string())
+                == self.mastodon_account.id.clone()
+        {
+            let in_reply_to_id = self.mastodon_status.in_reply_to_id.clone().unwrap();
+
+            match fediproto_sync_db::operations::check_synced_mastodon_post_exists(
+                db_connection,
+                &in_reply_to_id
+            ) {
+                true => (),
+                false => {
+                    return Err(anyhow::anyhow!(
+                        "Previous post '{}' not found in database for post '{}'",
+                        in_reply_to_id,
+                        self.mastodon_status.id
+                    ));
+                }
+            }
+
+            // Resolve the previous post in the thread and resolve it's synced post data.
+            let previous_mastodon_post =
+                fediproto_sync_db::operations::get_synced_mastodon_post_by_id(
+                    db_connection,
+                    &in_reply_to_id
+                )?;
+            let previous_synced_post =
+                fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
+                    db_connection,
+                    &in_reply_to_id
+                )?;
+
+            // If the previous post has a root post, resolve it's synced post data.
+            let previous_synced_post_root = match previous_mastodon_post.root_mastodon_post_id {
+                Some(root_mastodon_post_id) => {
+                    // Set the previous post ID to the root post ID retrieved.
+                    self.previous_post_id = Some(root_mastodon_post_id.clone());
+
+                    fediproto_sync_db::operations::get_bluesky_data_by_mastodon_post_id(
+                        db_connection,
+                        &root_mastodon_post_id
+                    )?
+                }
+
+                None => {
+                    // Set the previous post ID to the previous post ID.
+                    self.previous_post_id = Some(in_reply_to_id.clone());
+
+                    previous_synced_post.clone()
+                }
+            };
+
+            // Set the reply reference for the post item.
+            self.post_item.reply = Some(
+                app::bsky::feed::post::ReplyRefData {
+                    root: com::atproto::repo::strong_ref::MainData {
+                        cid: Cid::from_str(&previous_synced_post_root.bsky_post_cid)?,
+                        uri: previous_synced_post_root.bsky_post_uri.clone()
+                    }
+                    .into(),
+                    parent: com::atproto::repo::strong_ref::MainData {
+                        cid: Cid::from_str(&previous_synced_post.bsky_post_cid)?,
+                        uri: previous_synced_post.bsky_post_uri.clone()
+                    }
+                    .into()
+                }
+                .into()
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Process a boosted Mastodon post.
+    async fn process_boosted_post(&mut self) -> Result<()> {
+        tracing::info!("Post '{}' is a boosted post", self.mastodon_status.id);
+
+        let reblogged_status = self.mastodon_status.reblog.clone().unwrap();
+
+        tracing::info!("Boosted post URI: {}", reblogged_status.uri);
+
+        // -- Parse the Mastodon status for post content and metadata. --
+        let mut parsed_status =
+            crate::mastodon::ParsedMastodonPost::from_mastodon_status(&reblogged_status)?;
+        parsed_status.truncate_post_content()?;
+
+        self.generate_boost_link_embed(&parsed_status).await?;
+
+        Ok(())
+    }
+
     /// Generate a Bluesky post item from a Mastodon status.
-    pub async fn generate_post_item(&mut self) -> Result<()> {
+    async fn generate_post_item(&mut self) -> Result<()> {
         // -- Parse the Mastodon status for post content and metadata. --
         let mut parsed_status =
             crate::mastodon::ParsedMastodonPost::from_mastodon_status(&self.mastodon_status)?;
