@@ -1,5 +1,6 @@
 use anyhow::Result;
-use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
+
+use crate::error::FediProtoSyncDbError;
 
 /// Embedded database migrations for PostgreSQL.
 pub const POSTGRES_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
@@ -20,7 +21,7 @@ pub const SQLITE_MIGRATIONS: diesel_migrations::EmbeddedMigrations =
 /// This is the main entry point for running database migrations. It will
 /// automatically determine the database backend and run the appropriate
 /// migrations.
-pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediProtoSyncError> {
+pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediProtoSyncDbError> {
     match connection {
         crate::AnyConnection::Postgres(connection) => {
             apply_migrations(connection, POSTGRES_MIGRATIONS)
@@ -44,13 +45,10 @@ pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediP
 fn apply_migrations<T: diesel::backend::Backend + 'static>(
     connection: &mut impl diesel_migrations::MigrationHarness<T>,
     migrations: diesel_migrations::EmbeddedMigrations
-) -> Result<(), FediProtoSyncError> {
-    let pending_migrations = connection.pending_migrations(migrations).map_err(|_| {
-        FediProtoSyncError::new(
-            "Failed to get pending database migrations.",
-            FediProtoSyncErrorKind::DatabaseMigrationError
-        )
-    })?;
+) -> Result<(), FediProtoSyncDbError> {
+    let pending_migrations = connection
+        .pending_migrations(migrations)
+        .map_err(|_| FediProtoSyncDbError::DatabaseMigrationError)?;
 
     if pending_migrations.is_empty() {
         tracing::info!("No pending database migrations.");
@@ -63,12 +61,9 @@ fn apply_migrations<T: diesel::backend::Backend + 'static>(
     );
 
     for migration_item in pending_migrations {
-        connection.run_migration(&migration_item).map_err(|_| {
-            FediProtoSyncError::new(
-                "Failed to run database migration.",
-                FediProtoSyncErrorKind::DatabaseMigrationError
-            )
-        })?;
+        connection
+            .run_migration(&migration_item)
+            .map_err(|_| FediProtoSyncDbError::DatabaseMigrationError)?;
 
         tracing::info!("Applied migration '{}'", migration_item.name());
     }

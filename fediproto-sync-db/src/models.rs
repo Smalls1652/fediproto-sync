@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
-use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
+use fediproto_sync_lib::error::FediProtoSyncError;
 use megalodon::entities::Status;
 
 use super::type_impls::UuidProxy;
@@ -200,17 +200,15 @@ impl CachedFile {
         &self,
         db_connection: &mut crate::AnyConnection
     ) -> Result<(), FediProtoSyncError> {
-        crate::operations::delete_cached_file_record(db_connection, self)?;
+        crate::operations::delete_cached_file_record(db_connection, self)
+            .map_err(|_| FediProtoSyncError::TempFileRemovalError)?;
 
         let file_path = std::path::Path::new(&self.file_path);
 
         if file_path.exists() {
-            tokio::fs::remove_file(&file_path).await.map_err(|_| {
-                FediProtoSyncError::new(
-                    "Failed to remove cached file.",
-                    FediProtoSyncErrorKind::TempFileRemovalError
-                )
-            })?;
+            tokio::fs::remove_file(&file_path)
+                .await
+                .map_err(|_| FediProtoSyncError::TempFileRemovalError)?;
         }
 
         Ok(())
@@ -468,7 +466,6 @@ impl NewMastodonPostRetryQueueItem {
         mastodon_post_id: &i64,
         failure_reason: &str
     ) -> Self {
-
         Self {
             id: mastodon_post_id.clone(),
             failure_reason: failure_reason.to_string(),
@@ -477,5 +474,3 @@ impl NewMastodonPostRetryQueueItem {
         }
     }
 }
-
-

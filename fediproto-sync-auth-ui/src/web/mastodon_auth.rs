@@ -17,7 +17,7 @@ use oauth2::{
 
 use crate::{
     error::FediProtoSyncWebError,
-    web::{AuthRequest, check_for_existing_token},
+    web::{check_for_existing_token, AuthRequest},
     FediProtoSyncWebServerAppState
 };
 
@@ -26,9 +26,9 @@ static CSRF_TOKEN: &str = "csrf_token";
 static PKCE_VERIFIER_SECRET: &str = "pkce_verifier_secret";
 
 /// The OAuth2 "login" endpoint for Mastodon.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `app_state` - The application state.
 pub async fn login_endpoint(
     State(app_state): State<FediProtoSyncWebServerAppState>
@@ -91,9 +91,9 @@ pub async fn login_endpoint(
 }
 
 /// Validate the CSRF token.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `auth_request` - The authorization request.
 /// * `cookies` - The cookies.
 /// * `memory_store` - The memory store.
@@ -149,9 +149,9 @@ async fn validate_csrf(
 }
 
 /// The OAuth2 "authorized" endpoint for Mastodon.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `query` - The query.
 /// * `app_state` - The application state.
 /// * `cookies` - The cookies.

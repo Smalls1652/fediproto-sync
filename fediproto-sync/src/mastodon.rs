@@ -71,9 +71,7 @@ impl ParsedMastodonPost {
     /// ## Arguments
     ///
     /// * `status` - The Mastodon status to parse.
-    pub fn from_mastodon_status(
-        status: &megalodon::entities::Status
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_mastodon_status(status: &megalodon::entities::Status) -> Result<Self> {
         // Parse the HTML content of the status.
         let html_document = dom_query::Document::fragment(status.content.clone().as_str());
 
@@ -192,9 +190,7 @@ impl ParsedMastodonPost {
     /// ## Arguments
     ///
     /// * `document` - The HTML document to convert to a string.
-    fn convert_html_content_to_string(
-        document: &dom_query::Document
-    ) -> Result<String> {
+    fn convert_html_content_to_string(document: &dom_query::Document) -> Result<String> {
         let mut stripped_html = String::new();
 
         for node in document.select("p").iter() {

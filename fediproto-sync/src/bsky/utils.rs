@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use super::BlueSkyPostSync;
 
 /// Trait for utility functions used in BlueSky post synchronization.
@@ -10,7 +12,7 @@ pub trait BlueSkyPostSyncUtils {
     async fn get_link_metadata(
         &mut self,
         url: &str
-    ) -> Result<serde_json::Value, Box<dyn std::error::Error>>;
+    ) -> Result<serde_json::Value>;
 
     /// Get a link thumbnail returned by the CardyB API.
     ///
@@ -20,7 +22,7 @@ pub trait BlueSkyPostSyncUtils {
     async fn get_link_thumbnail(
         &mut self,
         image_url: &str
-    ) -> Result<reqwest::Response, Box<dyn std::error::Error>>;
+    ) -> Result<reqwest::Response>;
 }
 
 impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
@@ -32,7 +34,7 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
     async fn get_link_metadata(
         &mut self,
         url: &str
-    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    ) -> Result<serde_json::Value> {
         tracing::info!("Getting link metadata for '{}'.", url);
         let query_params = vec![("url", url)];
 
@@ -57,7 +59,7 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
     async fn get_link_thumbnail(
         &mut self,
         image_url: &str
-    ) -> Result<reqwest::Response, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::Response> {
         tracing::info!("Getting link thumbnail for '{}'.", image_url);
 
         let link_thumbnail_client = crate::core::create_http_client(&self.config)?;

@@ -1,13 +1,13 @@
 use fediproto_sync_lib::{
     config::FediProtoSyncConfig,
-    error::{FediProtoSyncError, FediProtoSyncErrorKind}
+    error::{AuthenticationSource, FediProtoSyncError}
 };
 use oauth2::basic::BasicClient;
 
 /// Get the Mastodon OAuth2 client.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `config` - The FediProtoSync configuration.
 /// * `redirect_uri` - The redirect URI.
 pub fn get_mastodon_oauth_client(
@@ -23,32 +23,18 @@ pub fn get_mastodon_oauth_client(
         "https://{}/oauth/authorize",
         config.mastodon_server.clone()
     ))
-    .map_err(|_| {
-        FediProtoSyncError::new(
-            "Failed to create Mastodon auth URL.",
-            FediProtoSyncErrorKind::AuthenticationError
-        )
-    })?;
+    .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?;
 
     let token_url = Some(
         oauth2::TokenUrl::new(format!(
             "https://{}/oauth/token",
             config.mastodon_server.clone()
         ))
-        .map_err(|_| {
-            FediProtoSyncError::new(
-                "Failed to create Mastodon token URL.",
-                FediProtoSyncErrorKind::AuthenticationError
-            )
-        })?
+        .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?
     );
 
-    let redirect_url = oauth2::RedirectUrl::new(redirect_uri.to_string()).map_err(|_| {
-        FediProtoSyncError::new(
-            "Failed to create Mastodon redirect URL.",
-            FediProtoSyncErrorKind::AuthenticationError
-        )
-    })?;
+    let redirect_url = oauth2::RedirectUrl::new(redirect_uri.to_string())
+        .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?;
 
     let client = BasicClient::new(client_id, client_secret, auth_url, token_url)
         .set_redirect_uri(redirect_url);
