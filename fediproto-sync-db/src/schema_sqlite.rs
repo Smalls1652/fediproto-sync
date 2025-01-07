@@ -34,6 +34,7 @@ diesel::table! {
         post_id -> Text,
         created_at -> Timestamp,
         is_thread_post -> Bool,
+        is_boosted_post -> Bool,
         previous_post_id -> Nullable<Text>,
         bsky_post_id -> Nullable<Text>,
         root_mastodon_post_id -> Nullable<Text>,

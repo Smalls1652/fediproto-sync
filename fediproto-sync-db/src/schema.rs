@@ -7,6 +7,7 @@ diesel::table! {
         post_id -> VarChar,
         created_at -> Timestamp,
         is_thread_post -> Bool,
+        is_boosted_post -> Bool,
         previous_post_id -> Nullable<VarChar>,
         bsky_post_id -> Nullable<VarChar>,
         root_mastodon_post_id -> Nullable<VarChar>,

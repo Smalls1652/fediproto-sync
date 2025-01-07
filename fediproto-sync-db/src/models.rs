@@ -25,6 +25,9 @@ pub struct MastodonPost {
     /// Whether the post is a thread post.
     pub is_thread_post: bool,
 
+    /// Whether the post is a boosted post.
+    pub is_boosted_post: bool,
+
     /// The previous post ID in the thread, if any.
     pub previous_post_id: Option<String>,
 
@@ -53,6 +56,9 @@ pub struct NewMastodonPost {
 
     /// Whether the post is a thread post.
     pub is_thread_post: bool,
+
+    /// Whether the post is a boosted post.
+    pub is_boosted_post: bool,
 
     /// The previous post ID in the thread, if any.
     pub previous_post_id: Option<String>,
@@ -99,6 +105,8 @@ impl NewMastodonPost {
             false => false
         };
 
+        let is_boosted_post = post.reblog.is_some();
+
         let previous_post_id = match is_thread_post {
             true => Some(post_in_reply_to_id.unwrap()),
             false => None
@@ -110,6 +118,7 @@ impl NewMastodonPost {
             post_id,
             created_at,
             is_thread_post,
+            is_boosted_post,
             previous_post_id,
             bsky_post_id,
             root_mastodon_post_id
