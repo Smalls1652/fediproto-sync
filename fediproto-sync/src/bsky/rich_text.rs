@@ -7,6 +7,8 @@ use atrium_api::{
 use bytes::Bytes;
 use ipld_core::ipld::Ipld;
 
+use crate::mastodon::ParsedMastodonPost;
+
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils, MAX_IMAGE_SIZE};
 
 /// Trait for generating rich text facets for a BlueSky post.
@@ -18,7 +20,7 @@ pub trait BlueSkyPostSyncRichText {
     /// * `parsed_status` - The parsed Mastodon post.
     fn generate_rich_text_tags(
         &self,
-        parsed_status: &crate::mastodon::ParsedMastodonPost
+        parsed_status: &ParsedMastodonPost
     ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>>;
 
     /// Generate rich text links for the post item.
@@ -28,8 +30,29 @@ pub trait BlueSkyPostSyncRichText {
     /// * `parsed_status` - The parsed Mastodon post.
     async fn generate_rich_text_links(
         &mut self,
-        parsed_status: &crate::mastodon::ParsedMastodonPost
+        parsed_status: &ParsedMastodonPost
     ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>>;
+
+    /// Generate an embed for a link.
+    ///
+    /// ## Arguments
+    ///
+    /// * `url` - The URL of the link.
+    /// * `is_boost` - Whether the link is a boosted Mastodon post.
+    async fn generate_link_embed(
+        &mut self,
+        url: &str
+    ) -> Result<()>;
+
+    /// Generate an embed for a boosted post.
+    ///
+    /// ## Arguments
+    ///
+    /// * `status` - The boosted Mastodon post.
+    async fn generate_boost_link_embed(
+        &mut self,
+        status: &ParsedMastodonPost
+    ) -> Result<()>;
 }
 
 impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
@@ -40,7 +63,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     /// * `parsed_status` - The parsed Mastodon post.
     fn generate_rich_text_tags(
         &self,
-        parsed_status: &crate::mastodon::ParsedMastodonPost
+        parsed_status: &ParsedMastodonPost
     ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>> {
         let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
@@ -81,7 +104,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     /// * `parsed_status` - The parsed Mastodon post.
     async fn generate_rich_text_links(
         &mut self,
-        parsed_status: &crate::mastodon::ParsedMastodonPost
+        parsed_status: &ParsedMastodonPost
     ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>> {
         let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
@@ -140,74 +163,163 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
                 first_link
             );
 
-            // Get metadata for the link.
-            let link_metadata = self.get_link_metadata(&first_link).await?;
-
-            // Get the thumbnail for the link if it has one and upload it to BlueSky.
-            let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
-            let link_thumbnail_bytes = match link_thumbnail_url == "" {
-                true => Bytes::new(),
-                false => {
-                    let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
-
-                    link_thumbnail.bytes().await?
-                }
-            };
-
-            let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
-                true => {
-                    let compressed_image =
-                        crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
-
-                    tracing::info!(
-                        "Compressed link thumbnail from {} bytes to {} bytes",
-                        link_thumbnail_bytes.len(),
-                        compressed_image.len()
-                    );
-
-                    compressed_image
-                }
-
-                _ => link_thumbnail_bytes
-            };
-
-            let blob_item = match link_thumbnail_bytes.len() > 0 {
-                true => Some(
-                    self.atp_agent
-                        .api
-                        .com
-                        .atproto
-                        .repo
-                        .upload_blob(link_thumbnail_bytes.to_vec())
-                        .await?
-                        .blob
-                        .clone()
-                ),
-                _ => None
-            };
-
-            self.post_item.embed = Some(Union::Refs(
-                app::bsky::feed::post::RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
-                    app::bsky::embed::external::Main {
-                        data: app::bsky::embed::external::MainData {
-                            external: app::bsky::embed::external::ExternalData {
-                                uri: link_metadata["url"].as_str().unwrap().to_string(),
-                                title: link_metadata["title"].as_str().unwrap().to_string(),
-                                description: link_metadata["description"]
-                                    .as_str()
-                                    .unwrap()
-                                    .to_string(),
-                                thumb: blob_item
-                            }
-                            .into()
-                        },
-                        extra_data: Ipld::Null
-                    }
-                    .into()
-                ))
-            ));
+            self.generate_link_embed(&first_link).await?;
         }
 
         Ok(richtext_facets)
+    }
+
+    /// Generate an embed for a link.
+    ///
+    /// ## Arguments
+    ///
+    /// * `url` - The URL of the link.
+    async fn generate_link_embed(
+        &mut self,
+        url: &str,
+    ) -> Result<()> {
+        // Get metadata for the link.
+        let link_metadata = self.get_link_metadata(url).await?;
+
+        // Get the thumbnail for the link if it has one and upload it to BlueSky.
+        let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
+        let link_thumbnail_bytes = match link_thumbnail_url == "" {
+            true => Bytes::new(),
+            false => {
+                let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
+
+                link_thumbnail.bytes().await?
+            }
+        };
+
+        let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
+            true => {
+                let compressed_image =
+                    crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
+
+                tracing::info!(
+                    "Compressed link thumbnail from {} bytes to {} bytes",
+                    link_thumbnail_bytes.len(),
+                    compressed_image.len()
+                );
+
+                compressed_image
+            }
+
+            _ => link_thumbnail_bytes
+        };
+
+        let blob_item = match link_thumbnail_bytes.len() > 0 {
+            true => Some(
+                self.atp_agent
+                    .api
+                    .com
+                    .atproto
+                    .repo
+                    .upload_blob(link_thumbnail_bytes.to_vec())
+                    .await?
+                    .blob
+                    .clone()
+            ),
+            _ => None
+        };
+
+        self.post_item.embed = Some(Union::Refs(
+            app::bsky::feed::post::RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
+                app::bsky::embed::external::Main {
+                    data: app::bsky::embed::external::MainData {
+                        external: app::bsky::embed::external::ExternalData {
+                            uri: link_metadata["url"].as_str().unwrap().to_string(),
+                            title: link_metadata["title"].as_str().unwrap().to_string(),
+                            description: link_metadata["description"].as_str().unwrap().to_string(),
+                            thumb: blob_item
+                        }
+                        .into()
+                    },
+                    extra_data: Ipld::Null
+                }
+                .into()
+            ))
+        ));
+
+        Ok(())
+    }
+
+    /// Generate an embed for a boosted post.
+    ///
+    /// ## Arguments
+    ///
+    /// * `status` - The boosted Mastodon post.
+    async fn generate_boost_link_embed(
+        &mut self,
+        status: &ParsedMastodonPost
+    ) -> Result<()> {
+        // Get metadata for the link.
+        let link_metadata = self.get_link_metadata(&status.mastodon_status.uri).await?;
+
+        // Get the thumbnail for the link if it has one and upload it to BlueSky.
+        let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
+        let link_thumbnail_bytes = match link_thumbnail_url == "" {
+            true => Bytes::new(),
+            false => {
+                let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
+
+                link_thumbnail.bytes().await?
+            }
+        };
+
+        let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
+            true => {
+                let compressed_image =
+                    crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
+
+                tracing::info!(
+                    "Compressed link thumbnail from {} bytes to {} bytes",
+                    link_thumbnail_bytes.len(),
+                    compressed_image.len()
+                );
+
+                compressed_image
+            }
+
+            _ => link_thumbnail_bytes
+        };
+
+        let blob_item = match link_thumbnail_bytes.len() > 0 {
+            true => Some(
+                self.atp_agent
+                    .api
+                    .com
+                    .atproto
+                    .repo
+                    .upload_blob(link_thumbnail_bytes.to_vec())
+                    .await?
+                    .blob
+                    .clone()
+            ),
+            _ => None
+        };
+
+        let link_title = format!("{} / 🚀 Boost", link_metadata["title"].as_str().unwrap().to_string());
+
+        self.post_item.embed = Some(Union::Refs(
+            app::bsky::feed::post::RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
+                app::bsky::embed::external::Main {
+                    data: app::bsky::embed::external::MainData {
+                        external: app::bsky::embed::external::ExternalData {
+                            uri: link_metadata["url"].as_str().unwrap().to_string(),
+                            title: link_title,
+                            description: status.stripped_html.clone(),
+                            thumb: blob_item
+                        }
+                        .into()
+                    },
+                    extra_data: Ipld::Null
+                }
+                .into()
+            ))
+        ));
+
+        Ok(())
     }
 }
