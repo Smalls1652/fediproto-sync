@@ -18,9 +18,9 @@ pub struct AuthRequest {
 }
 
 /// Check if a token already exists for the given service name.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `db_connection` - The database connection.
 /// * `service_name` - The name of the service.
 pub fn check_for_existing_token(

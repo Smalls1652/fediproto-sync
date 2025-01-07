@@ -1,3 +1,4 @@
+use anyhow::Result;
 use atrium_api::{
     self,
     app::{
@@ -13,7 +14,7 @@ use atrium_api::{
     }
 };
 use fediproto_sync_db::models::NewCachedFile;
-use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
+use fediproto_sync_lib::error::FediProtoSyncError;
 use ipld_core::cid::Cid;
 use rand::distributions::DistString;
 use reqwest::header::CONTENT_TYPE;
@@ -50,7 +51,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_image_embed(
         &mut self,
         media_attachments: &Vec<megalodon::entities::attachment::Attachment>
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>>;
 
     /// Generate a video embed for a BlueSky post from a media attachment from
     /// a Mastodon status.
@@ -62,7 +63,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_video_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>>;
 
     /// Create a video link embed for a BlueSky post from a media attachment
     /// from a Mastodon status.
@@ -74,7 +75,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn generate_video_link_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>>;
 
     /// Upload a video attachment to BlueSky.
     ///
@@ -86,7 +87,7 @@ pub trait BlueSkyPostSyncMedia {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment,
         file_path: &std::path::PathBuf
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>>;
+    ) -> Result<Option<Union<RecordEmbedRefs>>>;
 
     /// Download a media attachment from a Mastodon status.
     ///
@@ -96,7 +97,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn download_mastodon_media_attachment(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<reqwest::Response, Box<dyn std::error::Error>>;
+    ) -> Result<reqwest::Response>;
 
     /// Download a media attachment from a Mastodon status to a temporary file.
     ///
@@ -106,7 +107,7 @@ pub trait BlueSkyPostSyncMedia {
     async fn download_mastodon_media_attachment_to_file(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>>;
+    ) -> Result<std::path::PathBuf>;
 }
 
 impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
@@ -120,7 +121,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     async fn generate_image_embed(
         &mut self,
         media_attachments: &Vec<megalodon::entities::attachment::Attachment>
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>> {
         let mut image_attachments = Vec::<Object<ImageData>>::new();
 
         for image_attachment in media_attachments {
@@ -185,7 +186,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     async fn generate_video_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>> {
         let db_connection = &mut self.db_connection_pool.get()?;
 
         #[allow(unused_assignments)]
@@ -238,7 +239,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     async fn generate_video_link_embed(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>> {
         let video_link_thumbnail_bytes = self
             .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
             .await?;
@@ -305,7 +306,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment,
         temp_path: &std::path::PathBuf
-    ) -> Result<Option<Union<RecordEmbedRefs>>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Union<RecordEmbedRefs>>> {
         tracing::info!("Creating video upload service auth token");
         tracing::info!("{}", self.pds_service_endpoint);
         let service_auth_response = self
@@ -316,9 +317,14 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             .server
             .get_service_auth(
                 com::atproto::server::get_service_auth::ParametersData {
-                    aud: Did::new(format!("did:web:{}", self.pds_service_endpoint))?,
+                    aud: Did::new(format!("did:web:{}", self.pds_service_endpoint))
+                        .map_err(|_| anyhow::anyhow!("Failed to create DID for video upload."))?,
                     exp: Some((chrono::Utc::now() + chrono::Duration::minutes(30)).timestamp()),
-                    lxm: Some(Nsid::new("com.atproto.repo.uploadBlob".to_string())?)
+                    lxm: Some(
+                        Nsid::new("com.atproto.repo.uploadBlob".to_string()).map_err(|_| {
+                            anyhow::anyhow!("Failed to create NSID for com.atproto.repo.uploadBlob")
+                        })?
+                    )
                 }
                 .into()
             )
@@ -386,10 +392,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                         .unwrap_or_else(|| "N/A".to_string())
                 );
 
-                return Err(Box::new(FediProtoSyncError::new(
-                    "The BlueSky upload job failed.",
-                    FediProtoSyncErrorKind::VideoUploadError
-                )));
+                return Err(FediProtoSyncError::VideoUploadError.into());
             }
 
             _ => {
@@ -434,7 +437,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     async fn download_mastodon_media_attachment(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<reqwest::Response, Box<dyn std::error::Error>> {
+    ) -> Result<reqwest::Response> {
         tracing::info!(
             "Downloading media attachment '{}' from Mastodon",
             media_attachment.url
@@ -457,7 +460,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
     async fn download_mastodon_media_attachment_to_file(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
-    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    ) -> Result<std::path::PathBuf> {
         let mut media_attachment_response = self
             .download_mastodon_media_attachment(media_attachment)
             .await?;

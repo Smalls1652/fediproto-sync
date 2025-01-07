@@ -1,3 +1,4 @@
+use anyhow::Result;
 use atrium_api::{
     self,
     app,
@@ -18,7 +19,7 @@ pub trait BlueSkyPostSyncRichText {
     fn generate_rich_text_tags(
         &self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>>;
 
     /// Generate rich text links for the post item.
     ///
@@ -28,7 +29,7 @@ pub trait BlueSkyPostSyncRichText {
     async fn generate_rich_text_links(
         &mut self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>>;
 }
 
 impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
@@ -40,7 +41,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     fn generate_rich_text_tags(
         &self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>> {
         let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
         for tag in parsed_status.found_tags.clone() {
@@ -81,7 +82,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     async fn generate_rich_text_links(
         &mut self,
         parsed_status: &crate::mastodon::ParsedMastodonPost
-    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Object<app::bsky::richtext::facet::MainData>>> {
         let mut richtext_facets = Vec::<Object<app::bsky::richtext::facet::MainData>>::new();
 
         for link in parsed_status.found_links.clone() {
@@ -103,7 +104,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
                 true => link_start_index_filter[0],
                 false => match parsed_status.stripped_html.find(&link) {
                     Some(index) => index,
-                    None => return Err("Link not found in post content".into())
+                    None => return Err(anyhow::anyhow!("Link not found in post content"))
                 }
             };
 
@@ -192,12 +193,17 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
                             external: app::bsky::embed::external::ExternalData {
                                 uri: link_metadata["url"].as_str().unwrap().to_string(),
                                 title: link_metadata["title"].as_str().unwrap().to_string(),
-                                description: link_metadata["description"].as_str().unwrap().to_string(),
+                                description: link_metadata["description"]
+                                    .as_str()
+                                    .unwrap()
+                                    .to_string(),
                                 thumb: blob_item
-                            }.into()
+                            }
+                            .into()
                         },
                         extra_data: Ipld::Null
-                    }.into()
+                    }
+                    .into()
                 ))
             ));
         }

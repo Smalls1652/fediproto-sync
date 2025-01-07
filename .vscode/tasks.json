@@ -98,7 +98,8 @@
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
-          "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}"
+          "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}",
+          "RUST_BACKTRACE": "1"
         }
       },
       "presentation": {

@@ -7,6 +7,7 @@ mod img_utils;
 /// Mastodon operations.
 mod mastodon;
 
+use anyhow::Result;
 use fediproto_sync_lib::{
     config::{FediProtoSyncConfig, FediProtoSyncMode},
     GIT_VERSION
@@ -14,7 +15,7 @@ use fediproto_sync_lib::{
 
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     let rust_log_result = std::env::var("RUST_LOG");
 
     match rust_log_result {
@@ -64,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = match config_result {
         Ok(config) => config,
         Err(e) => {
-            tracing::error!("{}", e.message);
+            tracing::error!("{}", e);
 
             std::process::exit(1);
         }
@@ -101,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::info!("Auth server completed successfully.");
                     }
                     Err(e) => {
-                        tracing::error!("Auth server failed: {}", e.message);
+                        tracing::error!("Auth server failed: {}", e);
 
                         core_sig_error_send.send(()).unwrap();
                     }
@@ -127,7 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::info!("FediProto Sync completed successfully.");
                     }
                     Err(e) => {
-                        tracing::error!("FediProto Sync failed: {}", e.message);
+                        tracing::error!("FediProto Sync failed: {}", e);
 
                         core_sig_error_send.send(()).unwrap();
                     }

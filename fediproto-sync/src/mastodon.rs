@@ -1,10 +1,12 @@
+use anyhow::Result;
+
 /// Extension trait for the Mastodon API.
 pub trait MastodonApiExtensions {
     async fn get_latest_posts(
         &self,
         account_id: &str,
         last_post_id: Option<String>
-    ) -> Result<Vec<megalodon::entities::Status>, Box<dyn std::error::Error>>;
+    ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error>;
 }
 
 impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
@@ -18,7 +20,7 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
         &self,
         account_id: &str,
         last_post_id: Option<String>
-    ) -> Result<Vec<megalodon::entities::Status>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error> {
         let limit_value = match last_post_id {
             Some(_) => None,
             None => Some(1)
@@ -69,9 +71,7 @@ impl ParsedMastodonPost {
     /// ## Arguments
     ///
     /// * `status` - The Mastodon status to parse.
-    pub fn from_mastodon_status(
-        status: &megalodon::entities::Status
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_mastodon_status(status: &megalodon::entities::Status) -> Result<Self> {
         // Parse the HTML content of the status.
         let html_document = dom_query::Document::fragment(status.content.clone().as_str());
 
@@ -95,7 +95,7 @@ impl ParsedMastodonPost {
     ///
     /// If the current content is already less than or equal to 300 characters,
     /// this method will just return without modifying the content.
-    pub fn truncate_post_content(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn truncate_post_content(&mut self) -> Result<()> {
         // If the content is already less than or equal to 300 characters, we don't need
         // to truncate.
         if self.stripped_html.len() <= 300 {
@@ -190,9 +190,7 @@ impl ParsedMastodonPost {
     /// ## Arguments
     ///
     /// * `document` - The HTML document to convert to a string.
-    fn convert_html_content_to_string(
-        document: &dom_query::Document
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    fn convert_html_content_to_string(document: &dom_query::Document) -> Result<String> {
         let mut stripped_html = String::new();
 
         for node in document.select("p").iter() {
@@ -213,7 +211,7 @@ impl ParsedMastodonPost {
     fn get_links(
         document: &dom_query::Document,
         tags: &Vec<megalodon::entities::status::Tag>
-    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<String>> {
         let mut links = Vec::new();
 
         for node in document.select("a").iter() {
@@ -242,7 +240,7 @@ impl ParsedMastodonPost {
     fn get_tags(
         document: &dom_query::Document,
         tags: &Vec<megalodon::entities::status::Tag>
-    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<String>> {
         let mut found_tags = Vec::new();
 
         for node in document.select("a").iter() {

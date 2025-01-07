@@ -4,14 +4,22 @@ mod utils;
 
 use std::str::FromStr;
 
-use atrium_api::{agent::{store::MemorySessionStore, AtpAgent}, app, com, types::{string::{Cid, Datetime, Nsid}, TryIntoUnknown}};
+use anyhow::Result;
+use atrium_api::{
+    agent::{store::MemorySessionStore, AtpAgent},
+    app,
+    com,
+    types::{
+        string::{Cid, Datetime, Nsid},
+        TryIntoUnknown
+    }
+};
 use atrium_xrpc_client::reqwest::ReqwestClient;
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
     models::{NewMastodonPost, NewSyncedPostBlueSkyData},
     AnyConnection
 };
-use fediproto_sync_lib::error::{FediProtoSyncError, FediProtoSyncErrorKind};
 use ipld_core::ipld::Ipld;
 
 #[allow(unused_imports)]
@@ -51,7 +59,7 @@ pub struct BlueSkyPostSync<'a> {
 
 impl BlueSkyPostSync<'_> {
     /// Sync a Mastodon post to Bluesky.
-    pub async fn sync_post(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn sync_post(&mut self) -> Result<()> {
         let db_connection = &mut self.db_connection_pool.get()?;
 
         // -- Generate a BlueSky post item from the Mastodon status. --
@@ -76,17 +84,16 @@ impl BlueSkyPostSync<'_> {
             match fediproto_sync_db::operations::check_synced_mastodon_post_exists(
                 db_connection,
                 &in_reply_to_id
-            )? {
-                true => {}
-
+            ) {
+                true => (),
                 false => {
-                    return Err(Box::new(FediProtoSyncError::new(
-                        format!("Previous post '{}' not found in database.", &in_reply_to_id)
-                            .as_str(),
-                        FediProtoSyncErrorKind::DatabaseQueryError
-                    )));
+                    return Err(anyhow::anyhow!(
+                        "Previous post '{}' not found in database for post '{}'",
+                        in_reply_to_id,
+                        self.mastodon_status.id
+                    ));
                 }
-            };
+            }
 
             // Resolve the previous post in the thread and resolve it's synced post data.
             let previous_mastodon_post =
@@ -110,7 +117,7 @@ impl BlueSkyPostSync<'_> {
                         db_connection,
                         &root_mastodon_post_id
                     )?
-                },
+                }
 
                 None => {
                     // Set the previous post ID to the previous post ID.
@@ -121,38 +128,57 @@ impl BlueSkyPostSync<'_> {
             };
 
             // Set the reply reference for the post item.
-            self.post_item.reply = Some(app::bsky::feed::post::ReplyRefData {
-                root: com::atproto::repo::strong_ref::MainData {
-                    cid: Cid::from_str(&previous_synced_post_root.bsky_post_cid)?,
-                    uri: previous_synced_post_root.bsky_post_uri.clone()
-                }.into(),
-                parent: com::atproto::repo::strong_ref::MainData {
-                    cid: Cid::from_str(&previous_synced_post.bsky_post_cid)?,
-                    uri: previous_synced_post.bsky_post_uri.clone()
-                }.into()
-            }.into());
+            self.post_item.reply = Some(
+                app::bsky::feed::post::ReplyRefData {
+                    root: com::atproto::repo::strong_ref::MainData {
+                        cid: Cid::from_str(&previous_synced_post_root.bsky_post_cid)?,
+                        uri: previous_synced_post_root.bsky_post_uri.clone()
+                    }
+                    .into(),
+                    parent: com::atproto::repo::strong_ref::MainData {
+                        cid: Cid::from_str(&previous_synced_post.bsky_post_cid)?,
+                        uri: previous_synced_post.bsky_post_uri.clone()
+                    }
+                    .into()
+                }
+                .into()
+            );
         }
+
+        let collection = Nsid::new("app.bsky.feed.post".to_string()).map_err(|_| {
+            anyhow::anyhow!("Error creating NSID for collection 'app.bsky.feed.post'")
+        })?;
 
         // -- Send the post item to BlueSky through the 'com.atproto.repo.applyWrites'
         // API. --
-        let apply_writes_result = self.atp_agent.api.com.atproto.repo.apply_writes(
-            com::atproto::repo::apply_writes::InputData {
-                repo: atrium_api::types::string::AtIdentifier::Did(self.did.clone()),
-                writes: vec![com::atproto::repo::apply_writes::InputWritesItem::Create(
-                    Box::new(com::atproto::repo::apply_writes::Create {
-                        data: com::atproto::repo::apply_writes::CreateData {
-                            collection: Nsid::new("app.bsky.feed.post".to_string())?,
-                            rkey: None,
-                            value: self.post_item.clone().try_into_unknown()?
-                        },
-                        extra_data: Ipld::Null
-                    }.into())
-                )],
-                swap_commit: None,
-                validate: Some(true)
-            }.into()
-        )
-        .await;
+        let apply_writes_result = self
+            .atp_agent
+            .api
+            .com
+            .atproto
+            .repo
+            .apply_writes(
+                com::atproto::repo::apply_writes::InputData {
+                    repo: atrium_api::types::string::AtIdentifier::Did(self.did.clone()),
+                    writes: vec![com::atproto::repo::apply_writes::InputWritesItem::Create(
+                        Box::new(
+                            com::atproto::repo::apply_writes::Create {
+                                data: com::atproto::repo::apply_writes::CreateData {
+                                    collection: collection,
+                                    rkey: None,
+                                    value: self.post_item.clone().try_into_unknown()?
+                                },
+                                extra_data: Ipld::Null
+                            }
+                            .into()
+                        )
+                    )],
+                    swap_commit: None,
+                    validate: Some(true)
+                }
+                .into()
+            )
+            .await;
 
         // -- Handle the response from the 'com.atproto.repo.applyWrites' API. --
         match apply_writes_result {
@@ -204,13 +230,13 @@ impl BlueSkyPostSync<'_> {
                     &self.mastodon_status.id,
                     error
                 );
-                Err(Box::new(error))
+                Err(error.into())
             }
         }
     }
 
     /// Generate a Bluesky post item from a Mastodon status.
-    pub async fn generate_post_item(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn generate_post_item(&mut self) -> Result<()> {
         // -- Parse the Mastodon status for post content and metadata. --
         let mut parsed_status =
             crate::mastodon::ParsedMastodonPost::from_mastodon_status(&self.mastodon_status)?;
