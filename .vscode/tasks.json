@@ -299,6 +299,10 @@
         {
           "label": "fediproto-sync-lib",
           "value": "fediproto-sync-lib"
+        },
+        {
+          "label": "fediproto-sync-build-lib",
+          "value": "fediproto-sync-build-lib"
         }
       ]
     },
