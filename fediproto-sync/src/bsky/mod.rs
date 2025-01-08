@@ -161,10 +161,11 @@ impl BlueSkyPostSync<'_> {
     }
 
     /// Process a Mastodon post.
-    /// 
+    ///
     /// ## Arguments
-    /// 
-    /// * `db_connection` - The database connection for the FediProto Sync application.
+    ///
+    /// * `db_connection` - The database connection for the FediProto Sync
+    ///   application.
     async fn process_post(
         &mut self,
         db_connection: &mut diesel::r2d2::PooledConnection<ConnectionManager<AnyConnection>>

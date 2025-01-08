@@ -7,9 +7,8 @@ use atrium_api::{
 use bytes::Bytes;
 use ipld_core::ipld::Ipld;
 
-use crate::mastodon::ParsedMastodonPost;
-
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils, MAX_IMAGE_SIZE};
+use crate::mastodon::ParsedMastodonPost;
 
 /// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {
@@ -176,7 +175,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
     /// * `url` - The URL of the link.
     async fn generate_link_embed(
         &mut self,
-        url: &str,
+        url: &str
     ) -> Result<()> {
         // Get metadata for the link.
         let link_metadata = self.get_link_metadata(url).await?;
@@ -300,7 +299,10 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             _ => None
         };
 
-        let link_title = format!("{} / 🚀 Boost", link_metadata["title"].as_str().unwrap().to_string());
+        let link_title = format!(
+            "{} / 🚀 Boost",
+            link_metadata["title"].as_str().unwrap().to_string()
+        );
 
         self.post_item.embed = Some(Union::Refs(
             app::bsky::feed::post::RecordEmbedRefs::AppBskyEmbedExternalMain(Box::new(
