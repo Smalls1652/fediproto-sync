@@ -11,6 +11,7 @@ resolver = "2"
 package.authors = ["Tim Small"]
 package.homepage = "https://github.com/Smalls1652/fediproto-sync"
 package.repository = "https://github.com/Smalls1652/fediproto-sync"
+package.license = "MIT"
 package.license-file = "LICENSE"
 
 [profile.release]

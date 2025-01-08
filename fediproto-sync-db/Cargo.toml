@@ -1,6 +1,6 @@
 [package]
 name = "fediproto-sync-db"
-version = "0.1.0-b472f68-b472f68"
+version = "0.1.0"
 edition = "2021"
 description = "Library for fediproto-sync database operations and models."
 authors.workspace = true

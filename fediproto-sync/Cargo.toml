@@ -1,6 +1,6 @@
 [package]
 name = "fediproto-sync"
-version = "0.1.0-b472f68"
+version = "0.1.0"
 edition = "2021"
 description = "A daemon for syncing Mastodon posts to BlueSky automatically."
 authors.workspace = true
