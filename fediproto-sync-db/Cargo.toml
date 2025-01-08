@@ -1,6 +1,6 @@
 [package]
 name = "fediproto-sync-db"
-version = "0.1.0"
+version = "0.1.0-b472f68-b472f68"
 edition = "2021"
 description = "Library for fediproto-sync database operations and models."
 authors.workspace = true
@@ -36,5 +36,4 @@ uuid = { version = "1.11.0", features = ["fast-rng", "v4", "v7"] }
 local_dev = []
 
 [build-dependencies]
-git-version = "0.3.9"
-toml_edit = "0.22.22"
+fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }

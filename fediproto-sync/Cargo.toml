@@ -1,6 +1,6 @@
 [package]
 name = "fediproto-sync"
-version = "0.1.0"
+version = "0.1.0-b472f68"
 edition = "2021"
 description = "A daemon for syncing Mastodon posts to BlueSky automatically."
 authors.workspace = true
@@ -47,5 +47,4 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [build-dependencies]
-git-version = "0.3.9"
-toml_edit = "0.22.22"
+fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
