@@ -73,18 +73,17 @@ async fn main() -> Result<()> {
 
     let database_url = config.database_url.clone();
 
-    let db_connection = fediproto_sync_db::create_database_connection(&database_url)?;
+    let db_connection_pool = fediproto_sync_db::create_database_connection(&database_url)?;
     tracing::info!("Connected to database.");
 
-    let db_connection_pool_migration = db_connection.clone();
-    let db_connection_migration = &mut db_connection_pool_migration.get().unwrap();
+    let db_connection_main = &mut db_connection_pool.get()?;
 
-    fediproto_sync_db::core::run_migrations(db_connection_migration)?;
+    fediproto_sync_db::core::run_migrations(db_connection_main)?;
 
     match config.mode {
         FediProtoSyncMode::Auth => {
             let config_auth = config.clone();
-            let db_connection_pool_auth = db_connection.clone();
+            let db_connection_pool_auth = db_connection_pool.clone();
 
             // Spawn the auth web server.
             tokio::spawn(async move {
@@ -112,7 +111,7 @@ async fn main() -> Result<()> {
 
         _ => {
             let config_core = config.clone();
-            let db_connection_pool_core = db_connection.clone();
+            let db_connection_pool_core = db_connection_pool.clone();
 
             // Spawn the core loop for running the syncs.
             tokio::spawn(async move {
