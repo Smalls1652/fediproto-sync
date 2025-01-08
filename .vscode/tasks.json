@@ -82,6 +82,32 @@
       "problemMatcher": "$rustc"
     },
     {
+      "label": "Format code",
+      "detail": "Format the code in the workspace",
+      "icon": {
+        "id": "code",
+        "color": "terminal.ansiGreen"
+      },
+      "type": "process",
+      "command": "cargo",
+      "args": [
+        "fmt",
+        "--verbose"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Run FediProto Sync",
       "detail": "Runs the application locally for testing",
       "icon": {
