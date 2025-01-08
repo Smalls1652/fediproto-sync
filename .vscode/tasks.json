@@ -12,7 +12,7 @@
       "command": "/bin/bash",
       "args": [
         "-c",
-        "${workspaceFolder}/tools/Build-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        "${workspaceFolder}/tools/bash/buildPackage.sh -n ${input:packageName} -p ${input:buildProfile}"
       ],
       "windows": {
         "command": "pwsh",
@@ -20,7 +20,7 @@
           "-NoLogo",
           "-NoProfile",
           "-File",
-          "${workspaceFolder}/tools/Build-Package.ps1",
+          "${workspaceFolder}/tools/pwsh/Build-Package.ps1",
           "-PackageName",
           "${input:packageName}",
           "-BuildProfile",
@@ -52,7 +52,7 @@
       "command": "/bin/bash",
       "args": [
         "-c",
-        "${workspaceFolder}/tools/Clean-Package.sh -n ${input:packageName} -p ${input:buildProfile}"
+        "${workspaceFolder}/tools/cleanPackage.sh -n ${input:packageName} -p ${input:buildProfile}"
       ],
       "windows": {
         "command": "pwsh",
@@ -60,7 +60,7 @@
           "-NoLogo",
           "-NoProfile",
           "-File",
-          "${workspaceFolder}/tools/Clean-Package.ps1",
+          "${workspaceFolder}/tools/pwsh/Clean-Package.ps1",
           "-PackageName",
           "${input:packageName}",
           "-BuildProfile",
@@ -244,14 +244,14 @@
       "command": "/bin/bash",
       "args": [
         "-c",
-        "${workspaceFolder}/tools/Run-GitTown.sh ${input:gitTownAction}"
+        "${workspaceFolder}/tools/bash/runGitTown.sh ${input:gitTownAction}"
       ],
       "windows": {
         "command": "pwsh",
         "args": [
           "-NoLogo",
           "-File",
-          "${workspaceFolder}/tools/Run-GitTown.ps1",
+          "${workspaceFolder}/tools/pwsh/Run-GitTown.ps1",
           "-Action",
           "${input:gitTownAction}"
         ]
@@ -277,7 +277,7 @@
       "command": "/bin/bash",
       "args": [
         "-c",
-        "${workspaceFolder}/tools/Build-Package.sh -n fediproto-sync -p Debug"
+        "${workspaceFolder}/tools/bash/buildPackage.sh -n fediproto-sync -p Debug"
       ],
       "windows": {
         "command": "pwsh",
@@ -285,7 +285,7 @@
           "-NoLogo",
           "-NoProfile",
           "-File",
-          "${workspaceFolder}/tools/Build-Package.ps1",
+          "${workspaceFolder}/tools/pwsh/Build-Package.ps1",
           "-PackageName",
           "fediproto-sync",
           "-BuildProfile",
