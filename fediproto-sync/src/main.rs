@@ -44,6 +44,7 @@ async fn main() -> Result<()> {
         .init();
 
     tracing::info!("FediProto Sync - v{}", GIT_VERSION);
+    tracing::info!("Press Ctrl+C to shutdown at any time...");
 
     // Load environment variables from the .env file for the specified environment,
     // if it exists.
