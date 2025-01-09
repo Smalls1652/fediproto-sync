@@ -291,7 +291,7 @@ impl FediProtoSyncConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FediProtoSyncMode {
     Auth,
     Normal

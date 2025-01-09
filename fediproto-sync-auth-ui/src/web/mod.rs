@@ -1,6 +1,9 @@
 /// Mastodon authentication endpoints.
 pub mod mastodon_auth;
 
+/// Root endpoints.
+pub mod root;
+
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use fediproto_sync_db::AnyConnection;
 use serde::Deserialize;

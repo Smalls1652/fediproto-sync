@@ -145,6 +145,8 @@ async fn validate_csrf(
         return Err((anyhow::anyhow!("CSRF token mismatch.")).into());
     }
 
+    tracing::info!("Mastodon auth: CSRF token validated.");
+
     Ok(pkce_verifier)
 }
 
@@ -224,6 +226,8 @@ pub async fn authorized_endpoint(
             )
         }
     }
+
+    tracing::info!("Mastodon auth: Authorized!");
 
     Ok("Authorized!")
 }

@@ -26,6 +26,7 @@ pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediP
         crate::AnyConnection::Postgres(connection) => {
             apply_migrations(connection, POSTGRES_MIGRATIONS)
         }
+
         crate::AnyConnection::SQLite(connection) => apply_migrations(connection, SQLITE_MIGRATIONS)
     }
 }
@@ -46,6 +47,11 @@ fn apply_migrations<T: diesel::backend::Backend + 'static>(
     connection: &mut impl diesel_migrations::MigrationHarness<T>,
     migrations: diesel_migrations::EmbeddedMigrations
 ) -> Result<(), FediProtoSyncDbError> {
+    let is_initial_run = connection
+        .applied_migrations()
+        .map(|applied_migrations| applied_migrations.is_empty())
+        .map_err(|_| FediProtoSyncDbError::DatabaseMigrationError)?;
+
     let pending_migrations = connection
         .pending_migrations(migrations)
         .map_err(|_| FediProtoSyncDbError::DatabaseMigrationError)?;
@@ -55,20 +61,26 @@ fn apply_migrations<T: diesel::backend::Backend + 'static>(
         return Ok(());
     }
 
-    tracing::info!(
-        "Applying '{}' pending database migrations...",
-        pending_migrations.len()
-    );
+    if !is_initial_run {
+        tracing::info!(
+            "Applying '{}' pending database migrations...",
+            pending_migrations.len()
+        );
+    }
 
     for migration_item in pending_migrations {
         connection
             .run_migration(&migration_item)
             .map_err(|_| FediProtoSyncDbError::DatabaseMigrationError)?;
 
-        tracing::info!("Applied migration '{}'", migration_item.name());
+        if !is_initial_run {
+            tracing::info!("Applied migration '{}'", migration_item.name());
+        }
     }
 
-    tracing::info!("Applied all pending database migrations.");
+    if !is_initial_run {
+        tracing::info!("Applied all pending database migrations.");
+    }
 
     Ok(())
 }
