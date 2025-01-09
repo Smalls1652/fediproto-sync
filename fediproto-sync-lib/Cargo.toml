@@ -10,7 +10,7 @@ license-file.workspace = true
 
 [dependencies]
 openssl = "0.10.68"
-thiserror = "2.0.9"
+thiserror = "2.0.10"
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
