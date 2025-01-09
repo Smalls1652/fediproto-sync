@@ -81,8 +81,10 @@ async fn main() -> Result<()> {
 
     fediproto_sync_db::core::run_migrations(db_connection_main)?;
 
-    match config.mode {
-        FediProtoSyncMode::Auth => {
+    let cached_tokens_exist = fediproto_sync_db::operations::get_cached_service_token_by_service_name(db_connection_main, "mastodon")?.is_some();
+
+    match config.mode == FediProtoSyncMode::Auth || !cached_tokens_exist {
+        true => {
             let config_auth = config.clone();
             let db_connection_pool_auth = db_connection_pool.clone();
 
@@ -110,7 +112,7 @@ async fn main() -> Result<()> {
             });
         }
 
-        _ => {
+        false => {
             let config_core = config.clone();
             let db_connection_pool_core = db_connection_pool.clone();
 
