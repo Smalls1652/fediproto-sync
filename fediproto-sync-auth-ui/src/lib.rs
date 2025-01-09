@@ -11,7 +11,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::AnyConnection;
 use fediproto_sync_lib::{config::FediProtoSyncConfig, error::FediProtoSyncError};
 use oauth2::basic::BasicClient;
-use web::mastodon_auth;
+use web::{mastodon_auth, root};
 
 /// Represents the "app state" for the FediProtoSync web server.
 #[derive(FromRef, Clone)]
@@ -91,6 +91,7 @@ impl FediProtoSyncWebServer {
 
         // Create the router and define the routes.
         let router = Router::new()
+            .route("/", get(root::root_endpoint))
             .route("/auth/mastodon/login", get(mastodon_auth::login_endpoint))
             .route(
                 "/auth/mastodon/authorized",
@@ -102,6 +103,8 @@ impl FediProtoSyncWebServer {
             )
             .with_state(app_state)
             .into_make_service();
+
+        tracing::info!("\nGo to this URL to setup authentication:\n\nhttp://{}:{}", bind_address, bind_port);
 
         // Serve the web server.
         axum::serve(listener, router)
