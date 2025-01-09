@@ -45,10 +45,10 @@ pub enum AnyConnection {
 pub fn create_database_connection(
     database_url: &str
 ) -> Result<Pool<ConnectionManager<AnyConnection>>> {
-    tracing::info!("Creating database connection pool.");
+    tracing::debug!("Creating database connection pool.");
     let connection_manager = ConnectionManager::<AnyConnection>::new(database_url);
 
-    tracing::info!("Building database connection pool.");
+    tracing::debug!("Building database connection pool.");
     let pool = Pool::builder()
         .test_on_check_out(true)
         .connection_timeout(Duration::from_secs(15))
