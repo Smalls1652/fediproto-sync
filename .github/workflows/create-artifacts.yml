@@ -61,6 +61,9 @@ jobs:
 
       - name: Build (Linux - arm64)
         shell: bash
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "${{ github.event_name == 'workflow_dispatch' || 'false' }}"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
         run: |
           cross build --target "aarch64-unknown-linux-gnu" --release;
           mkdir -p "${{ github.workspace }}/artifacts/linux-arm64";
