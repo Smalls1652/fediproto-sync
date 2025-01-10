@@ -42,7 +42,8 @@ jobs:
       - name: Install cargo cross
         shell: bash
         run: |
-          cargo binstall --no-confirm cross
+          cargo binstall --no-confirm cross;
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH;
 
       - name: Build (Linux - x64)
         shell: bash
