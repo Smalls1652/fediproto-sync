@@ -51,3 +51,24 @@ pub fn decrypt_string(
 
     Ok(decrypted_string)
 }
+
+/// Generate a new token encryption key pair.
+pub fn generate_token_encryption_key(
+) -> Result<String, FediProtoSyncError> {
+    let private_key =
+        openssl::rsa::Rsa::generate(2048).map_err(|_| FediProtoSyncError::KeyGenerationError)?;
+
+    let private_key_bytes = private_key
+        .private_key_to_pem()
+        .map_err(|_| FediProtoSyncError::KeyGenerationError)?;
+    let private_key_base64 = openssl::base64::encode_block(&private_key_bytes);
+
+    let public_key_bytes = private_key
+        .public_key_to_pem()
+        .map_err(|_| FediProtoSyncError::KeyGenerationError)?;
+    let public_key_base64 = openssl::base64::encode_block(&public_key_bytes);
+
+    let output_string = format!("TOKEN_ENCRYPTION_PRIVATE_KEY=\"{}\"\nTOKEN_ENCRYPTION_PUBLIC_KEY=\"{}\"", private_key_base64, public_key_base64);
+
+    Ok(output_string)
+}

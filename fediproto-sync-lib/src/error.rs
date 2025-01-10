@@ -20,6 +20,9 @@ pub enum FediProtoSyncError {
     #[error("Invalid database type.")]
     InvalidDatabaseType,
 
+    #[error("Failed to generate key.")]
+    KeyGenerationError,
+
     /// An error occurred while encrypting a value.
     #[error("Failed to encrypt value.")]
     EncryptionError,

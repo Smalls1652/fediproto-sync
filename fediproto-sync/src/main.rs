@@ -1,5 +1,7 @@
 /// BlueSky operations for syncing posts.
 mod bsky;
+/// CLI operations for the application.
+mod cli;
 /// Core operations for the application.
 mod core;
 /// Utilities for working with images.
@@ -43,8 +45,11 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    tracing::info!("FediProto Sync - v{}", GIT_VERSION);
-    tracing::info!("Press Ctrl+C to shutdown at any time...");
+    let args = std::env::args().collect::<Vec<String>>();
+
+    if args.len() > 1 {
+        cli::handle_cli_options(args)?;
+    }
 
     // Load environment variables from the .env file for the specified environment,
     // if it exists.
@@ -72,6 +77,9 @@ async fn main() -> Result<()> {
         }
     };
 
+    tracing::info!("FediProto Sync - v{}", GIT_VERSION);
+    tracing::info!("Press Ctrl+C to shutdown at any time...");
+
     let database_url = config.database_url.clone();
 
     let db_connection_pool = fediproto_sync_db::create_database_connection(&database_url)?;
@@ -81,7 +89,12 @@ async fn main() -> Result<()> {
 
     fediproto_sync_db::core::run_migrations(db_connection_main)?;
 
-    let cached_tokens_exist = fediproto_sync_db::operations::get_cached_service_token_by_service_name(db_connection_main, "mastodon")?.is_some();
+    let cached_tokens_exist =
+        fediproto_sync_db::operations::get_cached_service_token_by_service_name(
+            db_connection_main,
+            "mastodon"
+        )?
+        .is_some();
 
     match config.mode == FediProtoSyncMode::Auth || !cached_tokens_exist {
         true => {
