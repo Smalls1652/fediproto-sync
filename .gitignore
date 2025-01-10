@@ -6,9 +6,13 @@ target/
 # macOS
 .DS_Store
 
+# Environment files
 .env
 *.env
 !sample.env
+
+# Artifact files
+artifacts/
 
 # Local files
 .local/*.db
