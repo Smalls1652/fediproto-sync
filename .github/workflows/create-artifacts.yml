@@ -127,13 +127,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
-        shell: bash
-        run: |
-          brew install libpq;
-          brew install sqlite;
-          brew install openssl@3;
-
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
