@@ -70,3 +70,94 @@ jobs:
           name: "fediproto-sync_linux-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
           path: ${{ github.workspace }}/artifacts/linux_arm64/**/*
           if-no-files-found: error
+  
+  create-windows-artifacts:
+    name: Create Windows artifacts
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install targets
+        shell: pwsh
+        run: |
+          rustup target add x86_64-pc-windows-gnu;
+          rustup target add aarch64-pc-windows-msvc;
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cargo build --release --target "x86_64-pc-windows-gnu";
+          cargo build --release --target "aarch64-pc-windows-msvc";
+          $null = New-Item -Path "${{ github.workspace }}/artifacts" -ItemType "Directory";
+          $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_amd64" -ItemType "Directory";
+          $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_arm64" -ItemType "Directory";
+          Copy-Item -Path "${{ github.workspace }}/target/x86_64-pc-windows-gnu/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_amd64/fediproto-sync.exe";
+          Copy-Item -Path "${{ github.workspace }}/target/aarch64-pc-windows-msvc/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_arm64/fediproto-sync.exe";
+
+      - name: Create artifact (Windows - x64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_windows-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/windows_amd64/**/*
+          if-no-files-found: error
+
+      - name: Create artifact (Windows - arm64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_windows-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/windows_arm64/**/*
+          if-no-files-found: error
+
+  create-macos-artifacts:
+    name: Create macOS artifacts
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install targets
+        shell: bash
+        run: |
+          rustup target add x86_64-apple-darwin;
+          rustup target add aarch64-apple-darwin;
+
+      - name: Build
+        shell: bash
+        run: |
+          cargo build --release --target "x86_64-apple-darwin";
+          cargo build --release --target "aarch64-apple-darwin";
+          mkdir -p "${{ github.workspace }}/artifacts/macos_amd64";
+          mkdir -p "${{ github.workspace }}/artifacts/macos_arm64";
+          cp "${{ github.workspace }}/target/x86_64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_amd64/fediproto-sync";
+          cp "${{ github.workspace }}/target/aarch64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_arm64/fediproto-sync";
+
+      - name: Create artifact (macOS - x64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_macos-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/macos_amd64/**/*
+          if-no-files-found: error
+
+      - name: Create artifact (macOS - arm64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_macos-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/macos_arm64/**/*
+          if-no-files-found: error
