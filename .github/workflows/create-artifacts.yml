@@ -89,18 +89,18 @@ jobs:
       - name: Install targets
         shell: pwsh
         run: |
-          rustup target add x86_64-pc-windows-gnu;
+          rustup target add x86_64-pc-windows-msvc;
           # rustup target add aarch64-pc-windows-msvc;
 
       - name: Build
         shell: pwsh
         run: |
-          cargo build --release --target "x86_64-pc-windows-gnu";
+          cargo build --release --target "x86_64-pc-windows-msvc";
           # cargo build --release --target "aarch64-pc-windows-msvc";
           $null = New-Item -Path "${{ github.workspace }}/artifacts" -ItemType "Directory";
           $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_amd64" -ItemType "Directory";
           # $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_arm64" -ItemType "Directory";
-          Copy-Item -Path "${{ github.workspace }}/target/x86_64-pc-windows-gnu/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_amd64/fediproto-sync.exe";
+          Copy-Item -Path "${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_amd64/fediproto-sync.exe";
           # Copy-Item -Path "${{ github.workspace }}/target/aarch64-pc-windows-msvc/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_arm64/fediproto-sync.exe";
 
       - name: Create artifact (Windows - x64)
