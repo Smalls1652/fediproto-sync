@@ -1,13 +1,15 @@
+[build]
+pre-build = [
+    "apt-get update && apt-get install -y g++-x86-64-linux-gnu libc6-dev-amd64-cross g++-aarch64-linux-gnu libc6-dev-arm64-cross build-essential crossbuild-essential-arm64 crossbuild-essential-amd64 git pkg-config && apt-get clean && rm -rf /var/lib/apt/lists/*",
+    "dpkg --add-architecture $CROSS_DEB_ARCH",
+    "apt-get update && apt-get install -y libpq-dev:$CROSS_DEB_ARCH libpq5:$CROSS_DEB_ARCH libsqlite3-dev:$CROSS_DEB_ARCH libsqlite3-0:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH && apt-get clean && rm -rf /var/lib/apt/lists/*"
+]
+
 [build.env]
 passthrough = [
     "FEDIPROTOSYNC_INCLUDE_COMMIT_HASH",
-    "FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION"
-]
-
-[target.x86_64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH",
-    "apt-get update && apt-get --assume-yes install libpq-dev:$CROSS_DEB_ARCH libpq5:$CROSS_DEB_ARCH libsqlite3-dev:$CROSS_DEB_ARCH libsqlite3-0:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH"
+    "FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION",
+    "PKG_CONFIG_SYSROOT_DIR=/"
 ]
 
 [target.x86_64-unknown-linux-gnu.env]
@@ -15,12 +17,6 @@ passthrough = [
     "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc",
     "CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc",
     "CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++"
-]
-
-[target.aarch64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH",
-    "apt-get update && apt-get --assume-yes install libpq-dev:$CROSS_DEB_ARCH libpq5:$CROSS_DEB_ARCH libsqlite3-dev:$CROSS_DEB_ARCH libsqlite3-0:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH"
 ]
 
 [target.aarch64-unknown-linux-gnu.env]
