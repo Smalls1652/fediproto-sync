@@ -26,11 +26,13 @@ diesel = { version = "2.2.6", features = [
 diesel_migrations = { version = "2.2.0", features = ["postgres", "sqlite"] }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 megalodon = "0.15.0"
-openssl = "0.10.68"
 thiserror = "2.0.10"
 tokio = { version = "1.42.0", features = ["io-std", "io-util"] }
 tracing = "0.1.41"
 uuid = { version = "1.11.0", features = ["fast-rng", "v4", "v7"] }
+
+[target.'cfg(unix)'.dependencies]
+openssl = { version = "0.10.68" }
 
 [target.'cfg(macos)'.dependencies]
 libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }

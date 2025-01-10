@@ -9,8 +9,10 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
-openssl = "0.10.68"
 thiserror = "2.0.10"
+
+[target.'cfg(unix)'.dependencies]
+openssl = { version = "0.10.68" }
 
 [target.'cfg(macos)'.dependencies]
 openssl = { version = "0.10.68", features = ["vendored"] }
