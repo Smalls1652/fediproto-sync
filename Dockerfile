@@ -26,12 +26,14 @@ RUN chmod +x ./docker-build/build.sh \
 
 FROM --platform=${TARGETARCH:-$BUILDPLATFORM} docker.io/library/debian:bookworm-slim
 
+ARG TARGETARCH
+
 RUN apt-get update \
     && apt-get install -y libsqlite3-0 libpq5 openssl ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /tmp/fediproto-sync /usr/local/bin/fediproto-sync
+COPY --from=build /tmp/fediproto-sync/linux_${TARGETARCH}/fediproto-sync /usr/local/bin/fediproto-sync
 
 WORKDIR /app
 

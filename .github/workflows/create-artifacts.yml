@@ -12,7 +12,7 @@ permissions:
 jobs:
   create-linux-artifacts:
     name: Create Linux artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
@@ -20,60 +20,53 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
         with:
-          toolchain: nightly
-
-      - name: Install targets
-        shell: bash
-        run: |
-          rustup target add x86_64-unknown-linux-gnu
-
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+            
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install cargo-binstall
-        uses: cargo-bins/cargo-binstall@main
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          file: ./Dockerfile.artifacts
+          context: ./
+          platforms: linux/amd64,linux/arm64
+          load: true
+          tags: fediproto-sync-artifacts:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install cargo cross
+      - name: Extract compiled artifacts
         shell: bash
         run: |
-          cargo binstall --no-confirm --force cross;
+          mkdir -p ${{ github.workspace }}/artifacts;
 
-      - name: Build (Linux - x64)
-        shell: bash
-        env:
-          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "${{ github.event_name == 'workflow_dispatch' || 'false' }}"
-          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
-        run: |
-          cross build --target "x86_64-unknown-linux-gnu" --release;
-          mkdir -p "${{ github.workspace }}/artifacts/linux-x64";
-          cp "${{ github.workspace }}/target/x86_64-unknown-linux-gnu/release/fediproto-sync" "${{ github.workspace }}/artifacts/linux-x64/fediproto-sync";
+          docker run --volume "./artifacts:/artifacts" --platform "linux/amd64" --rm "fediproto-sync-artifacts:latest" /bin/bash -c "cp -r /tmp/fediproto-sync/** /artifacts";
 
-      - name: Build (Linux - arm64)
-        shell: bash
-        env:
-          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "${{ github.event_name == 'workflow_dispatch' || 'false' }}"
-          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
-        run: |
-          cross build --target "aarch64-unknown-linux-gnu" --release;
-          mkdir -p "${{ github.workspace }}/artifacts/linux-arm64";
-          cp "${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/fediproto-sync" "${{ github.workspace }}/artifacts/linux-arm64/fediproto-sync";
+          docker run --volume "./artifacts:/artifacts" --platform "linux/arm64" --rm "fediproto-sync-artifacts:latest" /bin/bash -c "cp -r /tmp/fediproto-sync/** /artifacts";
 
       - name: Create artifact (Linux - x64)
         uses: actions/upload-artifact@v4
         with:
-          name: "fediproto-sync_linux-x64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
-          path: ${{ github.workspace }}/artifacts/linux-x64/**/*
+          name: "fediproto-sync_linux-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/linux_amd64/**/*
           if-no-files-found: error
 
       - name: Create artifact (Linux - arm64)
         uses: actions/upload-artifact@v4
         with:
           name: "fediproto-sync_linux-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
-          path: ${{ github.workspace }}/artifacts/linux-arm64/**/*
+          path: ${{ github.workspace }}/artifacts/linux_arm64/**/*
           if-no-files-found: error

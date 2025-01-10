@@ -42,4 +42,5 @@ export PKG_CONFIG_SYSROOT_DIR=/
 rustup default nightly
 rustup target add --toolchain "nightly" "${RUST_TARGET}"
 cargo build --package "fediproto-sync" --release --target "${RUST_TARGET}"
-cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync"
+mkdir -p "/tmp/fediproto-sync/linux_${TARGETARCH}"
+cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync/linux_${TARGETARCH}/fediproto-sync"
