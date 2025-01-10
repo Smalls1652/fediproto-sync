@@ -1,11 +1,4 @@
-FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1-bookworm AS build
-
-ARG TARGETPLATFORM
-ARG TARGETARCH
-
-WORKDIR /app
-
-ADD --keep-git-dir . .
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1-bookworm AS base
 
 RUN apt-get update \
     && apt-get install -y \
@@ -20,6 +13,15 @@ RUN apt-get update \
         pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+FROM --platform=${BUILDPLATFORM} base AS build
+
+ARG TARGETPLATFORM
+ARG TARGETARCH
+
+WORKDIR /app
+
+ADD --keep-git-dir . .
     
 RUN chmod +x ./docker-build/build.sh \
     && ./docker-build/build.sh
