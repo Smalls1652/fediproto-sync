@@ -94,6 +94,9 @@ jobs:
 
       - name: Build
         shell: pwsh
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "true"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
         run: |
           cargo build --release --target "x86_64-pc-windows-msvc";
           # cargo build --release --target "aarch64-pc-windows-msvc";
@@ -119,7 +122,12 @@ jobs:
 
   create-macos-artifacts:
     name: Create macOS artifacts
-    runs-on: macos-14
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ "macos-14", "macos-13" ]
 
     steps:
       - name: Checkout repository
@@ -132,23 +140,42 @@ jobs:
         with:
           toolchain: nightly
 
-      - name: Install targets
+      - name: Install targets (macOS - x64)
+        if: ${{ matrix.os == 'macos-13' }}
         shell: bash
         run: |
           rustup target add x86_64-apple-darwin;
-          rustup target add aarch64-apple-darwin;
 
-      - name: Build
+      - name: Install targets (macOS - arm64)
+        if: ${{ matrix.os == 'macos-14' }}
         shell: bash
         run: |
+          rustup target add aarch64-apple-darwin;
+
+      - name: Build (macOS - x64)
+        if: ${{ matrix.os == 'macos-13' }}
+        shell: bash
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "true"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
+        run: |
           cargo build --release --target "x86_64-apple-darwin";
-          cargo build --release --target "aarch64-apple-darwin";
           mkdir -p "${{ github.workspace }}/artifacts/macos_amd64";
-          mkdir -p "${{ github.workspace }}/artifacts/macos_arm64";
           cp "${{ github.workspace }}/target/x86_64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_amd64/fediproto-sync";
+
+      - name: Build (macOS - arm64)
+        if: ${{ matrix.os == 'macos-14' }}
+        shell: bash
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "true"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
+        run: |
+          cargo build --release --target "aarch64-apple-darwin";
+          mkdir -p "${{ github.workspace }}/artifacts/macos_arm64";
           cp "${{ github.workspace }}/target/aarch64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_arm64/fediproto-sync";
 
       - name: Create artifact (macOS - x64)
+        if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
           name: "fediproto-sync_macos-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
@@ -156,6 +183,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create artifact (macOS - arm64)
+        if: ${{ matrix.os == 'macos-14' }}
         uses: actions/upload-artifact@v4
         with:
           name: "fediproto-sync_macos-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
