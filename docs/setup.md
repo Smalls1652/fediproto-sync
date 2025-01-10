@@ -101,7 +101,10 @@ You can:
 > [!WARNING]
 > All of the required environment variables [in the previous section](#configuration) must be defined before running the daemon.
 
-1. Set the `FEDIPROTO_SYNC_MODE` environment variable to `auth`.
-2. Run the daemon.
-3. Navigate to [`http://localhost:3000/auth/mastodon/login`](http://localhost:3000/auth/mastodon/login) in your browser and follow the instructions for logging in with Mastodon.
-4. Once you've logged on, stop the daemon.
+1. Run the daemon.
+2. Navigate to [`http://localhost:3000`](http://localhost:3000) in your browser and follow the instructions for logging in with Mastodon.
+    * **Note:** If you supplied a different `AUTH_SERVER_ADDRESS` or `AUTH_SERVER_PORT`, you will need to navigate to that address instead.
+3. Once you've logged on, stop the daemon.
+    * **Note:** You can stop the daemon by pressing `CTRL+C` in the terminal.
+
+Subsequent runs of the daemon will run normally (Syncing posts) after this.
