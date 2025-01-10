@@ -42,15 +42,14 @@ jobs:
       - name: Install cargo cross
         shell: bash
         run: |
-          cargo binstall --no-confirm cross;
-          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH;
+          cargo binstall --no-confirm cross
 
       - name: Build (Linux - x64)
         shell: bash
         run: |
           FEDIPROTOSYNC_INCLUDE_COMMIT_HASH="${{ github.event_name == 'workflow_dispatch' || 'false' }}" \
           FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION="true" \
-          cross build --target "x86_64-unknown-linux-gnu" --release;
+          $HOME/.cargo/bin/cross build --target "x86_64-unknown-linux-gnu" --release;
           mkdir -p "${{ github.workspace }}/artifacts/linux-x64";
           cp "${{ github.workspace }}/target/x86_64-unknown-linux-gnu/release/fediproto-sync" "${{ github.workspace }}/artifacts/linux-x64/fediproto-sync";
 
@@ -59,7 +58,7 @@ jobs:
         run: |
           FEDIPROTOSYNC_INCLUDE_COMMIT_HASH="${{ github.event_name == 'workflow_dispatch' || 'false' }}" \
           FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION="true" \
-          cross build --target "aarch64-unknown-linux-gnu" --release;
+          $HOME/.cargo/bin/cross build --target "aarch64-unknown-linux-gnu" --release;
           mkdir -p "${{ github.workspace }}/artifacts/linux-arm64";
           cp "${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/fediproto-sync" "${{ github.workspace }}/artifacts/linux-arm64/fediproto-sync";
 
