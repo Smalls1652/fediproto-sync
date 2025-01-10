@@ -16,12 +16,18 @@ passthrough = [
     "PKG_CONFIG_SYSROOT_DIR=/"
 ]
 
+[target.x86_64-unknown-linux-gnu]
+image = "docker.io/library/rust:1-bookworm"
+
 [target.x86_64-unknown-linux-gnu.env]
 passthrough = [
     "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc",
     "CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc",
     "CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++"
 ]
+
+[target.aarch64-unknown-linux-gnu]
+image = "docker.io/library/rust:1-bookworm"
 
 [target.aarch64-unknown-linux-gnu.env]
 passthrough = [
