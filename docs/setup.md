@@ -12,8 +12,8 @@ You can create an application and get an access token for your account by:
 4. Fill out a name for the application.
 5. Set the **Redirect URI** to `http://localhost:3000/auth/mastodon/authorized`.
 6. Check the following scopes:
-  * `read:statuses`
-  * `profile`
+    * `read:statuses`
+    * `profile`
 7. Click the **"Submit"** button at the bottom.
 8. Copy the **Client key** and **Client secret** values generated.
 
@@ -27,7 +27,23 @@ You can create an application and get an access token for your account by:
 > [!WARNING]
 > Changing these keys will invalidate all existing tokens.
 
-You can generate a public/private key-pair by either running the `./scripts/generateTokenKeys.sh` script or running the following commands:
+You can generate a public/private key-pair a few different ways. The options provided below will output the keys in a `.env` format in the terminal. You can then copy and paste the values into your `.env` file or pipe them directly into the `.env` file.
+
+#### `fediproto-sync`
+
+```bash
+fediproto-sync generate-token-encryption-keys
+```
+
+#### Shell
+
+You can either run a provided shell script:
+
+```bash
+./scripts/generateTokenKeys.sh
+```
+
+Or run the following commands in your terminal:
 
 ```bash
 PRIVATE_KEY_PATH="${TMPDIR}fediproto-private_key.pem"
