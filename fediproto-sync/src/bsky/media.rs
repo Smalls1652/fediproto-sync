@@ -1,9 +1,11 @@
+use std::num::NonZero;
+
 use anyhow::Result;
 use atrium_api::{
     self,
     app::{
         self,
-        bsky::{embed::images::ImageData, feed::post::RecordEmbedRefs}
+        bsky::{embed::{defs::AspectRatioData, images::ImageData}, feed::post::RecordEmbedRefs}
     },
     com,
     types::{
@@ -134,6 +136,13 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                 .await?
                 .compress_image()?;
 
+            let media_attachment_aspect_ratio = crate::img_utils::get_image_aspect_ratio(&media_attachment_bytes)?;
+
+            tracing::info!("Aspect ratio: {}:{}",
+                media_attachment_aspect_ratio.0,
+                media_attachment_aspect_ratio.1
+            );
+
             tracing::info!("Uploading {} bytes", media_attachment_bytes.len());
             let blob_upload_response = self
                 .atp_agent
@@ -146,7 +155,6 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
             tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
-            tracing::info!("Uploaded");
             // Create an image embed and add it to the list of image attachments.
             image_attachments.push(
                 app::bsky::embed::images::ImageData {
@@ -155,7 +163,10 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                         .description
                         .clone()
                         .unwrap_or_else(|| "".to_string()),
-                    aspect_ratio: None
+                    aspect_ratio: Some(AspectRatioData {
+                        width: NonZero::<u64>::new(media_attachment_aspect_ratio.0 as u64).unwrap(),
+                        height: NonZero::<u64>::new(media_attachment_aspect_ratio.1 as u64).unwrap()
+                    }.into())
                 }
                 .into()
             );
