@@ -1,7 +1,6 @@
 use std::io::Cursor;
 
 use anyhow::Result;
-use fediproto_sync_lib::error::FediProtoSyncError;
 use image::{codecs::jpeg::JpegEncoder, DynamicImage, GenericImageView, ImageReader};
 
 use crate::bsky::MAX_IMAGE_SIZE;
@@ -17,15 +16,13 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes> {
     tracing::info!("Decoding image for compression.");
 
     let image_reader = ImageReader::new(Cursor::new(image))
-        .with_guessed_format()
-        .map_err(|_| FediProtoSyncError::ImageCompressionError)?
-        .decode()
-        .map_err(|_| FediProtoSyncError::ImageCompressionError)?;
+        .with_guessed_format()?
+        .decode()?;
 
     let image_reader = resize_image(image_reader).into_rgb8();
 
     let mut image_buffer = vec![];
-    let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 80);
+    let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 90);
 
     jpeg_encoder
         .encode_image(&image_reader)?;
@@ -35,6 +32,22 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes> {
         .write_with_encoder(jpeg_encoder)?;
 
     Ok(bytes::Bytes::from(image_buffer))
+}
+
+/// Get the aspect ratio of an image.
+/// 
+/// ## Arguments
+/// 
+/// * `image` - The image to get the aspect ratio of.
+pub fn get_image_aspect_ratio(image: &[u8]) -> Result<(u32, u32)> {
+    let image_reader = ImageReader::new(Cursor::new(image))
+        .with_guessed_format()?
+        .decode()?;
+
+    let dimensions = image_reader.dimensions();
+    let gcd = greatest_common_divisor(dimensions.0, dimensions.1);
+
+    Ok((dimensions.0 / gcd, dimensions.1 / gcd))
 }
 
 pub trait ImageCompressionUtils {
@@ -59,11 +72,16 @@ impl<'a> ImageCompressionUtils for Vec<u8> {
 fn resize_image(image: DynamicImage) -> DynamicImage {
     let dimensions = image.dimensions();
 
-    if dimensions.0 <= MAX_IMAGE_PIXELS && dimensions.1 <= MAX_IMAGE_PIXELS {
+    let is_height_greater_than_width = dimensions.1 > dimensions.0;
+
+    let dimension_to_check = match is_height_greater_than_width {
+        true => dimensions.1,
+        false => dimensions.0
+    };
+
+    if dimension_to_check <= MAX_IMAGE_PIXELS {
         return image;
     }
-
-    let is_height_greater_than_width = dimensions.1 > dimensions.0;
 
     let new_height = match is_height_greater_than_width {
         true => MAX_IMAGE_PIXELS,
@@ -93,4 +111,27 @@ fn resize_image(image: DynamicImage) -> DynamicImage {
         new_height,
         image::imageops::FilterType::Lanczos3
     ))
+}
+
+/// Get the greatest common divisor of two numbers.
+/// 
+/// ## Arguments
+/// 
+/// * `a` - The first number.
+/// * `b` - The second number.
+fn greatest_common_divisor(a: u32, b: u32) -> u32 {
+    let (mut a, mut b) = match a > b {
+        true => (a, b),
+        false => (b, a)
+    };
+
+    while b != 0 {
+        let temp = a;
+        a = b;
+        b = temp;
+
+        b %= a;
+    }
+
+    a
 }
