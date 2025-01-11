@@ -228,7 +228,7 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
                 app::bsky::embed::external::Main {
                     data: app::bsky::embed::external::MainData {
                         external: app::bsky::embed::external::ExternalData {
-                            uri: link_metadata["url"].as_str().unwrap().to_string(),
+                            uri: url.to_string(),
                             title: link_metadata["title"].as_str().unwrap().to_string(),
                             description: link_metadata["description"].as_str().unwrap().to_string(),
                             thumb: blob_item
