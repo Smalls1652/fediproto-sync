@@ -5,6 +5,19 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      linux:
+        description: "Create artifacts for Linux"
+        required: false
+        default: "true"
+      windows:
+        description: "Create artifacts for Windows"
+        required: false
+        default: "true"
+      macos:
+        description: "Create artifacts for macOS"
+        required: false
+        default: "true"
 
 permissions:
   contents: read
@@ -12,6 +25,7 @@ permissions:
 jobs:
   create-linux-artifacts:
     name: Create Linux artifacts
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.linux == 'true' || github.event_name == 'push') || 'false' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -73,6 +87,7 @@ jobs:
   
   create-windows-artifacts:
     name: Create Windows artifacts
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.windows == 'true' || github.event_name == 'push') || 'false' }}
     runs-on: windows-latest
 
     steps:
@@ -122,6 +137,7 @@ jobs:
 
   create-macos-artifacts:
     name: Create macOS artifacts
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.macos == 'true' || github.event_name == 'push') || 'false' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
