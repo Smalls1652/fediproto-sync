@@ -9,15 +9,18 @@ on:
       linux:
         description: "Create artifacts for Linux"
         required: false
-        default: "true"
+        type: boolean
+        default: true
       windows:
         description: "Create artifacts for Windows"
         required: false
-        default: "true"
+        type: boolean
+        default: true
       macos:
         description: "Create artifacts for macOS"
         required: false
-        default: "true"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
