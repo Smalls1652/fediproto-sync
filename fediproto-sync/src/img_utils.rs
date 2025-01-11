@@ -1,18 +1,19 @@
 use std::io::Cursor;
 
+use anyhow::Result;
 use fediproto_sync_lib::error::FediProtoSyncError;
 use image::{codecs::jpeg::JpegEncoder, DynamicImage, GenericImageView, ImageReader};
 
 use crate::bsky::MAX_IMAGE_SIZE;
 
-const MAX_IMAGE_WIDTH: u32 = 1080;
+const MAX_IMAGE_PIXELS: u32 = 1080;
 
 /// Compress an image using the JPEG format.
 ///
 /// ## Arguments
 ///
 /// * `image` - The image to compress.
-pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes, FediProtoSyncError> {
+pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes> {
     tracing::info!("Decoding image for compression.");
 
     let image_reader = ImageReader::new(Cursor::new(image))
@@ -21,50 +22,75 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes, FediProto
         .decode()
         .map_err(|_| FediProtoSyncError::ImageCompressionError)?;
 
-    let image_dimensions = image_reader.dimensions();
-
-    // Resize the image if it's height is greater than `1080`.
-    let image_reader = match image_dimensions.1 > MAX_IMAGE_WIDTH {
-        true => {
-            let new_height = MAX_IMAGE_WIDTH;
-            let new_width = image_dimensions.0 * (new_height / image_dimensions.1);
-            
-            image::imageops::resize::<DynamicImage>(
-                &image_reader,
-                new_width,
-                new_height,
-                image::imageops::FilterType::Lanczos3
-            )
-        },
-
-        false => image_reader.into_rgba8()
-    };
+    let image_reader = resize_image(image_reader).into_rgb8();
 
     let mut image_buffer = vec![];
-    let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 75);
+    let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 80);
 
     jpeg_encoder
-        .encode_image(&image_reader)
-        .map_err(|_| FediProtoSyncError::ImageCompressionError)?;
+        .encode_image(&image_reader)?;
 
     tracing::info!("Compressing image.");
     image_reader
-        .write_with_encoder(jpeg_encoder)
-        .map_err(|_| FediProtoSyncError::ImageCompressionError)?;
+        .write_with_encoder(jpeg_encoder)?;
 
     Ok(bytes::Bytes::from(image_buffer))
 }
 
 pub trait ImageCompressionUtils {
-    fn compress_image(self) -> Result<Vec<u8>, FediProtoSyncError>;
+    fn compress_image(self) -> Result<Vec<u8>>;
 }
 
 impl<'a> ImageCompressionUtils for Vec<u8> {
-    fn compress_image(self) -> Result<Self, FediProtoSyncError> {
+    fn compress_image(self) -> Result<Self> {
         if self.len() > MAX_IMAGE_SIZE as usize {
             Ok(compress_image_from_bytes(&self)?.to_vec())
         } else {
             Ok(self)
         }
     }
+}
+
+/// Resize an image to a maximum of 1080 pixels in either dimension.
+/// 
+/// ## Arguments
+/// 
+/// * `image` - The image to resize.
+fn resize_image(image: DynamicImage) -> DynamicImage {
+    let dimensions = image.dimensions();
+
+    if dimensions.0 <= MAX_IMAGE_PIXELS && dimensions.1 <= MAX_IMAGE_PIXELS {
+        return image;
+    }
+
+    let is_height_greater_than_width = dimensions.1 > dimensions.0;
+
+    let new_height = match is_height_greater_than_width {
+        true => MAX_IMAGE_PIXELS,
+        false => {
+            (MAX_IMAGE_PIXELS as f32 * (dimensions.1 as f32 / dimensions.0 as f32)).round() as u32
+        }
+    };
+
+    let new_width = match is_height_greater_than_width {
+        true => {
+            (MAX_IMAGE_PIXELS as f32 * (dimensions.0 as f32 / dimensions.1 as f32)).round() as u32
+        }
+        false => MAX_IMAGE_PIXELS
+    };
+
+    tracing::info!(
+        "Resizing image from {}x{} to {}x{}.",
+        dimensions.0,
+        dimensions.1,
+        new_width,
+        new_height
+    );
+
+    DynamicImage::ImageRgba8(image::imageops::resize::<DynamicImage>(
+        &image,
+        new_width,
+        new_height,
+        image::imageops::FilterType::Lanczos3
+    ))
 }
