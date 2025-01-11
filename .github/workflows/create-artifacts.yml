@@ -28,7 +28,7 @@ permissions:
 jobs:
   create-linux-artifacts:
     name: Create Linux artifacts
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.linux == 'true' || github.event_name == 'push'}}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.linux == true || github.event_name == 'push'}}
     runs-on: ubuntu-24.04
 
     steps:
@@ -90,7 +90,7 @@ jobs:
   
   create-windows-artifacts:
     name: Create Windows artifacts
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.windows == 'true' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.windows == true || github.event_name == 'push' }}
     runs-on: windows-latest
 
     steps:
@@ -140,7 +140,7 @@ jobs:
 
   create-macos-artifacts:
     name: Create macOS artifacts
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.macos == 'true' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.macos == true || github.event_name == 'push' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
