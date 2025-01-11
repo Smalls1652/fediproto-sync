@@ -32,8 +32,15 @@ async fn main() -> Result<()> {
     let (core_sig_error_send, mut core_sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
 
     // Set up signal handlers for SIGTERM and SIGQUIT.
+    #[cfg(target_family = "unix")]
     let mut sig_term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    #[cfg(target_family = "unix")]
     let mut sig_quit = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::quit())?;
+
+    #[cfg(target_family = "windows")]
+    let mut sig_term = tokio::signal::windows::ctrl_c()?;
+    #[cfg(target_family = "windows")]
+    let mut sig_quit = tokio::signal::windows::ctrl_shutdown()?;
 
     // Set up tracing subscriber for logging.
     tracing_subscriber::fmt()
