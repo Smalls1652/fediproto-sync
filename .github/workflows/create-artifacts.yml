@@ -113,7 +113,7 @@ jobs:
       - name: Build
         shell: pwsh
         env:
-          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "true"
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "false"
           FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
         run: |
           cargo build --release --target "x86_64-pc-windows-msvc";
@@ -163,7 +163,7 @@ jobs:
       - name: Build
         shell: bash
         env:
-          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "true"
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "false"
           FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
         run: |
           cargo build --release --target "x86_64-apple-darwin";
