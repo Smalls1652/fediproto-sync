@@ -11,13 +11,13 @@ license-file.workspace = true
 [dependencies]
 thiserror = "2.0.10"
 
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 openssl = { version = "0.10.68" }
 
-[target.'cfg(macos)'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
 openssl = { version = "0.10.68", features = ["vendored"] }
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(target_os = "windows")'.dependencies]
 openssl = { version = "0.10.68", features = ["vendored"] }
 
 [build-dependencies]
