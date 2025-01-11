@@ -5,6 +5,22 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      linux:
+        description: "Create artifacts for Linux"
+        required: false
+        type: boolean
+        default: true
+      windows:
+        description: "Create artifacts for Windows"
+        required: false
+        type: boolean
+        default: true
+      macos:
+        description: "Create artifacts for macOS"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -12,6 +28,7 @@ permissions:
 jobs:
   create-linux-artifacts:
     name: Create Linux artifacts
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.linux == true || github.event_name == 'push'}}
     runs-on: ubuntu-24.04
 
     steps:
@@ -69,4 +86,103 @@ jobs:
         with:
           name: "fediproto-sync_linux-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
           path: ${{ github.workspace }}/artifacts/linux_arm64/**/*
+          if-no-files-found: error
+  
+  create-windows-artifacts:
+    name: Create Windows artifacts
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.windows == true || github.event_name == 'push' }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install targets
+        shell: pwsh
+        run: |
+          rustup target add x86_64-pc-windows-msvc;
+          # rustup target add aarch64-pc-windows-msvc;
+
+      - name: Build
+        shell: pwsh
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "false"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
+        run: |
+          cargo build --release --target "x86_64-pc-windows-msvc";
+          # cargo build --release --target "aarch64-pc-windows-msvc";
+          $null = New-Item -Path "${{ github.workspace }}/artifacts" -ItemType "Directory";
+          $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_amd64" -ItemType "Directory";
+          # $null = New-Item -Path "${{ github.workspace }}/artifacts/windows_arm64" -ItemType "Directory";
+          Copy-Item -Path "${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_amd64/fediproto-sync.exe";
+          # Copy-Item -Path "${{ github.workspace }}/target/aarch64-pc-windows-msvc/release/fediproto-sync.exe" -Destination "${{ github.workspace }}/artifacts/windows_arm64/fediproto-sync.exe";
+
+      - name: Create artifact (Windows - x64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_windows-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/windows_amd64/**/*
+          if-no-files-found: error
+
+      # - name: Create artifact (Windows - arm64)
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: "fediproto-sync_windows-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+      #     path: ${{ github.workspace }}/artifacts/windows_arm64/**/*
+      #     if-no-files-found: error
+
+  create-macos-artifacts:
+    name: Create macOS artifacts
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.macos == true || github.event_name == 'push' }}
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install targets
+        shell: bash
+        run: |
+          rustup target add x86_64-apple-darwin;
+          rustup target add aarch64-apple-darwin;
+
+      - name: Build
+        shell: bash
+        env:
+          FEDIPROTOSYNC_INCLUDE_COMMIT_HASH: "false"
+          FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION: "true"
+        run: |
+          cargo build --release --target "x86_64-apple-darwin";
+          mkdir -p "${{ github.workspace }}/artifacts/macos_amd64";
+          cp "${{ github.workspace }}/target/x86_64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_amd64/fediproto-sync";
+          cargo build --release --target "aarch64-apple-darwin";
+          mkdir -p "${{ github.workspace }}/artifacts/macos_arm64";
+          cp "${{ github.workspace }}/target/aarch64-apple-darwin/release/fediproto-sync" "${{ github.workspace }}/artifacts/macos_arm64/fediproto-sync";
+
+      - name: Create artifact (macOS - x64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_macos-amd64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/macos_amd64/**/*
+          if-no-files-found: error
+
+      - name: Create artifact (macOS - arm64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "fediproto-sync_macos-arm64_${{ github.ref_type == 'tag' && github.ref_name || github.sha }}"
+          path: ${{ github.workspace }}/artifacts/macos_arm64/**/*
           if-no-files-found: error
