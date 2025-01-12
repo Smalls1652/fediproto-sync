@@ -11,8 +11,8 @@ mod mastodon;
 
 use anyhow::Result;
 use fediproto_sync_lib::{
-    config::{FediProtoSyncConfig, FediProtoSyncMode},
-    GIT_VERSION
+    GIT_VERSION,
+    config::{FediProtoSyncConfig, FediProtoSyncMode}
 };
 
 /// The main entrypoint for the FediProtoSync application.
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
 
     match rust_log_result {
         Ok(_) => (),
-        Err(_) => {
+        Err(_) => unsafe {
             std::env::set_var("RUST_LOG", "info");
         }
     }

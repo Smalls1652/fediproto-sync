@@ -1,8 +1,8 @@
 [package]
 name = "fediproto-sync-auth-ui"
 version = "0.1.0"
-edition = "2021"
 description = "Authentication web server for fediproto-sync."
+edition.workspace = true
 authors.workspace = true
 homepage.workspace = true
 repository.workspace = true

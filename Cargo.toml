@@ -13,6 +13,7 @@ package.homepage = "https://github.com/Smalls1652/fediproto-sync"
 package.repository = "https://github.com/Smalls1652/fediproto-sync"
 package.license = "MIT"
 package.license-file = "LICENSE"
+package.edition = "2024"
 
 [profile.release]
 opt-level = "s"
