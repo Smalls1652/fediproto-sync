@@ -6,19 +6,19 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use atrium_api::{
-    agent::{store::MemorySessionStore, AtpAgent},
+    agent::{AtpAgent, store::MemorySessionStore},
     app,
     com,
     types::{
-        string::{Cid, Datetime, Nsid},
-        TryIntoUnknown
+        TryIntoUnknown,
+        string::{Cid, Datetime, Nsid}
     }
 };
 use atrium_xrpc_client::reqwest::ReqwestClient;
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
-    models::{NewMastodonPost, NewSyncedPostBlueSkyData},
-    AnyConnection
+    AnyConnection,
+    models::{NewMastodonPost, NewSyncedPostBlueSkyData}
 };
 use ipld_core::ipld::Ipld;
 

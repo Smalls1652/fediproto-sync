@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use anyhow::Result;
-use image::{codecs::jpeg::JpegEncoder, DynamicImage, GenericImageView, ImageReader};
+use image::{DynamicImage, GenericImageView, ImageReader, codecs::jpeg::JpegEncoder};
 
 use crate::bsky::MAX_IMAGE_SIZE;
 
@@ -24,20 +24,18 @@ pub fn compress_image_from_bytes(image: &[u8]) -> Result<bytes::Bytes> {
     let mut image_buffer = vec![];
     let mut jpeg_encoder = JpegEncoder::new_with_quality(&mut image_buffer, 90);
 
-    jpeg_encoder
-        .encode_image(&image_reader)?;
+    jpeg_encoder.encode_image(&image_reader)?;
 
     tracing::info!("Compressing image.");
-    image_reader
-        .write_with_encoder(jpeg_encoder)?;
+    image_reader.write_with_encoder(jpeg_encoder)?;
 
     Ok(bytes::Bytes::from(image_buffer))
 }
 
 /// Get the aspect ratio of an image.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `image` - The image to get the aspect ratio of.
 pub fn get_image_aspect_ratio(image: &[u8]) -> Result<(u32, u32)> {
     let image_reader = ImageReader::new(Cursor::new(image))
@@ -65,9 +63,9 @@ impl<'a> ImageCompressionUtils for Vec<u8> {
 }
 
 /// Resize an image to a maximum of 1080 pixels in either dimension.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `image` - The image to resize.
 fn resize_image(image: DynamicImage) -> DynamicImage {
     let dimensions = image.dimensions();
@@ -114,12 +112,15 @@ fn resize_image(image: DynamicImage) -> DynamicImage {
 }
 
 /// Get the greatest common divisor of two numbers.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `a` - The first number.
 /// * `b` - The second number.
-fn greatest_common_divisor(a: u32, b: u32) -> u32 {
+fn greatest_common_divisor(
+    a: u32,
+    b: u32
+) -> u32 {
     let (mut a, mut b) = match a > b {
         true => (a, b),
         false => (b, a)

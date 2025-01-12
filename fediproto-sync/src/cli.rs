@@ -3,7 +3,7 @@ use anyhow::Result;
 /// CLI options for FediProtoSync.
 enum CliOption {
     /// Generate a token encryption key for the application.
-    GenerateTokenEncryptionKey,
+    GenerateTokenEncryptionKey
 }
 
 impl std::str::FromStr for CliOption {

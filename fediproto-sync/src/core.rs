@@ -1,14 +1,14 @@
 use anyhow::Result;
 use atrium_api::{
-    agent::{store::MemorySessionStore, AtpAgent},
+    agent::{AtpAgent, store::MemorySessionStore},
     client::AtpServiceClient,
     types::string::{Datetime, Did}
 };
 use atrium_xrpc_client::reqwest::{ReqwestClient, ReqwestClientBuilder};
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
-    models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem},
-    AnyConnection
+    AnyConnection,
+    models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem}
 };
 use fediproto_sync_lib::{
     config::FediProtoSyncConfig,

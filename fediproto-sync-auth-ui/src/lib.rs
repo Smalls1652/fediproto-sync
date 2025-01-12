@@ -6,7 +6,7 @@ pub mod error;
 pub mod web;
 
 use async_session::MemoryStore;
-use axum::{extract::FromRef, routing::get, Router};
+use axum::{Router, extract::FromRef, routing::get};
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::AnyConnection;
 use fediproto_sync_lib::{config::FediProtoSyncConfig, error::FediProtoSyncError};
@@ -104,7 +104,11 @@ impl FediProtoSyncWebServer {
             .with_state(app_state)
             .into_make_service();
 
-        tracing::info!("\nGo to this URL to setup authentication:\n\nhttp://{}:{}", bind_address, bind_port);
+        tracing::info!(
+            "\nGo to this URL to setup authentication:\n\nhttp://{}:{}",
+            bind_address,
+            bind_port
+        );
 
         // Serve the web server.
         axum::serve(listener, router)

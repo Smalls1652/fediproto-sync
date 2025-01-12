@@ -5,14 +5,17 @@ use atrium_api::{
     self,
     app::{
         self,
-        bsky::{embed::{defs::AspectRatioData, images::ImageData}, feed::post::RecordEmbedRefs}
+        bsky::{
+            embed::{defs::AspectRatioData, images::ImageData},
+            feed::post::RecordEmbedRefs
+        }
     },
     com,
     types::{
-        string::{Did, Nsid},
         CidLink,
         Object,
-        Union
+        Union,
+        string::{Did, Nsid}
     }
 };
 use fediproto_sync_db::models::NewCachedFile;
@@ -136,9 +139,11 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                 .await?
                 .compress_image()?;
 
-            let media_attachment_aspect_ratio = crate::img_utils::get_image_aspect_ratio(&media_attachment_bytes)?;
+            let media_attachment_aspect_ratio =
+                crate::img_utils::get_image_aspect_ratio(&media_attachment_bytes)?;
 
-            tracing::info!("Aspect ratio: {}:{}",
+            tracing::info!(
+                "Aspect ratio: {}:{}",
                 media_attachment_aspect_ratio.0,
                 media_attachment_aspect_ratio.1
             );
@@ -163,10 +168,15 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                         .description
                         .clone()
                         .unwrap_or_else(|| "".to_string()),
-                    aspect_ratio: Some(AspectRatioData {
-                        width: NonZero::<u64>::new(media_attachment_aspect_ratio.0 as u64).unwrap(),
-                        height: NonZero::<u64>::new(media_attachment_aspect_ratio.1 as u64).unwrap()
-                    }.into())
+                    aspect_ratio: Some(
+                        AspectRatioData {
+                            width: NonZero::<u64>::new(media_attachment_aspect_ratio.0 as u64)
+                                .unwrap(),
+                            height: NonZero::<u64>::new(media_attachment_aspect_ratio.1 as u64)
+                                .unwrap()
+                        }
+                        .into()
+                    )
                 }
                 .into()
             );

@@ -1,4 +1,4 @@
-use crate::{error::FediProtoSyncError, GIT_VERSION};
+use crate::{GIT_VERSION, error::FediProtoSyncError};
 
 static FEDIPROTO_SYNC_MODE_ENV_VAR: &str = "FEDIPROTO_SYNC_MODE";
 static AUTH_SERVER_ADDRESS_ENV_VAR: &str = "AUTH_SERVER_ADDRESS";

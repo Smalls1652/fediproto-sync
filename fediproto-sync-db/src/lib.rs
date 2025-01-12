@@ -22,13 +22,13 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use diesel::{
+    QueryResult,
     backend::Backend,
     connection::Connection,
     deserialize::{self, FromSql},
     r2d2::{ConnectionManager, Pool},
     serialize::{self, IsNull, ToSql},
-    sql_types::HasSqlType,
-    QueryResult
+    sql_types::HasSqlType
 };
 use type_impls::{MultiBackendUuid, UuidProxy};
 

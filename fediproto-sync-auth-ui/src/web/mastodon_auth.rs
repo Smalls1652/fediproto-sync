@@ -2,23 +2,23 @@ use anyhow::Context;
 use async_session::{MemoryStore, Session, SessionStore};
 use axum::{
     extract::{Query, State},
-    http::{header::SET_COOKIE, HeaderMap},
+    http::{HeaderMap, header::SET_COOKIE},
     response::{Html, IntoResponse, Redirect}
 };
-use axum_extra::{headers, TypedHeader};
+use axum_extra::{TypedHeader, headers};
 use fediproto_sync_db::{models::NewCachedServiceToken, operations::insert_cached_service_token};
 use oauth2::{
-    reqwest::async_http_client,
     AuthorizationCode,
     CsrfToken,
     PkceCodeVerifier,
-    TokenResponse
+    TokenResponse,
+    reqwest::async_http_client
 };
 
 use crate::{
+    FediProtoSyncWebServerAppState,
     error::FediProtoSyncWebError,
-    web::{check_for_existing_token, AuthRequest},
-    FediProtoSyncWebServerAppState
+    web::{AuthRequest, check_for_existing_token}
 };
 
 static AUTH_SESSION: &str = "MASTODON_AUTH_SESSION";
@@ -223,7 +223,7 @@ pub async fn authorized_endpoint(
         Err(e) => {
             return Err(
                 anyhow::anyhow!("Failed to insert the token into the database: {:?}", e).into()
-            )
+            );
         }
     }
 

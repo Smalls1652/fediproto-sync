@@ -1,9 +1,9 @@
 use diesel::{
+    AsExpression,
     deserialize::{self, FromSql, FromSqlRow},
     query_builder::QueryId,
     serialize::{self, IsNull, ToSql},
-    sql_types::*,
-    AsExpression
+    sql_types::*
 };
 
 /// Custom type for Diesel to handle UUIDs in both SQLite and PostgreSQL.
