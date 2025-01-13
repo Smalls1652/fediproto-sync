@@ -11,6 +11,7 @@ RUN apt-get update \
         crossbuild-essential-amd64 \
         git \
         pkg-config \
+        cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
