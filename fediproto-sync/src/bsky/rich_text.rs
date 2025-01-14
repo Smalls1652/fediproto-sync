@@ -4,11 +4,10 @@ use atrium_api::{
     app,
     types::{Object, Union}
 };
-use bytes::Bytes;
 use ipld_core::ipld::Ipld;
 
-use super::{BlueSkyPostSync, BlueSkyPostSyncUtils, MAX_IMAGE_SIZE};
-use crate::mastodon::ParsedMastodonPost;
+use super::{BlueSkyPostSync, BlueSkyPostSyncUtils};
+use crate::{img_utils::ImageAttachmentData, mastodon::ParsedMastodonPost};
 
 /// Trait for generating rich text facets for a BlueSky post.
 pub trait BlueSkyPostSyncRichText {
@@ -182,40 +181,23 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
 
         // Get the thumbnail for the link if it has one and upload it to BlueSky.
         let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
-        let link_thumbnail_bytes = match link_thumbnail_url == "" {
-            true => Bytes::new(),
+        let link_thumbnail = match link_thumbnail_url == "" {
+            true => None,
             false => {
-                let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
+                let temp_file_path = self.download_file_to_temp(link_thumbnail_url).await?;
 
-                link_thumbnail.bytes().await?
+                Some(ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), link_thumbnail_url)?)
             }
         };
 
-        let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
-            true => {
-                let compressed_image =
-                    crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
-
-                tracing::info!(
-                    "Compressed link thumbnail from {} bytes to {} bytes",
-                    link_thumbnail_bytes.len(),
-                    compressed_image.len()
-                );
-
-                compressed_image
-            }
-
-            _ => link_thumbnail_bytes
-        };
-
-        let blob_item = match link_thumbnail_bytes.len() > 0 {
-            true => Some(
+        let blob_item = match link_thumbnail {
+            Some(thumbnail) => Some(
                 self.atp_agent
                     .api
                     .com
                     .atproto
                     .repo
-                    .upload_blob(link_thumbnail_bytes.to_vec())
+                    .upload_blob(thumbnail.image_bytes.into())
                     .await?
                     .blob
                     .clone()
@@ -258,40 +240,23 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
 
         // Get the thumbnail for the link if it has one and upload it to BlueSky.
         let link_thumbnail_url = link_metadata["image"].as_str().unwrap_or_else(|| "");
-        let link_thumbnail_bytes = match link_thumbnail_url == "" {
-            true => Bytes::new(),
+        let link_thumbnail = match link_thumbnail_url == "" {
+            true => None,
             false => {
-                let link_thumbnail = self.get_link_thumbnail(link_thumbnail_url).await?;
+                let temp_file_path = self.download_file_to_temp(link_thumbnail_url).await?;
 
-                link_thumbnail.bytes().await?
+                Some(ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), link_thumbnail_url)?)
             }
         };
 
-        let link_thumbnail_bytes = match link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
-            true => {
-                let compressed_image =
-                    crate::img_utils::compress_image_from_bytes(link_thumbnail_bytes.as_ref())?;
-
-                tracing::info!(
-                    "Compressed link thumbnail from {} bytes to {} bytes",
-                    link_thumbnail_bytes.len(),
-                    compressed_image.len()
-                );
-
-                compressed_image
-            }
-
-            _ => link_thumbnail_bytes
-        };
-
-        let blob_item = match link_thumbnail_bytes.len() > 0 {
-            true => Some(
+        let blob_item = match link_thumbnail {
+            Some(thumbnail) => Some(
                 self.atp_agent
                     .api
                     .com
                     .atproto
                     .repo
-                    .upload_blob(link_thumbnail_bytes.to_vec())
+                    .upload_blob(thumbnail.image_bytes.into())
                     .await?
                     .blob
                     .clone()

@@ -18,7 +18,6 @@ use atrium_api::{
         string::{Did, Nsid}
     }
 };
-use fediproto_sync_db::models::NewCachedFile;
 use fediproto_sync_lib::error::FediProtoSyncError;
 use ipld_core::cid::Cid;
 use rand::distributions::DistString;
@@ -27,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 
 use super::{BlueSkyPostSync, BlueSkyPostSyncUtils};
-use crate::{core::create_http_client, img_utils::ImageCompressionUtils};
+use crate::{core::create_http_client, img_utils::ImageAttachmentData};
 
 /// The maximum duration for a BlueSky video in seconds.
 ///
@@ -37,6 +36,7 @@ pub const MAX_VIDEO_DURATION: f64 = 60.0;
 /// The maximum size for a BlueSky image in bytes.
 ///
 /// (Currently `976.56 KB`, but set to `950 KB` to account for overhead)
+#[allow(dead_code)]
 pub const MAX_IMAGE_SIZE: u64 = 950_000;
 
 /// The maximum size for a BlueSky video in bytes.
@@ -109,6 +109,7 @@ pub trait BlueSkyPostSyncMedia {
     /// ## Arguments
     ///
     /// * `media_attachment` - The media attachment to download.
+    #[allow(dead_code)]
     async fn download_mastodon_media_attachment_to_file(
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
@@ -131,34 +132,33 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
         for image_attachment in media_attachments {
             // Download the media attachment from the Mastodon server.
-            let media_attachment_temp_path = self
-                .download_mastodon_media_attachment_to_file(image_attachment)
+            let temp_file_path = self
+                .download_file_to_temp(&image_attachment.url)
                 .await?;
 
-            let media_attachment_bytes = tokio::fs::read(&media_attachment_temp_path)
-                .await?
-                .compress_image()?;
-
-            let media_attachment_aspect_ratio =
-                crate::img_utils::get_image_aspect_ratio(&media_attachment_bytes)?;
+            let media_attachment =
+                ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), &image_attachment.url)?;
 
             tracing::info!(
                 "Aspect ratio: {}:{}",
-                media_attachment_aspect_ratio.0,
-                media_attachment_aspect_ratio.1
+                media_attachment.aspect_ratio_width,
+                media_attachment.aspect_ratio_height
             );
 
-            tracing::info!("Uploading {} bytes", media_attachment_bytes.len());
+            let aspect_ratio_data = AspectRatioData {
+                width: NonZero::<u64>::new(media_attachment.aspect_ratio_width as u64).unwrap(),
+                height: NonZero::<u64>::new(media_attachment.aspect_ratio_height as u64).unwrap()
+            };
+
+            tracing::info!("Uploading '{}' bytes", media_attachment.image_bytes.len());
             let blob_upload_response = self
                 .atp_agent
                 .api
                 .com
                 .atproto
                 .repo
-                .upload_blob(media_attachment_bytes)
+                .upload_blob(media_attachment.image_bytes.into())
                 .await?;
-
-            tokio::fs::remove_file(&media_attachment_temp_path).await?;
 
             // Create an image embed and add it to the list of image attachments.
             image_attachments.push(
@@ -168,15 +168,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
                         .description
                         .clone()
                         .unwrap_or_else(|| "".to_string()),
-                    aspect_ratio: Some(
-                        AspectRatioData {
-                            width: NonZero::<u64>::new(media_attachment_aspect_ratio.0 as u64)
-                                .unwrap(),
-                            height: NonZero::<u64>::new(media_attachment_aspect_ratio.1 as u64)
-                                .unwrap()
-                        }
-                        .into()
-                    )
+                    aspect_ratio: Some(aspect_ratio_data.into())
                 }
                 .into()
             );
@@ -208,18 +200,10 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<Union<RecordEmbedRefs>>> {
-        let db_connection = &mut self.db_connection_pool.get()?;
-
         #[allow(unused_assignments)]
         let temp_file_path = self
-            .download_mastodon_media_attachment_to_file(media_attachment)
+            .download_file_to_temp(&media_attachment.url)
             .await?;
-
-        let new_cached_file_record = NewCachedFile::new(&temp_file_path);
-        fediproto_sync_db::operations::insert_cached_file_record(
-            db_connection,
-            &new_cached_file_record
-        )?;
 
         let mut should_fallback = false;
 
@@ -261,36 +245,21 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         &mut self,
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<Union<RecordEmbedRefs>>> {
-        let video_link_thumbnail_bytes = self
-            .get_link_thumbnail(media_attachment.preview_url.clone().unwrap().as_str())
+        let temp_file_path = self
+            .download_file_to_temp(&media_attachment.preview_url.clone().unwrap())
             .await?;
-        let video_link_thumbnail_bytes = video_link_thumbnail_bytes.bytes().await?;
-        let video_link_thumbnail_bytes =
-            match video_link_thumbnail_bytes.len() > MAX_IMAGE_SIZE as usize {
-                true => {
-                    let compressed_image =
-                        crate::img_utils::compress_image_from_bytes(&video_link_thumbnail_bytes)?;
 
-                    tracing::info!(
-                        "Compressed video link thumbnail from {} bytes to {} bytes",
-                        video_link_thumbnail_bytes.len(),
-                        compressed_image.len()
-                    );
+        let video_link_thumbnail: bytes::Bytes = tokio::fs::read(&temp_file_path).await?.into();
+        let video_link_thumbnail = ImageAttachmentData::new(video_link_thumbnail, &media_attachment.url)?;
 
-                    compressed_image
-                }
-
-                _ => video_link_thumbnail_bytes
-            };
-
-        let blob_item = match video_link_thumbnail_bytes.len() > 0 {
+        let blob_item = match video_link_thumbnail.image_bytes.len() > 0 {
             true => Some(
                 self.atp_agent
                     .api
                     .com
                     .atproto
                     .repo
-                    .upload_blob(video_link_thumbnail_bytes.to_vec())
+                    .upload_blob(video_link_thumbnail.image_bytes.into())
                     .await?
                     .blob
                     .clone()
