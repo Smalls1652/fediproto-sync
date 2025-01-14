@@ -22,3 +22,6 @@ openssl = { version = "0.10.68", features = ["vendored"] }
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
+
+[package.metadata.cargo-machete]
+ignored = ["fediproto-sync-build-macros"]
