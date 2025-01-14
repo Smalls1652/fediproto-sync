@@ -186,7 +186,10 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             false => {
                 let temp_file_path = self.download_file_to_temp(link_thumbnail_url).await?;
 
-                Some(ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), link_thumbnail_url)?)
+                Some(ImageAttachmentData::new(
+                    tokio::fs::read(temp_file_path).await?.into(),
+                    link_thumbnail_url
+                )?)
             }
         };
 
@@ -245,7 +248,10 @@ impl BlueSkyPostSyncRichText for BlueSkyPostSync<'_> {
             false => {
                 let temp_file_path = self.download_file_to_temp(link_thumbnail_url).await?;
 
-                Some(ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), link_thumbnail_url)?)
+                Some(ImageAttachmentData::new(
+                    tokio::fs::read(temp_file_path).await?.into(),
+                    link_thumbnail_url
+                )?)
             }
         };
 

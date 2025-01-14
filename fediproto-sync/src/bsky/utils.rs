@@ -29,9 +29,9 @@ pub trait BlueSkyPostSyncUtils {
     ) -> Result<reqwest::Response>;
 
     /// Download a file to a temporary location.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `url` - The URL of the file to download.
     async fn download_file_to_temp(
         &mut self,
@@ -84,9 +84,9 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
     }
 
     /// Download a file to a temporary location.
-    /// 
+    ///
     /// ## Arguments
-    /// 
+    ///
     /// * `url` - The URL of the file to download.
     async fn download_file_to_temp(
         &mut self,
@@ -95,10 +95,7 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
         let db_connection = &mut self.db_connection_pool.get()?;
 
         let file_download_client = crate::core::create_http_client(&self.config)?;
-        let mut file_download_response = file_download_client
-            .get(url)
-            .send()
-            .await?;
+        let mut file_download_response = file_download_client.get(url).send().await?;
 
         let temp_path = std::env::temp_dir()
             .join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));

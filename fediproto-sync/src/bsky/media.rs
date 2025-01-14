@@ -132,12 +132,12 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
 
         for image_attachment in media_attachments {
             // Download the media attachment from the Mastodon server.
-            let temp_file_path = self
-                .download_file_to_temp(&image_attachment.url)
-                .await?;
+            let temp_file_path = self.download_file_to_temp(&image_attachment.url).await?;
 
-            let media_attachment =
-                ImageAttachmentData::new(tokio::fs::read(temp_file_path).await?.into(), &image_attachment.url)?;
+            let media_attachment = ImageAttachmentData::new(
+                tokio::fs::read(temp_file_path).await?.into(),
+                &image_attachment.url
+            )?;
 
             tracing::info!(
                 "Aspect ratio: {}:{}",
@@ -201,9 +201,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
         media_attachment: &megalodon::entities::attachment::Attachment
     ) -> Result<Option<Union<RecordEmbedRefs>>> {
         #[allow(unused_assignments)]
-        let temp_file_path = self
-            .download_file_to_temp(&media_attachment.url)
-            .await?;
+        let temp_file_path = self.download_file_to_temp(&media_attachment.url).await?;
 
         let mut should_fallback = false;
 
@@ -250,7 +248,8 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             .await?;
 
         let video_link_thumbnail: bytes::Bytes = tokio::fs::read(&temp_file_path).await?.into();
-        let video_link_thumbnail = ImageAttachmentData::new(video_link_thumbnail, &media_attachment.url)?;
+        let video_link_thumbnail =
+            ImageAttachmentData::new(video_link_thumbnail, &media_attachment.url)?;
 
         let blob_item = match video_link_thumbnail.image_bytes.len() > 0 {
             true => Some(
