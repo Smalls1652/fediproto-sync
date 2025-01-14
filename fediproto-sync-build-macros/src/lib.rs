@@ -41,12 +41,11 @@ macro_rules! set_package_version {
                 .trim_start_matches('v');
 
                 let git_version_output = $crate::git_version::git_version!(
-                    args = ["--always"],
-                    fallback = git_version_tag_output
+                    args = ["--always", "--exclude=*"]
                 )
                 .to_string();
 
-                match &git_version_output == package_version {
+                match git_version_tag_output == package_version {
                     true => package_version.to_string(),
 
                     false => format!("{}-{}", git_version_tag_output, git_version_output)
