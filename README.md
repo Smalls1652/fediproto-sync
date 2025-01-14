@@ -73,24 +73,7 @@ You can run the daemon in the following ways:
 
 ## 🏗️ Building from source
 
-### 🧰 Pre-requisites
-
-- [Rust](https://www.rust-lang.org/tools/install)
-  - The `nightly` toolchain is preferred, but `stable` should work as well.
-  - Make sure to have the toolchains for the [target platforms](https://doc.rust-lang.org/nightly/rustc/platform-support.html) you want to build for.
-
-### 🧱 Building
-
-#### Command-line
-
-1. Navigate to the project directory in your terminal.
-2. Run the following command to build the project:
-
-```bash
-cargo build --package fediproto-sync --release --target <TARGET>
-```
-
-Replace `<TARGET>` with the desired [target platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html).
+For detailed building instructions, see the [building guide](docs/Building.md).
 
 ## 🗂️ Dependencies used
 
