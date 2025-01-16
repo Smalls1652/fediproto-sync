@@ -1,0 +1,252 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+# Core
+
+## Format code
+[tasks.rustfmt]
+command = "cargo"
+args = ["--verbose", "fmt"]
+
+## Build fediproto-sync
+[tasks.build-fediproto-sync]
+command = "cargo"
+args = ["build", "--package=fediproto-sync"]
+workspace = false
+
+# Dependency installs
+
+## Install OS dependencies.
+[tasks.install-dependencies]
+description = "Install OS dependencies."
+linux_alias = "install-linux-dependencies"
+mac_alias = "install-macos-dependencies"
+windows_alias = "empty"
+workspace = false
+
+## Install OS dependencies for Linux. 
+[tasks.install-linux-dependencies]
+condition = { platforms = ["linux"] }
+description = "Install OS dependencies for Linux."
+install_script = '''
+#!/bin/bash
+
+DISTRO_ID=$(cat /etc/*release | sed -nE "s/^ID=(.+)$/\1/p")
+
+PACKAGE_INSTALLER=""
+if command -v apt-get &> /dev/null; then
+    PACKAGE_INSTALLER="apt-get"
+elif command -v dnf &> /dev/null; then
+    PACKAGE_INSTALLER="dnf"
+else
+    echo "Unsupported platform: ${DISTRO_ID}"
+    exit 1
+fi
+
+if [ "${PACKAGE_INSTALLER}" == "apt-get" ]; then
+    sudo apt-get update
+    sudo apt-get install -y \
+        build-essential \
+        g++-x86-64-linux-gnu \
+        libc6-dev \
+        git \
+        pkg-config \
+        cmake \
+        libpq-dev \
+        libpq5 \
+        libsqlite3-dev \
+        libsqlite3-0 \
+        libssl-dev
+elif [ "${PACKAGE_INSTALLER}" == "dnf" ]; then
+    sudo dnf install -y \
+        gcc \
+        gcc-c++ \
+        glibc-devel \
+        git \
+        pkgconfig \
+        cmake \
+        libpq-devel \
+        libpq \
+        sqlite-devel \
+        sqlite \
+        openssl-devel
+fi
+'''
+workspace = false
+
+## Install OS dependencies for macOS.
+[tasks.install-macos-dependencies]
+condition = { platforms = ["mac"] }
+description = "Install OS dependencies for macOS."
+install_script = '''
+echo "Checking to see if Homebrew is installed."
+
+if ! command -v brew &> /dev/null; then
+    echo -e "Homebrew is not installed.\n"
+    echo "Follow the install instructions here before running:"
+    echo "https://brew.sh/"
+
+    exit 1
+else
+    echo "Homebrew is installed."
+fi
+
+echo ""
+
+DEPENDENCIES_TO_INSTALL=(
+    "git"
+    "pkgconf"
+    "gcc"
+    "make"
+    "cmake"
+    "perl"
+)
+
+for DEPENDENCY in "${DEPENDENCIES_TO_INSTALL[@]}" ; do
+    if brew list -1 | grep -q "^${DEPENDENCY}\$"; then
+        echo "${DEPENDENCY} is already installed"
+    else
+        echo "Installing ${DEPENDENCY}"
+        brew install ${DEPENDENCY}
+    fi
+done
+'''
+workspace = false
+
+# Container build tasks
+
+## Build fediproto-sync in release mode for a container image.
+[tasks.build-fediproto-sync-container]
+condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+description = "Build fediproto-sync in release mode for a container image."
+script = '''
+#!/bin/bash
+
+cargo build --package=fediproto-sync --release --target=${RUST_TARGET}
+mkdir -p "/tmp/fediproto-sync/linux_${TARGETARCH}"
+cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync/linux_${TARGETARCH}/fediproto-sync"
+'''
+dependencies = [
+    "set-build-container-env"
+]
+workspace = false
+
+## Set environment variables for building a container image.
+[tasks.set-build-container-env]
+condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+description = "Set environment variables for building a container image."
+dependencies = [
+    "set-build-container-env-amd64",
+    "set-build-container-env-arm64",
+]
+env = { FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true", FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true", PKG_CONFIG_SYSROOT_DIR = "/" }
+workspace = false
+
+## Set environment variables for 'linux/amd64' container image builds.
+[tasks.set-build-container-env-amd64]
+condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/amd64", BUILD_ENVIRONMENT = "CONTAINER" } }
+description = "Set environment variables for 'linux/amd64' container image builds."
+env = { CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "x86_64-linux-gnu-gcc", CC_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-gcc", CXX_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-g++", RUST_TARGET = "x86_64-unknown-linux-gnu" }
+workspace = false
+
+## Set environment variables for 'linux/arm64' container image builds.
+[tasks.set-build-container-env-arm64]
+condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/arm64", BUILD_ENVIRONMENT = "CONTAINER" } }
+description = "Set environment variables for 'linux/arm64' container image builds."
+env = { CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc", CC_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-gcc", CXX_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-g++", RUST_TARGET = "aarch64-unknown-linux-gnu" }
+workspace = false
+
+## Install OS dependencies for a container image build.
+[tasks.install-linux-dependencies-container]
+condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+description = "Install OS dependencies for a container image build."
+install_script = '''
+#!/bin/bash
+
+DISTRO_ID=$(cat /etc/*release | sed -nE "s/^ID=(.+)$/\1/p")
+
+PACKAGE_INSTALLER=""
+if command -v apt-get &> /dev/null; then
+    PACKAGE_INSTALLER="apt-get"
+elif command -v dnf &> /dev/null; then
+    PACKAGE_INSTALLER="dnf"
+else
+    echo "Unsupported platform: ${DISTRO_ID}"
+    exit 1
+fi
+
+if [ "${PACKAGE_INSTALLER}" == "apt-get" ]; then
+    apt-get update
+    apt-get install -y \
+        build-essential \
+        g++-x86-64-linux-gnu \
+        libc6-dev-amd64-cross \
+        g++-aarch64-linux-gnu \
+        libc6-dev-arm64-cross \
+        crossbuild-essential-arm64 \
+        crossbuild-essential-amd64 \
+        git \
+        pkg-config \
+        cmake
+
+    case "${TARGETPLATFORM}" in
+        "linux/amd64")
+            dpkg --add-architecture amd64
+            apt-get update
+            apt-get install -y \
+                libpq-dev:amd64 \
+                libpq5:amd64 \
+                libsqlite3-dev:amd64 \
+                libsqlite3-0:amd64 \
+                libssl-dev:amd64
+            ;;
+        "linux/arm64")
+            dpkg --add-architecture arm64
+            apt-get update
+            apt-get install -y \
+                libpq-dev:arm64 \
+                libpq5:arm64 \
+                libsqlite3-dev:arm64 \
+                libsqlite3-0:arm64 \
+                libssl-dev:arm64
+            ;;
+        *)
+            echo "Unsupported platform: ${TARGETPLATFORM}"
+            exit 1
+            ;;
+    esac
+elif [ "${PACKAGE_INSTALLER}" == "dnf" ]; then
+    dnf install -y \
+        gcc \
+        gcc-c++ \
+        glibc-devel.x86_64 \
+        glibc-devel.aarch64 \
+        git \
+        pkgconfig \
+        cmake
+
+    case "${TARGETPLATFORM}" in
+        "linux/amd64")
+            dnf install -y \
+                libpq-devel.x86_64 \
+                libpq.x86_64 \
+                sqlite-devel.x86_64 \
+                sqlite.x86_64 \
+                openssl-devel.x86_64
+            ;;
+        "linux/arm64")
+            dnf install -y \
+                libpq-devel.aarch64 \
+                libpq.aarch64 \
+                sqlite-devel.aarch64 \
+                sqlite.aarch64 \
+                openssl-devel.aarch64
+            ;;
+        *)
+            echo "Unsupported platform: ${TARGETPLATFORM}"
+            exit 1
+            ;;
+    esac
+fi
+'''
+workspace = false
