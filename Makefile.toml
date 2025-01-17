@@ -32,6 +32,17 @@ end
 
 set_env CONTAINER_BUILD_PLATFORM ${input_platform}
 ''',
+'''
+#!@duckscript
+
+input_package = get_env BUILD_PACKAGE_NAME
+
+if is_empty ${input_package}
+    input_package = set "fediproto-sync"
+end
+
+set_env BUILD_PACKAGE_NAME ${input_package}
+'''
 ]
 
 [env]
@@ -46,6 +57,15 @@ description = "Format code"
 
 command = "cargo"
 args = ["--verbose", "fmt"]
+
+## Build a package in the workspace.
+[tasks.build-package]
+category = "core"
+description = "Build a package in the workspace."
+workspace = false
+
+command = "cargo"
+args = ["build", "--package=${BUILD_PACKAGE_NAME}", "--target=${BUILD_TARGET}"]
 
 ## Build fediproto-sync.
 [tasks.build-fediproto-sync]
