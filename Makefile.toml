@@ -34,6 +34,25 @@ command = "cargo"
 args = ["build", "--package=fediproto-sync", "--release", "--target=${BUILD_TARGET}"]
 workspace = false
 
+## Create distribution artifacts.
+[tasks.dist]
+script_runner = "@shell"
+script = '''
+COMPILED_PATH="${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${BUILD_TARGET}/release/fediproto-sync"
+OUTPUT_DIR="${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/dist/${BUILD_TARGET}"
+
+if [ -d "${OUTPUT_DIR}" ]; then
+    rm -rf "${OUTPUT_DIR}"
+fi
+
+mkdir -p "${OUTPUT_DIR}"
+cp "${COMPILED_PATH}" "${OUTPUT_DIR}/fediproto-sync"
+
+echo "\tOutput path: ${OUTPUT_DIR}/fediproto-sync"
+'''
+workspace = false
+dependencies = ["build-fediproto-sync-release"]
+
 # Dependency installs
 
 ## Install OS dependencies.
