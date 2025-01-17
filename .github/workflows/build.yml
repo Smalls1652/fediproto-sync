@@ -35,10 +35,13 @@ jobs:
           toolchain: nightly
           rustflags: ""
 
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
       - name: Install cargo-make
         shell: bash
         run: | 
-          cargo install --force cargo-make
+          cargo binstall cargo-make
 
       - name: Build project
         shell: bash
