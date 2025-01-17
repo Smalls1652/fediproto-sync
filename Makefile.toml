@@ -1,3 +1,17 @@
+env_scripts = [
+'''
+#!@duckscript
+
+input_target = get_env BUILD_TARGET
+
+if is_empty ${input_target}
+    input_target = get_env CARGO_MAKE_RUST_TARGET_TRIPLE
+end
+
+set_env BUILD_TARGET ${input_target}
+'''
+]
+
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
@@ -11,7 +25,13 @@ args = ["--verbose", "fmt"]
 ## Build fediproto-sync
 [tasks.build-fediproto-sync]
 command = "cargo"
-args = ["build", "--package=fediproto-sync"]
+args = ["build", "--package=fediproto-sync", "--target=${BUILD_TARGET}"]
+workspace = false
+
+## Build fediproto-sync in release mode.
+[tasks.build-fediproto-sync-release]
+command = "cargo"
+args = ["build", "--package=fediproto-sync", "--release", "--target=${BUILD_TARGET}"]
 workspace = false
 
 # Dependency installs
