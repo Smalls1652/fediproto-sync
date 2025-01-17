@@ -139,21 +139,29 @@ dependencies = [
     "set-build-container-env-amd64",
     "set-build-container-env-arm64",
 ]
-env = { FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true", FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true", PKG_CONFIG_SYSROOT_DIR = "/" }
+env.FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true"
+env.FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true"
+env.PKG_CONFIG_SYSROOT_DIR = "/"
 workspace = false
 
 ## Set environment variables for 'linux/amd64' container image builds.
 [tasks.set-build-container-env-amd64]
 condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/amd64", BUILD_ENVIRONMENT = "CONTAINER" } }
 description = "Set environment variables for 'linux/amd64' container image builds."
-env = { CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "x86_64-linux-gnu-gcc", CC_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-gcc", CXX_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-g++", RUST_TARGET = "x86_64-unknown-linux-gnu" }
+env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "x86_64-linux-gnu-gcc"
+env.CC_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-gcc"
+env.CXX_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-g++"
+env.RUST_TARGET = "x86_64-unknown-linux-gnu"
 workspace = false
 
 ## Set environment variables for 'linux/arm64' container image builds.
 [tasks.set-build-container-env-arm64]
 condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/arm64", BUILD_ENVIRONMENT = "CONTAINER" } }
 description = "Set environment variables for 'linux/arm64' container image builds."
-env = { CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc", CC_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-gcc", CXX_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-g++", RUST_TARGET = "aarch64-unknown-linux-gnu" }
+env.CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc"
+env.CC_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-gcc"
+env.CXX_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-g++"
+env.RUST_TARGET = "aarch64-unknown-linux-gnu"
 workspace = false
 
 ## Install OS dependencies for a container image build.
