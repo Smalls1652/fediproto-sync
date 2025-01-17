@@ -17,25 +17,38 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
 # Core
 
-## Format code
+## Format code.
 [tasks.rustfmt]
+category = "core"
+description = "Format code"
+
 command = "cargo"
 args = ["--verbose", "fmt"]
 
-## Build fediproto-sync
+## Build fediproto-sync.
 [tasks.build-fediproto-sync]
+category = "core"
+description = "Build fediproto-sync."
+workspace = false
+
 command = "cargo"
 args = ["build", "--package=fediproto-sync", "--target=${BUILD_TARGET}"]
-workspace = false
 
 ## Build fediproto-sync in release mode.
 [tasks.build-fediproto-sync-release]
+category = "core"
+description = "Build fediproto-sync in release mode."
+workspace = false
+
 command = "cargo"
 args = ["build", "--package=fediproto-sync", "--release", "--target=${BUILD_TARGET}"]
-workspace = false
 
 ## Create distribution artifacts.
 [tasks.dist]
+category = "core"
+description = "Create distribution artifacts."
+workspace = false
+
 script_runner = "@shell"
 script = '''
 COMPILED_PATH="${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${BUILD_TARGET}/release/fediproto-sync"
@@ -50,23 +63,28 @@ cp "${COMPILED_PATH}" "${OUTPUT_DIR}/fediproto-sync"
 
 echo "\tOutput path: ${OUTPUT_DIR}/fediproto-sync"
 '''
-workspace = false
 dependencies = ["build-fediproto-sync-release"]
 
-# Dependency installs
+# OS Dependency installs
 
 ## Install OS dependencies.
 [tasks.install-dependencies]
+category = "os_dependencies"
 description = "Install OS dependencies."
+workspace = false
+
 linux_alias = "install-linux-dependencies"
 mac_alias = "install-macos-dependencies"
 windows_alias = "empty"
-workspace = false
 
 ## Install OS dependencies for Linux. 
 [tasks.install-linux-dependencies]
 condition = { platforms = ["linux"] }
+category = "os_dependencies"
 description = "Install OS dependencies for Linux."
+private = true
+workspace = false
+
 install_script = '''
 #!/bin/bash
 
@@ -111,12 +129,15 @@ elif [ "${PACKAGE_INSTALLER}" == "dnf" ]; then
         openssl-devel
 fi
 '''
-workspace = false
 
 ## Install OS dependencies for macOS.
 [tasks.install-macos-dependencies]
 condition = { platforms = ["mac"] }
+category = "os_dependencies"
 description = "Install OS dependencies for macOS."
+private = true
+workspace = false
+
 install_script = '''
 echo "Checking to see if Homebrew is installed."
 
@@ -150,14 +171,16 @@ for DEPENDENCY in "${DEPENDENCIES_TO_INSTALL[@]}" ; do
     fi
 done
 '''
-workspace = false
 
 # Container build tasks
 
 ## Build fediproto-sync in release mode for a container image.
 [tasks.build-fediproto-sync-container]
 condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+category = "container_build"
 description = "Build fediproto-sync in release mode for a container image."
+workspace = false
+
 script = '''
 #!/bin/bash
 
@@ -168,45 +191,53 @@ cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync/linux_$
 dependencies = [
     "set-build-container-env"
 ]
-workspace = false
 
 ## Set environment variables for building a container image.
 [tasks.set-build-container-env]
 condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+category = "container_build"
 description = "Set environment variables for building a container image."
+workspace = false
+
+env.FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true"
+env.FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true"
+env.PKG_CONFIG_SYSROOT_DIR = "/"
 dependencies = [
     "set-build-container-env-amd64",
     "set-build-container-env-arm64",
 ]
-env.FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true"
-env.FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true"
-env.PKG_CONFIG_SYSROOT_DIR = "/"
-workspace = false
 
 ## Set environment variables for 'linux/amd64' container image builds.
 [tasks.set-build-container-env-amd64]
 condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/amd64", BUILD_ENVIRONMENT = "CONTAINER" } }
+category = "container_build"
 description = "Set environment variables for 'linux/amd64' container image builds."
+workspace = false
+
 env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "x86_64-linux-gnu-gcc"
 env.CC_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-gcc"
 env.CXX_x86_64_unknown_linux_gnu = "x86_64-linux-gnu-g++"
 env.RUST_TARGET = "x86_64-unknown-linux-gnu"
-workspace = false
 
 ## Set environment variables for 'linux/arm64' container image builds.
 [tasks.set-build-container-env-arm64]
 condition = { platforms = ["linux"], env = { TARGETPLATFORM = "linux/arm64", BUILD_ENVIRONMENT = "CONTAINER" } }
+category = "container_build"
 description = "Set environment variables for 'linux/arm64' container image builds."
+workspace = false
+
 env.CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc"
 env.CC_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-gcc"
 env.CXX_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-g++"
 env.RUST_TARGET = "aarch64-unknown-linux-gnu"
-workspace = false
 
 ## Install OS dependencies for a container image build.
 [tasks.install-linux-dependencies-container]
 condition = { platforms = ["linux"], env = { BUILD_ENVIRONMENT = "CONTAINER" } }
+category = "container_build"
 description = "Install OS dependencies for a container image build."
+workspace = false
+
 install_script = '''
 #!/bin/bash
 
@@ -296,4 +327,3 @@ elif [ "${PACKAGE_INSTALLER}" == "dnf" ]; then
     esac
 fi
 '''
-workspace = false
