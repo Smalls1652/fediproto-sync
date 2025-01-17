@@ -13,6 +13,7 @@ target/
 
 # Artifact files
 artifacts/
+dist/
 
 # Local files
 .local/*.db
