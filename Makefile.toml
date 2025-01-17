@@ -13,7 +13,18 @@ set_env BUILD_TARGET ${input_target}
 '''
 #!@duckscript
 
+task_name = get_env CARGO_MAKE_TASK
+
+if not equals ${task_name} "create-container-image"
+    return
+end
+
 input_tag = get_env CONTAINER_BUILD_TAG
+input_tag_arg = array_get ${@} 0
+
+if not is_empty ${input_tag_arg}
+    input_tag = set "${input_tag_arg}"
+end
 
 if is_empty ${input_tag}
     input_tag = set "fediproto-sync-local:latest"
@@ -24,7 +35,18 @@ set_env CONTAINER_BUILD_TAG ${input_tag}
 '''
 #!@duckscript
 
+task_name = get_env CARGO_MAKE_TASK
+
+if not equals ${task_name} "create-container-image"
+    return
+end
+
 input_platform = get_env CONTAINER_BUILD_PLATFORM
+input_platform_arg = array_get ${@} 1
+
+if not is_empty ${input_platform_arg}
+    input_platform = set "${input_platform_arg}"
+end
 
 if is_empty ${input_platform}
     input_platform = set "linux/amd64"
@@ -35,7 +57,18 @@ set_env CONTAINER_BUILD_PLATFORM ${input_platform}
 '''
 #!@duckscript
 
+task_name = get_env CARGO_MAKE_TASK
+
+if not equals ${task_name} "build-package"
+    return
+end
+
 input_package = get_env BUILD_PACKAGE_NAME
+input_package_arg = array_get ${@} 0
+
+if not is_empty ${input_package_arg}
+    input_package = set "${input_package_arg}"
+end
 
 if is_empty ${input_package}
     input_package = set "fediproto-sync"
@@ -47,6 +80,12 @@ set_env BUILD_PACKAGE_NAME ${input_package}
 
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.super-cool-test]
+workspace = false
+script = '''
+echo "${TESTING_VAR_01}"
+'''
 
 # Core
 
