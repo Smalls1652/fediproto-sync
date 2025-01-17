@@ -9,7 +9,29 @@ if is_empty ${input_target}
 end
 
 set_env BUILD_TARGET ${input_target}
+''',
 '''
+#!@duckscript
+
+input_tag = get_env CONTAINER_BUILD_TAG
+
+if is_empty ${input_tag}
+    input_tag = set "fediproto-sync-local:latest"
+end
+
+set_env CONTAINER_BUILD_TAG ${input_tag}
+''',
+'''
+#!@duckscript
+
+input_platform = get_env CONTAINER_BUILD_PLATFORM
+
+if is_empty ${input_platform}
+    input_platform = set "linux/amd64"
+end
+
+set_env CONTAINER_BUILD_PLATFORM ${input_platform}
+''',
 ]
 
 [env]
@@ -171,6 +193,25 @@ done
 '''
 
 # Container build tasks
+
+## Create container images for fediproto-sync.
+[tasks.create-container-image]
+category = "container_build"
+description = "Create container images for fediproto-sync."
+workspace = false
+
+command = "docker"
+args = [
+    "build",
+    "--load",
+    "--tag",
+    "${CONTAINER_BUILD_TAG}",
+    "--platform",
+    "${CONTAINER_BUILD_PLATFORM}",
+    "--file",
+    "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/Dockerfile",
+    "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+]
 
 ## Build fediproto-sync in release mode for a container image.
 [tasks.build-fediproto-sync-container]
