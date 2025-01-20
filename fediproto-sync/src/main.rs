@@ -15,9 +15,6 @@ use fediproto_sync_lib::{
     config::{FediProtoSyncConfig, FediProtoSyncMode}
 };
 
-#[global_allocator]
-static ALLOC: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
-
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<()> {
