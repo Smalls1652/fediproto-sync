@@ -33,7 +33,7 @@ fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 image = "0.25.5"
 ipld-core = "0.4.1"
-megalodon = "0.15.0"
+megalodon = "1.0.0"
 once_cell = "1.20.2"
 rand = "0.8.5"
 regex = { version = "1.11.1", features = ["std"] }

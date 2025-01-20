@@ -25,7 +25,7 @@ diesel = { version = "2.2.6", features = [
 ] }
 diesel_migrations = { version = "2.2.0", features = ["postgres", "sqlite"] }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
-megalodon = "0.15.0"
+megalodon = "1.0.0"
 thiserror = "2.0.10"
 tokio = { version = "1.42.0", features = ["io-std", "io-util"] }
 tracing = "0.1.41"
