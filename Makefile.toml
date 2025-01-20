@@ -81,12 +81,6 @@ set_env BUILD_PACKAGE_NAME ${input_package}
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
-[tasks.super-cool-test]
-workspace = false
-script = '''
-echo "${TESTING_VAR_01}"
-'''
-
 # Core
 
 ## Format code.
