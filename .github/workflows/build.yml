@@ -41,7 +41,7 @@ jobs:
       - name: Install cargo-make
         shell: bash
         run: | 
-          cargo binstall cargo-make
+          cargo binstall cargo-make --force
 
       - name: Build project
         shell: bash
