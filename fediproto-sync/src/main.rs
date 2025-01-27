@@ -15,6 +15,10 @@ use fediproto_sync_lib::{
     config::{FediProtoSyncConfig, FediProtoSyncMode}
 };
 
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<()> {

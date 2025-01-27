@@ -100,7 +100,8 @@
         "cwd": "${workspaceFolder}",
         "env": {
           "FEDIPROTO_SYNC_ENVIRONMENT": "Development_${input:dbType}",
-          "RUST_BACKTRACE": "1"
+          "RUST_BACKTRACE": "1",
+          "JEMALLOC_SYS_WITH_MALLOC_CONF": "background_thread:true,narenas:1,tcache:false,dirty_decay_ms:0,muzzy_decay_ms:0,abort_conf:true"
         }
       },
       "presentation": {
