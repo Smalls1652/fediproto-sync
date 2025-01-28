@@ -12,7 +12,7 @@ license-file.workspace = true
 thiserror = "2.0.10"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.68" }
+openssl = { version = "0.10.69" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 openssl = { version = "0.10.68", features = ["vendored"] }
