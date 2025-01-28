@@ -102,6 +102,15 @@ description = "Build a package in the workspace."
 workspace = false
 
 command = "cargo"
+args = ["build", "--package=${BUILD_PACKAGE_NAME}"]
+
+## Build a package in the workspace in release mode.
+[tasks.build-package-release]
+category = "core"
+description = "Build a package in the workspace in release mode."
+workspace = false
+
+command = "cargo"
 args = ["build", "--package=${BUILD_PACKAGE_NAME}", "--target=${BUILD_TARGET}"]
 
 ## Build fediproto-sync.
@@ -111,7 +120,7 @@ description = "Build fediproto-sync."
 workspace = false
 
 command = "cargo"
-args = ["build", "--package=fediproto-sync", "--target=${BUILD_TARGET}"]
+args = ["build", "--package=fediproto-sync"]
 
 ## Build fediproto-sync in release mode.
 [tasks.build-fediproto-sync-release]
