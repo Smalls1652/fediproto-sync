@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 anyhow = "1.0.95"
 async-session = "3.0.0"
-axum = { version = "0.8.1", features = ["macros"] }
+axum = { version = "0.8.2", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
 diesel = { version = "2.2.6", features = [
     "chrono",
