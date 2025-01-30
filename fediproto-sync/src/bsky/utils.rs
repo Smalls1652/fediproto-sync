@@ -1,6 +1,6 @@
 use anyhow::Result;
 use fediproto_sync_db::models::NewCachedFile;
-use rand::distributions::DistString;
+use rand::distr::SampleString;
 use tokio::io::AsyncWriteExt;
 
 use super::BlueSkyPostSync;
@@ -98,7 +98,7 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
         let mut file_download_response = file_download_client.get(url).send().await?;
 
         let temp_path = std::env::temp_dir()
-            .join(rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 14));
+            .join(rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 14));
         let mut temp_file = tokio::fs::File::create(&temp_path).await?;
 
         while let Some(chunk) = file_download_response.chunk().await? {
