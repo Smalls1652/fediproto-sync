@@ -27,7 +27,7 @@ diesel = { version = "2.2.6", features = [
 ] }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
-oauth2 = "4.4.2"
+oauth2 = "5.0.0"
 serde = { version = "1.0.217", features = ["derive"] }
 tokio = { version = "1.42.0", features = ["full"] }
 tracing = "0.1.41"
