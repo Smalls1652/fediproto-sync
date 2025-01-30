@@ -47,6 +47,9 @@ tokio = { version = "1.42.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
+[target.'cfg(all(target_family = "unix", not(target_os = "macos")))'.dependencies]
+tikv-jemallocator = { version = "0.6.0" }
+
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
 

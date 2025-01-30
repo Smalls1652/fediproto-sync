@@ -15,6 +15,11 @@ use fediproto_sync_lib::{
     config::{FediProtoSyncConfig, FediProtoSyncMode}
 };
 
+// Use Jemalloc for *nix-based systems, excluding macOS.
+#[cfg(all(target_family = "unix", not(target_os = "macos")))]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<()> {

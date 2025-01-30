@@ -324,6 +324,7 @@ workspace = false
 
 env.FEDIPROTOSYNC_INCLUDE_COMMIT_HASH = "true"
 env.FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION = "true"
+env.JEMALLOC_SYS_WITH_MALLOC_CONF = "background_thread:true,narenas:1,lg_tcache_max:13,dirty_decay_ms:1000,abort_conf:true"
 env.PKG_CONFIG_SYSROOT_DIR = "/"
 dependencies = [
     "set-build-container-env-amd64",
