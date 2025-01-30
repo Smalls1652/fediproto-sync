@@ -85,6 +85,12 @@ set_env BUILD_PACKAGE_NAME ${input_package}
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
+# Overrides
+
+## Run test.
+[tasks.test]
+args = ["test", "--", "--show-output"]
+
 # Core
 
 ## Format code.
