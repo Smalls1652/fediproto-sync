@@ -18,9 +18,8 @@ use atrium_api::{
         string::{Did, Nsid}
     }
 };
-use fediproto_sync_lib::error::FediProtoSyncError;
+use fediproto_sync_lib::{error::FediProtoSyncError, utils::new_random_file_name};
 use ipld_core::cid::Cid;
-use rand::distr::SampleString;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
@@ -319,10 +318,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             )
             .await?;
 
-        let random_video_name = format!(
-            "{}.mp4",
-            rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 14)
-        );
+        let random_video_name = new_random_file_name(14, Some(".mp4"));
 
         // Upload the video to BlueSky.
         tracing::info!(
@@ -454,8 +450,7 @@ impl BlueSkyPostSyncMedia for BlueSkyPostSync<'_> {
             .download_mastodon_media_attachment(media_attachment)
             .await?;
 
-        let temp_path = std::env::temp_dir()
-            .join(rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 14));
+        let temp_path = std::env::temp_dir().join(new_random_file_name(14, None));
         let mut temp_file = tokio::fs::File::create(&temp_path).await?;
 
         while let Some(chunk) = media_attachment_response.chunk().await? {

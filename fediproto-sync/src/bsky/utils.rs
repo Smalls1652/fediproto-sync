@@ -1,6 +1,6 @@
 use anyhow::Result;
 use fediproto_sync_db::models::NewCachedFile;
-use rand::distr::SampleString;
+use fediproto_sync_lib::utils::new_random_file_name;
 use tokio::io::AsyncWriteExt;
 
 use super::BlueSkyPostSync;
@@ -97,8 +97,7 @@ impl BlueSkyPostSyncUtils for BlueSkyPostSync<'_> {
         let file_download_client = crate::core::create_http_client(&self.config)?;
         let mut file_download_response = file_download_client.get(url).send().await?;
 
-        let temp_path = std::env::temp_dir()
-            .join(rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 14));
+        let temp_path = std::env::temp_dir().join(new_random_file_name(14, None));
         let mut temp_file = tokio::fs::File::create(&temp_path).await?;
 
         while let Some(chunk) = file_download_response.chunk().await? {
