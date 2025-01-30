@@ -1,9 +1,6 @@
 name: Git Town
 
 on:
-  push:
-    branches-ignore:
-      - 'dependabot/**'
   pull_request:
     branches-ignore: 
       - 'dependabot/**'
