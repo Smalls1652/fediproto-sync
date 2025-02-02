@@ -17,6 +17,7 @@ static BLUESKY_HANDLE_ENV_VAR: &str = "BLUESKY_HANDLE";
 static BLUESKY_APP_PASSWORD_ENV_VAR: &str = "BLUESKY_APP_PASSWORD";
 static SYNC_INTERVAL_SECONDS_ENV_VAR: &str = "SYNC_INTERVAL_SECONDS";
 static BLUESKY_VIDEO_ALWAYS_FALLBACK_ENV_VAR: &str = "BLUESKY_VIDEO_ALWAYS_FALLBACK";
+static MASTODON_ALLOW_UNLISTED_POSTS_ENV_VAR: &str = "MASTODON_ALLOW_UNLISTED_POSTS";
 
 /// Config values for configuring the FediProtoSync
 /// application.
@@ -105,7 +106,12 @@ pub struct FediProtoSyncConfig {
     /// Whether to always fallback to the video URL for BlueSky posts.
     ///
     /// **Environment variable:** `BLUESKY_VIDEO_ALWAYS_FALLBACK`
-    pub bluesky_video_always_fallback: bool
+    pub bluesky_video_always_fallback: bool,
+
+    /// Whether to allow unlisted posts from Mastodon to sync to BlueSky.
+    /// 
+    /// **Environment variable:** `MASTODON_ALLOW_UNLISTED_POSTS`
+    pub mastodon_allow_unlisted_posts: bool
 }
 
 impl FediProtoSyncConfig {
@@ -269,6 +275,16 @@ impl FediProtoSyncConfig {
                 )
             })?;
 
+        // Read 'MASTODON_ALLOW_UNLISTED_POSTS' environment variable.
+        let mastodon_allow_unlisted_posts = std::env::var(MASTODON_ALLOW_UNLISTED_POSTS_ENV_VAR)
+            .unwrap_or("false".to_string())
+            .parse::<bool>()
+            .map_err(|_| {
+                FediProtoSyncError::EnvironmentVariableParseError(
+                    MASTODON_ALLOW_UNLISTED_POSTS_ENV_VAR.to_string()
+                )
+            })?;
+
         Ok(Self {
             mode,
             auth_server_address,
@@ -286,7 +302,8 @@ impl FediProtoSyncConfig {
             bluesky_handle,
             bluesky_app_password,
             sync_interval,
-            bluesky_video_always_fallback
+            bluesky_video_always_fallback,
+            mastodon_allow_unlisted_posts
         })
     }
 }
