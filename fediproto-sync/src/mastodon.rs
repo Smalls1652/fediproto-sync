@@ -5,7 +5,8 @@ pub trait MastodonApiExtensions {
     async fn get_latest_posts(
         &self,
         account_id: &str,
-        last_post_id: Option<String>
+        last_post_id: Option<String>,
+        include_unlisted: bool
     ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error>;
 }
 
@@ -19,7 +20,8 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
     async fn get_latest_posts(
         &self,
         account_id: &str,
-        last_post_id: Option<String>
+        last_post_id: Option<String>,
+        include_unlisted: bool
     ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error> {
         let limit_value = match last_post_id {
             Some(_) => None,
@@ -44,9 +46,14 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
         let filtered_latest_posts = latest_posts
             .json
             .iter()
-            .filter(|&item| {
-                item.visibility == megalodon::entities::status::StatusVisibility::Public
-                    || item.visibility == megalodon::entities::status::StatusVisibility::Unlisted
+            .filter(|&item| match include_unlisted {
+                true => {
+                    item.visibility == megalodon::entities::status::StatusVisibility::Public
+                        || item.visibility
+                            == megalodon::entities::status::StatusVisibility::Unlisted
+                },
+
+                false => item.visibility == megalodon::entities::status::StatusVisibility::Public
             })
             .cloned()
             .collect();
