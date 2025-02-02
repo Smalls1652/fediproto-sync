@@ -148,7 +148,7 @@ impl FediProtoSyncLoop {
         // Otherwise, we will get all posts since the last synced post.
         tracing::info!("Getting latest posts from Mastodon...");
         let mut latest_posts = mastodon_client
-            .get_latest_posts(&account.json.id, last_synced_post_id.clone())
+            .get_latest_posts(&account.json.id, last_synced_post_id.clone(), self.config.mastodon_allow_unlisted_posts)
             .await?;
 
         // Reverse the posts so we process them in ascending order.
