@@ -32,17 +32,17 @@ tracing = "0.1.41"
 uuid = { version = "1.12.1", features = ["fast-rng", "v4", "v7"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.69" }
+openssl = { version = "0.10.70" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
 pq-sys = { version = "0.6.3", features = ["bundled"] }
-openssl = { version = "0.10.68", features = ["vendored"] }
+openssl = { version = "0.10.70", features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
 pq-sys = { version = "0.6.3", features = ["bundled"] }
-openssl = { version = "0.10.68", features = ["vendored"] }
+openssl = { version = "0.10.70", features = ["vendored"] }
 
 [features]
 local_dev = []

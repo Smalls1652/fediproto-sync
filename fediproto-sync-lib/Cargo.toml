@@ -13,13 +13,13 @@ rand = "0.9.0"
 thiserror = "2.0.10"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.69" }
+openssl = { version = "0.10.70" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-openssl = { version = "0.10.68", features = ["vendored"] }
+openssl = { version = "0.10.70", features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-openssl = { version = "0.10.68", features = ["vendored"] }
+openssl = { version = "0.10.70", features = ["vendored"] }
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
