@@ -10,4 +10,4 @@ license-file.workspace = true
 
 [dependencies]
 git-version = "0.3.9"
-toml_edit = "0.22.22"
+toml_edit = "0.22.23"
