@@ -29,7 +29,7 @@ megalodon = "1.0.0"
 thiserror = "2.0.10"
 tokio = { version = "1.42.0", features = ["io-std", "io-util"] }
 tracing = "0.1.41"
-uuid = { version = "1.12.1", features = ["fast-rng", "v4", "v7"] }
+uuid = { version = "1.13.1", features = ["fast-rng", "v4", "v7"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 openssl = { version = "0.10.70" }
