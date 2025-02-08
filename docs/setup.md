@@ -85,7 +85,8 @@ The following environment variables are required to run the daemon:
 | `BLUESKY_HANDLE` * | Your handle on BlueSky without the `@`. |
 | `BLUESKY_APP_PASSWORD` * | The app password for your account on BlueSky. [See more](#bluesky---app-password) |
 | `BLUESKY_VIDEO_ALWAYS_FALLBACK` | Whether to always fallback to the video URL. **Default:** `false` |
-| `SYNC_INTERVAL_SECONDS` | The interval in seconds to sync posts. Defaults to `300` seconds. |
+| `SYNC_INTERVAL_SECONDS` | The interval in seconds to sync posts. **Default:** `300` |
+| `MASTODON_ALLOW_UNLISTED_POSTS` | Whether to allow unlisted posts to be synced. **Default:** `false` |
 
 **Note:** The `*` icon indicates that the environment variable is required.
 
