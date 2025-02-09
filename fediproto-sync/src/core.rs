@@ -60,7 +60,7 @@ impl FediProtoSyncLoop {
         let pds_service_endpoint = atproto_auth_data.1.replace("https://", "");
         let did = atproto_auth_data.2;
 
-        let mastodon_client = init_mastodon_client(&config, &db_connection_pool).await?;
+        let mastodon_client = create_mastodon_client(&config, &db_connection_pool).await?;
 
         let mastodon_account = mastodon_client
         .verify_account_credentials()
@@ -387,7 +387,7 @@ pub fn create_atp_service_client(
     Ok(service_client)
 }
 
-async fn init_mastodon_client(
+async fn create_mastodon_client(
     config: &FediProtoSyncConfig,
     db_connection_pool: &Pool<ConnectionManager<AnyConnection>>
 ) -> Result<Box<dyn Megalodon + Send + Sync>, FediProtoSyncError> {
