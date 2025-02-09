@@ -16,6 +16,10 @@ pub enum FediProtoSyncError {
     #[error("Failed to authenticate to {0}.")]
     AuthenticationError(AuthenticationSource),
 
+    /// A DB connection pool error occurred.
+    #[error("DB connection pool error.")]
+    DatabaseConnectionPoolError,
+
     /// An invalid database type was specified.
     #[error("Invalid database type.")]
     InvalidDatabaseType,
