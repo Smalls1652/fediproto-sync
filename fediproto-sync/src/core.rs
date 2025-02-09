@@ -23,7 +23,7 @@ pub struct FediProtoSyncLoop {
     /// The environment variables for the FediProto Sync application.
     config: FediProtoSyncConfig,
 
-    /// The database connection for the FediProto Sync application.
+    /// The database connection pool for the FediProto Sync application.
     db_connection_pool: Pool<ConnectionManager<AnyConnection>>,
 
     /// The ATProto agent for the FediProto Sync application.
@@ -387,6 +387,12 @@ pub fn create_atp_service_client(
     Ok(service_client)
 }
 
+/// Create a Mastodon client with `Megalodon`.
+/// 
+/// ## Arguments
+/// 
+/// * `config` - The environment variables for the FediProto Sync application.
+/// * `db_connection_pool` - The database connection pool for the FediProto Sync application.
 async fn create_mastodon_client(
     config: &FediProtoSyncConfig,
     db_connection_pool: &Pool<ConnectionManager<AnyConnection>>
