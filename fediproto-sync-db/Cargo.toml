@@ -35,12 +35,12 @@ uuid = { version = "1.13.1", features = ["fast-rng", "v4", "v7"] }
 openssl = { version = "0.10.70" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
+libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
 pq-sys = { version = "0.6.3", features = ["bundled"] }
 openssl = { version = "0.10.70", features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
+libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
 pq-sys = { version = "0.6.3", features = ["bundled"] }
 openssl = { version = "0.10.70", features = ["vendored"] }
 
