@@ -17,6 +17,7 @@ atrium-xrpc-client = "0.5.10"
 bytes = "1.10.0"
 chrono = { version = "0.4.39", features = ["serde"] }
 diesel = { version = "2.2.7", features = [
+    "32-column-tables",
     "chrono",
     "postgres",
     "postgres_backend",
@@ -25,7 +26,7 @@ diesel = { version = "2.2.7", features = [
     "serde_json",
     "sqlite",
     "uuid",
-] }
+], default-features = false }
 dom_query = "0.13.1"
 dotenvy = "0.15.7"
 fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
