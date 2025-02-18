@@ -16,6 +16,7 @@ async-session = "3.0.0"
 axum = { version = "0.8.2", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
 diesel = { version = "2.2.7", features = [
+    "32-column-tables",
     "chrono",
     "postgres",
     "postgres_backend",
@@ -24,7 +25,7 @@ diesel = { version = "2.2.7", features = [
     "serde_json",
     "sqlite",
     "uuid",
-] }
+], default-features = false }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 oauth2 = "4.4.2"

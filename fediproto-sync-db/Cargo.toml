@@ -14,6 +14,7 @@ build = "build.rs"
 anyhow = "1.0.95"
 chrono = { version = "0.4.39", features = ["serde"] }
 diesel = { version = "2.2.7", features = [
+    "32-column-tables",
     "chrono",
     "postgres",
     "postgres_backend",
@@ -22,7 +23,7 @@ diesel = { version = "2.2.7", features = [
     "serde_json",
     "sqlite",
     "uuid",
-] }
+], default-features = false }
 diesel_migrations = { version = "2.2.0", features = ["postgres", "sqlite"] }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 megalodon = "1.0.0"
