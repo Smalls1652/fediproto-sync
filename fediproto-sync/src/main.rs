@@ -20,6 +20,11 @@ use fediproto_sync_lib::{
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
+// Use snmalloc for macOS-based systems.
+#[cfg(all(target_family = "unix", target_os = "macos"))]
+#[global_allocator]
+static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
+
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<()> {
