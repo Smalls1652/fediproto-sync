@@ -1,5 +1,5 @@
 use diesel::{
-    AsExpression,
+    expression::AsExpression,
     deserialize::{self, FromSql, FromSqlRow},
     query_builder::QueryId,
     serialize::{self, IsNull, ToSql},
