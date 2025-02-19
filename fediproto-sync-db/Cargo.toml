@@ -33,7 +33,7 @@ tracing = "0.1.41"
 uuid = { version = "1.13.2", features = ["fast-rng", "v4", "v7"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.70" }
+openssl = { version = "0.10.71" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
