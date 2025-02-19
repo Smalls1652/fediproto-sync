@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 anyhow = "1.0.95"
 atrium-api = "0.24.10"
-atrium-xrpc-client = "0.5.10"
+atrium-xrpc-client = "0.5.11"
 bytes = "1.10.0"
 chrono = { version = "0.4.39", features = ["serde"] }
 diesel = { version = "2.2.7", features = [
