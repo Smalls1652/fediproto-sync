@@ -352,6 +352,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bit-set"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
+dependencies = [
+ "bit-vec",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
+
+[[package]]
 name = "bit_field"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -835,10 +850,11 @@ dependencies = [
 
 [[package]]
 name = "dom_query"
-version = "0.13.3"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30ba21700266836a963f31c062bf5ea74ace3f9402089d13f17f090b118d3336"
+checksum = "a1d2f5c459788d6e1111b8ad252ad8a7d552bb3b3e6b08c3b5b4495ecea0ee47"
 dependencies = [
+ "bit-set",
  "cssparser",
  "foldhash",
  "html5ever",

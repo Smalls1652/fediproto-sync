@@ -27,7 +27,7 @@ diesel = { version = "2.2.7", features = [
     "sqlite",
     "uuid",
 ], default-features = false }
-dom_query = "0.13.1"
+dom_query = "0.14.0"
 dotenvy = "0.15.7"
 fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
