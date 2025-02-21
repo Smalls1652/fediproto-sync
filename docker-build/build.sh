@@ -39,8 +39,8 @@ export FEDIPROTOSYNC_INCLUDE_COMMIT_HASH="true"
 export FEDIPROTOSYNC_UPDATE_MANIFEST_VERSION="true"
 export PKG_CONFIG_SYSROOT_DIR=/
 
-rustup default nightly
-rustup target add --toolchain "nightly" "${RUST_TARGET}"
+rustup default stable
+rustup target add --toolchain "stable" "${RUST_TARGET}"
 cargo build --package "fediproto-sync" --release --target "${RUST_TARGET}"
 mkdir -p "/tmp/fediproto-sync/linux_${TARGETARCH}"
 cp "./target/${RUST_TARGET}/release/fediproto-sync" "/tmp/fediproto-sync/linux_${TARGETARCH}/fediproto-sync"
