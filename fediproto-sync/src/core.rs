@@ -1,6 +1,6 @@
 use anyhow::Result;
 use atrium_api::{
-    agent::{AtpAgent, store::MemorySessionStore},
+    agent::{atp_agent::AtpAgent, atp_agent::store::MemorySessionStore},
     client::AtpServiceClient,
     types::string::{Datetime, Did}
 };
