@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
-name: Build
+name: Build and test
 on:
   push:
     tags-ignore: [ 'v*.*.*', 'v*.*.*-*' ]
@@ -47,3 +47,42 @@ jobs:
         shell: bash
         run: |
           cargo make build-fediproto-sync
+
+  test:
+    name: Test project
+    runs-on: ubuntu-latest
+    needs:
+      build
+
+    env:
+      CARGO_TERM_COLOR: always
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dev libraries
+        shell: bash
+        run: |
+          sudo apt-get install -y libpq-dev libpq5 libsqlite3-dev libsqlite3-0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          rustflags: ""
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install cargo-make
+        shell: bash
+        run: | 
+          cargo binstall cargo-make --force
+
+      - name: Test project
+        shell: bash
+        run: |
+          cargo make test
