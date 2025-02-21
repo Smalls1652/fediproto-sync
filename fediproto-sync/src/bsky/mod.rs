@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use atrium_api::{
-    agent::{AtpAgent, store::MemorySessionStore},
+    agent::{atp_agent::AtpAgent, atp_agent::store::MemorySessionStore},
     app,
     com,
     types::{
