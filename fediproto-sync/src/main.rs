@@ -28,15 +28,6 @@ static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 /// The main entrypoint for the FediProtoSync application.
 #[tokio::main]
 async fn main() -> Result<()> {
-    let rust_log_result = std::env::var("RUST_LOG");
-
-    match rust_log_result {
-        Ok(_) => (),
-        Err(_) => unsafe {
-            std::env::set_var("RUST_LOG", "info");
-        }
-    }
-
     // Set up unbounded channels for shutdown and error signals.
     let (shutdown_send, mut shutdown_recv) = tokio::sync::mpsc::unbounded_channel();
     let (core_sig_error_send, mut core_sig_error_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -59,7 +50,11 @@ async fn main() -> Result<()> {
         .with_line_number(false)
         .with_target(true)
         .with_thread_ids(false)
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
+                .from_env_lossy()
+        )
         .init();
 
     let args = std::env::args().collect::<Vec<String>>();
