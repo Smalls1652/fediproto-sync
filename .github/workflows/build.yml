@@ -34,6 +34,8 @@ jobs:
         with:
           toolchain: stable
           rustflags: ""
+          cache: true
+          shared-cache-key: "build"
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
@@ -78,6 +80,8 @@ jobs:
         with:
           toolchain: stable
           rustflags: ""
+          cache: true
+          shared-cache-key: "build"
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
@@ -117,6 +121,8 @@ jobs:
         with:
           toolchain: stable
           rustflags: ""
+          cache: true
+          shared-cache-key: "build"
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
