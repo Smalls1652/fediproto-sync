@@ -30,7 +30,7 @@ jobs:
           sudo apt-get install -y libpq-dev libpq5 libsqlite3-dev libsqlite3-0
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@f8efd60d2dea71cf378cafb3f494ecf103ae1179
+        uses: actions-rust-lang/setup-rust-toolchain@b38f618be2096d3fc834d239085766ecdc8f4b62
         with:
           toolchain: stable
           rustflags: ""
@@ -76,7 +76,7 @@ jobs:
           sudo apt-get install -y libpq-dev libpq5 libsqlite3-dev libsqlite3-0
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@f8efd60d2dea71cf378cafb3f494ecf103ae1179
+        uses: actions-rust-lang/setup-rust-toolchain@b38f618be2096d3fc834d239085766ecdc8f4b62
         with:
           toolchain: stable
           rustflags: ""
@@ -117,7 +117,7 @@ jobs:
           sudo apt-get install -y libpq-dev libpq5 libsqlite3-dev libsqlite3-0
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@f8efd60d2dea71cf378cafb3f494ecf103ae1179
+        uses: actions-rust-lang/setup-rust-toolchain@b38f618be2096d3fc834d239085766ecdc8f4b62
         with:
           toolchain: stable
           rustflags: ""
