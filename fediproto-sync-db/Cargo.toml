@@ -11,39 +11,29 @@ license-file.workspace = true
 build = "build.rs"
 
 [dependencies]
-anyhow = "1.0.95"
-chrono = { version = "0.4.39", features = ["serde"] }
-diesel = { version = "2.2.7", features = [
-    "32-column-tables",
-    "chrono",
-    "postgres",
-    "postgres_backend",
-    "r2d2",
-    "returning_clauses_for_sqlite_3_35",
-    "serde_json",
-    "sqlite",
-    "uuid",
-], default-features = false }
-diesel_migrations = { version = "2.2.0", features = ["postgres", "sqlite"] }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+diesel = { workspace = true }
+diesel_migrations = { workspace = true }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
-megalodon = "1.0.0"
-thiserror = "2.0.10"
-tokio = { version = "1.42.0", features = ["io-std", "io-util"] }
-tracing = "0.1.41"
-uuid = { version = "1.13.2", features = ["fast-rng", "v4", "v7"] }
+megalodon = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.71" }
+openssl = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
-pq-sys = { version = "0.7.0", features = ["bundled"] }
-openssl = { version = "0.10.70", features = ["vendored"] }
+libsqlite3-sys = { workspace = true }
+pq-sys = { workspace = true }
+openssl = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
-pq-sys = { version = "0.7.0", features = ["bundled"] }
-openssl = { version = "0.10.70", features = ["vendored"] }
+libsqlite3-sys = { workspace = true }
+pq-sys = { workspace = true }
+openssl = { workspace = true, features = ["vendored"] }
 
 [features]
 local_dev = []

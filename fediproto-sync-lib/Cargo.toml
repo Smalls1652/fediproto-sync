@@ -9,23 +9,23 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
-rand = "0.9.0"
-thiserror = "2.0.10"
+rand = { workspace = true }
+thiserror = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-openssl = { version = "0.10.71" }
+openssl = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-openssl = { version = "0.10.70", features = ["vendored"] }
+openssl = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-openssl = { version = "0.10.70", features = ["vendored"] }
+openssl = { workspace = true, features = ["vendored"] }
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
 
 [dev-dependencies]
-rstest = "0.24.0"
+rstest = { workspace = true }
 
 [package.metadata.cargo-machete]
 ignored = ["fediproto-sync-build-macros"]

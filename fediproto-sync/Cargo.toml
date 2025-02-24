@@ -11,47 +11,34 @@ license-file.workspace = true
 build = "build.rs"
 
 [dependencies]
-anyhow = "1.0.95"
-atrium-api = "0.25.0"
-atrium-xrpc-client = "0.5.11"
-bytes = "1.10.0"
-chrono = { version = "0.4.39", features = ["serde"] }
-diesel = { version = "2.2.7", features = [
-    "32-column-tables",
-    "chrono",
-    "postgres",
-    "postgres_backend",
-    "r2d2",
-    "returning_clauses_for_sqlite_3_35",
-    "serde_json",
-    "sqlite",
-    "uuid",
-], default-features = false }
-dom_query = "0.13.1"
-dotenvy = "0.15.7"
+anyhow = { workspace = true }
+atrium-api = { workspace = true }
+atrium-xrpc-client = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+diesel = { workspace = true }
+dom_query = { workspace = true }
+dotenvy = { workspace = true }
 fediproto-sync-auth-ui = { path = "../fediproto-sync-auth-ui" }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
-image = "0.25.5"
-ipld-core = "0.4.2"
-megalodon = "1.0.0"
-once_cell = "1.20.3"
-regex = { version = "1.11.1", features = ["std"] }
-reqwest = { version = "0.12.12", features = [
-    "json",
-    "rustls-tls",
-], default-features = false }
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
-tokio = { version = "1.42.0", features = ["full"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+image = { workspace = true }
+ipld-core = { workspace = true }
+megalodon = { workspace = true }
+once_cell = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [target.'cfg(all(target_family = "unix", not(target_os = "macos")))'.dependencies]
-tikv-jemallocator = { version = "0.6.0" }
+tikv-jemallocator = { workspace = true }
 
 [target.'cfg(all(target_family = "unix", target_os = "macos"))'.dependencies]
-snmalloc-rs = { version = "0.3.8" }
+snmalloc-rs = { workspace = true }
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
