@@ -11,27 +11,17 @@ license-file.workspace = true
 build = "build.rs"
 
 [dependencies]
-anyhow = "1.0.95"
-async-session = "3.0.0"
-axum = { version = "0.8.1", features = ["macros"] }
-axum-extra = { version = "0.10.0", features = ["typed-header"] }
-diesel = { version = "2.2.7", features = [
-    "32-column-tables",
-    "chrono",
-    "postgres",
-    "postgres_backend",
-    "r2d2",
-    "returning_clauses_for_sqlite_3_35",
-    "serde_json",
-    "sqlite",
-    "uuid",
-], default-features = false }
+anyhow = { workspace = true }
+async-session = { workspace = true }
+axum = { workspace = true }
+axum-extra = { workspace = true }
+diesel = { workspace = true }
 fediproto-sync-db = { path = "../fediproto-sync-db" }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
-oauth2 = "4.4.2"
-serde = { version = "1.0.217", features = ["derive"] }
-tokio = { version = "1.42.0", features = ["full"] }
-tracing = "0.1.41"
+oauth2 = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 
 [build-dependencies]
 fediproto-sync-build-macros = { path = "../fediproto-sync-build-macros" }
