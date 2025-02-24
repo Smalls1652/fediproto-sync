@@ -198,7 +198,7 @@ impl FediProtoSyncConfig {
         };
 
         // Read 'DATABASE_TYPE' environment variable.
-        let database_type = get_env_var!(DATABASE_TYPE_ENV_VAR, "postgres", DatabaseType)?;
+        let database_type = get_env_var!(DATABASE_TYPE_ENV_VAR, "Postgres", DatabaseType)?;
 
         // Read 'DATABASE_URL' environment variable.
         let database_url = get_env_var!(DATABASE_URL_ENV_VAR)?;
