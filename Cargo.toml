@@ -20,7 +20,7 @@ opt-level = "s"
 lto = true
 
 [workspace.dependencies]
-anyhow = "1.0.95"
+anyhow = "1.0.97"
 async-session = "3.0.0"
 atrium-api = "0.25.0"
 atrium-xrpc-client = "0.5.11"
