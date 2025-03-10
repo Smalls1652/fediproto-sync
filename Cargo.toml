@@ -62,7 +62,7 @@ serde_json = "1.0.138"
 snmalloc-rs = { version = "0.3.8" }
 thiserror = "2.0.12"
 tikv-jemallocator = { version = "0.6.0" }
-tokio = { version = "1.42.0", features = ["full"] }
+tokio = { version = "1.44.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 uuid = { version = "1.15.1", features = ["fast-rng", "v4", "v7"] }
