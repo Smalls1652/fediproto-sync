@@ -17,6 +17,7 @@ diesel = { workspace = true }
 diesel_migrations = { workspace = true }
 fediproto-sync-lib = { path = "../fediproto-sync-lib" }
 megalodon = { workspace = true }
+r2d2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

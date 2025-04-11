@@ -1105,6 +1105,7 @@ dependencies = [
  "libsqlite3-sys",
  "megalodon",
  "openssl",
+ "r2d2",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
