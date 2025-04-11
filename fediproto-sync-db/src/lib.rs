@@ -20,7 +20,6 @@ mod schema_sqlite;
 
 use std::time::Duration;
 
-use anyhow::{Context, Result};
 use diesel::{
     QueryResult,
     backend::Backend,
@@ -28,8 +27,9 @@ use diesel::{
     deserialize::{self, FromSql},
     r2d2::{ConnectionManager, Pool},
     serialize::{self, IsNull, ToSql},
-    sql_types::HasSqlType
+    sql_types::HasSqlType,
 };
+use error::FediProtoSyncDbError;
 use type_impls::{MultiBackendUuid, UuidProxy};
 
 /// A multi-backend enum to use with Diesel. Supports PostgreSQL and SQLite.
@@ -39,12 +39,12 @@ pub enum AnyConnection {
     Postgres(diesel::PgConnection),
 
     /// A SQLite connection.
-    SQLite(diesel::SqliteConnection)
+    SQLite(diesel::SqliteConnection),
 }
 
 pub fn create_database_connection(
     database_url: &str
-) -> Result<Pool<ConnectionManager<AnyConnection>>> {
+) -> Result<Pool<ConnectionManager<AnyConnection>>, FediProtoSyncDbError> {
     tracing::debug!("Creating database connection pool.");
     let connection_manager = ConnectionManager::<AnyConnection>::new(database_url);
 
@@ -55,7 +55,7 @@ pub fn create_database_connection(
         .min_idle(Some(1))
         .max_size(10)
         .build(connection_manager)
-        .context("Failed to create database connection pool.")?;
+        .map_err(|e| FediProtoSyncDbError::DatabaseConnectionError(e))?;
 
     Ok(pool)
 }
@@ -87,7 +87,7 @@ impl ToSql<MultiBackendUuid, MultiBackend> for UuidProxy {
     /// * `out` - The output buffer to write the serialized value to.
     fn to_sql<'b>(
         &'b self,
-        out: &mut serialize::Output<'b, '_, MultiBackend>
+        out: &mut serialize::Output<'b, '_, MultiBackend>,
     ) -> serialize::Result {
         out.set_value((MultiBackendUuid, self));
         Ok(IsNull::No)

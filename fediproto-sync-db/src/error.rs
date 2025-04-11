@@ -4,7 +4,7 @@ use thiserror::Error;
 pub enum FediProtoSyncDbError {
     /// An error occurred while trying to connect to the database.
     #[error("An error occurred while trying to connect to the database.")]
-    DatabaseConnectionError(#[from] diesel::r2d2::Error),
+    DatabaseConnectionError(#[from] r2d2::Error),
 
     /// An error occurred while trying to run a database migration.
     #[error("An error occurred while trying to run a database migration.")]
