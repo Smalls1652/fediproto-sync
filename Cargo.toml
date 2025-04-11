@@ -50,7 +50,7 @@ megalodon = "1.0.0"
 oauth2 = "4.4.2"
 once_cell = "1.21.3"
 openssl = { version = "0.10.72" }
-pq-sys = { version = "0.7.0", features = ["bundled"] }
+#pq-sys = { version = "0.7.1", features = ["bundled"] }
 rand = "0.9.0"
 regex = { version = "1.11.1", features = ["std"] }
 reqwest = { version = "0.12.12", features = [

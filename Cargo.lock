@@ -1105,7 +1105,6 @@ dependencies = [
  "libsqlite3-sys",
  "megalodon",
  "openssl",
- "pq-sys",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -2569,23 +2568,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "pq-src"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a76c01d553cfd30886b224368946a4278f40656d8fcd0fef8a286988f0e9ab53"
-dependencies = [
- "cc",
- "openssl-sys",
-]
-
-[[package]]
 name = "pq-sys"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b51d65ebe1cb1f40641b15abae017fed35ccdda46e3dab1ff8768f625a3222"
+checksum = "41c852911b98f5981956037b2ca976660612e548986c30af075e753107bc3400"
 dependencies = [
  "libc",
- "pq-src",
  "vcpkg",
 ]
 

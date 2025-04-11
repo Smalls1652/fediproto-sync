@@ -27,12 +27,12 @@ openssl = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libsqlite3-sys = { workspace = true }
-pq-sys = { workspace = true }
+#pq-sys = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 libsqlite3-sys = { workspace = true }
-pq-sys = { workspace = true }
+#pq-sys = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 
 [features]
