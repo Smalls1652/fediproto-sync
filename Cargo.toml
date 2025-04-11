@@ -28,7 +28,7 @@ axum = { version = "0.8.1", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
 bytes = "1.10.1"
 chrono = { version = "0.4.40", features = ["serde"] }
-diesel = { version = "2.2.7", features = [
+diesel = { version = "2.2.9", features = [
     "32-column-tables",
     "chrono",
     "postgres",
