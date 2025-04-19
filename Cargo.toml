@@ -24,7 +24,7 @@ anyhow = "1.0.98"
 async-session = "3.0.0"
 atrium-api = "0.25.2"
 atrium-xrpc-client = "0.5.13"
-axum = { version = "0.8.1", features = ["macros"] }
+axum = { version = "0.8.3", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
 bytes = "1.10.1"
 chrono = { version = "0.4.40", features = ["serde"] }
