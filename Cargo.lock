@@ -197,9 +197,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-xrpc"
-version = "0.12.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a9e526cb2ed3e0a2ca78c3ce2a943d9041a68e067dadf42923b523771e07df"
+checksum = "0216ad50ce34e9ff982e171c3659e65dedaa2ed5ac2994524debdc9a9647ffa8"
 dependencies = [
  "http 1.2.0",
  "serde",
@@ -211,9 +211,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-xrpc-client"
-version = "0.5.13"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4141931fb07affe67e4971d199e7d305a41537e6cf30dd4b1f38146b2a5d4b09"
+checksum = "e099e5171f79faef52364ef0657a4cab086a71b384a779a29597a91b780de0d5"
 dependencies = [
  "atrium-xrpc",
  "reqwest 0.12.15",
