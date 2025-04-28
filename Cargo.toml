@@ -22,7 +22,7 @@ lto = true
 [workspace.dependencies]
 anyhow = "1.0.98"
 async-session = "3.0.0"
-atrium-api = "0.25.2"
+atrium-api = "0.25.3"
 atrium-xrpc-client = "0.5.13"
 axum = { version = "0.8.3", features = ["macros"] }
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
