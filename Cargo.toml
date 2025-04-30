@@ -27,7 +27,7 @@ atrium-xrpc-client = "0.5.13"
 axum = { version = "0.8.3", features = ["macros"] }
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
 bytes = "1.10.1"
-chrono = { version = "0.4.40", features = ["serde"] }
+chrono = { version = "0.4.41", features = ["serde"] }
 diesel = { version = "2.2.9", features = [
     "32-column-tables",
     "chrono",
