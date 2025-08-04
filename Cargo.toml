@@ -27,8 +27,8 @@ atrium-xrpc-client = "0.5.13"
 axum = { version = "0.8.3", features = ["macros"] }
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
 bytes = "1.10.1"
-chrono = { version = "0.4.40", features = ["serde"] }
-diesel = { version = "2.2.9", features = [
+chrono = { version = "0.4.41", features = ["serde"] }
+diesel = { version = "2.2.12", features = [
     "32-column-tables",
     "chrono",
     "postgres",
@@ -40,31 +40,31 @@ diesel = { version = "2.2.9", features = [
     "uuid",
 ], default-features = false }
 diesel_migrations = { version = "2.2.0", features = ["postgres", "sqlite"] }
-dom_query = "0.13.1"
+dom_query = "0.20.0"
 dotenvy = "0.15.7"
 git-version = "0.3.9"
 image = "0.25.6"
 ipld-core = "0.4.2"
-libsqlite3-sys = { version = "0.31.0", features = ["bundled"] }
-megalodon = "1.0.0"
+libsqlite3-sys = { version = "0.35.0", features = ["bundled"] }
+megalodon = "1.0.3"
 oauth2 = "4.4.2"
 once_cell = "1.21.3"
-openssl = { version = "0.10.72" }
+openssl = { version = "0.10.73" }
 #pq-sys = { version = "0.7.1", features = ["bundled"] }
-rand = "0.9.1"
+rand = "0.9.2"
 regex = { version = "1.11.1", features = ["std"] }
-reqwest = { version = "0.12.15", features = [
+reqwest = { version = "0.12.22", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-rstest = "0.24.0"
+rstest = "0.26.0"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde_json = "1.0.142"
 snmalloc-rs = { version = "0.3.8" }
 thiserror = "2.0.12"
 tikv-jemallocator = { version = "0.6.0" }
-tokio = { version = "1.44.2", features = ["full"] }
-toml_edit = "0.22.24"
+tokio = { version = "1.47.1", features = ["full"] }
+toml_edit = "0.23.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-uuid = { version = "1.16.0", features = ["fast-rng", "v4", "v7"] }
+uuid = { version = "1.17.0", features = ["fast-rng", "v4", "v7"] }
