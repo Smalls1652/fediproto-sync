@@ -32,12 +32,7 @@ jobs:
       - name: Setup Rust
         uses: https://git.smalls.online/smallsonline-actions/setup-rs@v1
 
-      - name: Install cargo-make
-        shell: bash
-        run: | 
-          cargo install --force cargo-make
-
       - name: Build project
         shell: bash
         run: |
-          cargo make build-fediproto-sync
+          cargo build --package="fediproto-sync"
