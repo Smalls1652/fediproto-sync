@@ -1,0 +1,17 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "local>renovate/presets"
+    ],
+    "enabledManagers": [
+        "cargo"
+    ],
+    "assignees": [
+        "smalls"
+    ],
+    "branchConcurrentLimit": 0,
+    "prConcurrentLimit": 0,
+    "prHourlyLimit": 0,
+    "dependencyDashboard": false
+}
