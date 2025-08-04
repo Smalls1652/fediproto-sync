@@ -13,23 +13,31 @@ permissions:
 jobs:
   build:
     name: Build project
-    runs-on: ${{ matrix.runs-on }}
-    strategy:
-      fail-fast: true
-      matrix:
-        package_name: ["fediproto-sync"]
-        runs-on: ["ubuntu-latest"]
+    runs-on: ubuntu-latest
+
     env:
       CARGO_TERM_COLOR: always
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Install dev libraries
+        shell: bash
+        run: |
+          sudo apt-get install -y libpq-dev libpq5 libsqlite3-dev libsqlite3-0
+
       - name: Setup Rust
         uses: https://git.smalls.online/smallsonline-actions/setup-rs@v1
 
+      - name: Install cargo-make
+        shell: bash
+        run: | 
+          cargo install --force cargo-make
+
       - name: Build project
-        run: cargo build --package ${{ matrix.package_name }} --verbose
+        shell: bash
+        run: |
+          cargo make build-fediproto-sync
