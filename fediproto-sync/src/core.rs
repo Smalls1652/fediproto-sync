@@ -2,21 +2,21 @@ use anyhow::Result;
 use atrium_api::{
     agent::{atp_agent::AtpAgent, atp_agent::store::MemorySessionStore},
     client::AtpServiceClient,
-    types::string::{Datetime, Did}
+    types::string::Did,
 };
 use atrium_xrpc_client::reqwest::{ReqwestClient, ReqwestClientBuilder};
 use diesel::r2d2::{ConnectionManager, Pool};
 use fediproto_sync_db::{
     AnyConnection,
-    models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem}
+    models::{self, CachedServiceTokenDecrypt, NewMastodonPostRetryQueueItem},
 };
 use fediproto_sync_lib::{
     config::FediProtoSyncConfig,
-    error::{AuthenticationSource, FediProtoSyncError}
+    error::{AuthenticationSource, FediProtoSyncError},
 };
-use megalodon::{entities::Account, Megalodon};
+use megalodon::{Megalodon, entities::Account};
 
-use crate::{bsky, mastodon::MastodonApiExtensions};
+use crate::{bsky_post_sync, mastodon::MastodonApiExtensions};
 
 /// The main sync loop for the FediProto Sync application.
 pub struct FediProtoSyncLoop {
@@ -39,7 +39,7 @@ pub struct FediProtoSyncLoop {
     mastodon_account: Account,
 
     /// The PDS service endpoint for the authenticated ATProto session.
-    pds_service_endpoint: String
+    pds_service_endpoint: String,
 }
 
 impl FediProtoSyncLoop {
@@ -51,7 +51,7 @@ impl FediProtoSyncLoop {
     ///   application.
     pub async fn new(
         config: &FediProtoSyncConfig,
-        db_connection_pool: Pool<ConnectionManager<AnyConnection>>
+        db_connection_pool: Pool<ConnectionManager<AnyConnection>>,
     ) -> Result<Self, FediProtoSyncError> {
         let config = config.clone();
 
@@ -63,12 +63,15 @@ impl FediProtoSyncLoop {
         let mastodon_client = create_mastodon_client(&config, &db_connection_pool).await?;
 
         let mastodon_account = mastodon_client
-        .verify_account_credentials()
-        .await
-        .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?
-        .json;
+            .verify_account_credentials()
+            .await
+            .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?
+            .json;
 
-        tracing::info!("Authenticated to Mastodon as '{}'", mastodon_account.username);
+        tracing::info!(
+            "Authenticated to Mastodon as '{}'",
+            mastodon_account.username
+        );
 
         Ok(Self {
             config,
@@ -77,7 +80,7 @@ impl FediProtoSyncLoop {
             did,
             mastodon_client,
             mastodon_account,
-            pds_service_endpoint
+            pds_service_endpoint,
         })
     }
 
@@ -131,8 +134,13 @@ impl FediProtoSyncLoop {
         // If there is no last synced post ID, we will only get the latest post.
         // Otherwise, we will get all posts since the last synced post.
         tracing::info!("Getting latest posts from Mastodon...");
-        let mut latest_posts = self.mastodon_client
-            .get_latest_posts(&self.mastodon_account.id, last_synced_post_id.clone(), self.config.mastodon_allow_unlisted_posts)
+        let mut latest_posts = self
+            .mastodon_client
+            .get_latest_posts(
+                &self.mastodon_account.id,
+                last_synced_post_id.clone(),
+                self.config.mastodon_allow_unlisted_posts,
+            )
             .await?;
 
         // Reverse the posts so we process them in ascending order.
@@ -148,7 +156,7 @@ impl FediProtoSyncLoop {
             let new_mastodon_post = models::NewMastodonPost::new(&initial_post, None, None);
             fediproto_sync_db::operations::insert_new_synced_mastodon_post(
                 db_connection,
-                &new_mastodon_post
+                &new_mastodon_post,
             )?;
 
             tracing::info!("Added initial post to database for future syncs.");
@@ -189,36 +197,26 @@ impl FediProtoSyncLoop {
             );
 
             for retry_item in posts_to_retry {
-                let fetched_post = &self.mastodon_client.get_status(retry_item.id.to_string()).await;
+                let fetched_post = &self
+                    .mastodon_client
+                    .get_status(retry_item.id.to_string())
+                    .await;
 
                 match fetched_post {
                     Ok(post) => {
                         tracing::info!("Retrying sync for post '{}'", retry_item.id);
                         let post = &post.json;
 
-                        let mut post_sync = bsky::BlueSkyPostSync {
+                        let sync_config = bsky_post_sync::BlueSkyPostSyncConfig {
                             config: self.config.clone(),
-                            db_connection_pool: self.db_connection_pool.clone(),
-                            atp_agent: &self.atp_agent,
-                            pds_service_endpoint: self.pds_service_endpoint.clone(),
                             did: self.did.clone(),
+                            pds_service_endpoint: self.pds_service_endpoint.clone(),
                             mastodon_account: self.mastodon_account.clone(),
-                            mastodon_status: post.clone(),
-                            post_item: atrium_api::app::bsky::feed::post::RecordData {
-                                created_at: Datetime::now(),
-                                text: "".to_string(),
-                                embed: None,
-                                entities: None,
-                                facets: None,
-                                labels: None,
-                                langs: None,
-                                reply: None,
-                                tags: None
-                            },
-                            previous_post_id: None
+                            db_connection_pool: self.db_connection_pool.clone(),
                         };
 
-                        let sync_result = post_sync.sync_post().await;
+                        let sync_result =
+                            bsky_post_sync::sync_post(&post, &self.atp_agent, &sync_config).await;
 
                         match sync_result {
                             Ok(_) => {
@@ -253,7 +251,7 @@ impl FediProtoSyncLoop {
 
                         fediproto_sync_db::operations::delete_mastodon_post_retry_queue_item(
                             db_connection,
-                            &retry_item
+                            &retry_item,
                         )?;
 
                         continue;
@@ -266,29 +264,15 @@ impl FediProtoSyncLoop {
         for post_item in latest_posts {
             tracing::info!("Processing post '{}'", post_item.id);
 
-            let mut post_sync = bsky::BlueSkyPostSync {
+            let sync_config = bsky_post_sync::BlueSkyPostSyncConfig {
                 config: self.config.clone(),
-                db_connection_pool: self.db_connection_pool.clone(),
-                atp_agent: &self.atp_agent,
-                pds_service_endpoint: self.pds_service_endpoint.clone(),
                 did: self.did.clone(),
+                pds_service_endpoint: self.pds_service_endpoint.clone(),
                 mastodon_account: self.mastodon_account.clone(),
-                mastodon_status: post_item.clone(),
-                post_item: atrium_api::app::bsky::feed::post::RecordData {
-                    created_at: Datetime::now(),
-                    text: "".to_string(),
-                    embed: None,
-                    entities: None,
-                    facets: None,
-                    labels: None,
-                    langs: None,
-                    reply: None,
-                    tags: None
-                },
-                previous_post_id: None
+                db_connection_pool: self.db_connection_pool.clone(),
             };
 
-            let sync_result = post_sync.sync_post().await;
+            let sync_result = bsky_post_sync::sync_post(&post_item, &self.atp_agent, &sync_config).await;
 
             match sync_result {
                 Ok(_) => {
@@ -305,12 +289,12 @@ impl FediProtoSyncLoop {
 
                     let new_retry_item = NewMastodonPostRetryQueueItem::new(
                         &post_item.id.parse::<i64>()?,
-                        e.to_string().as_str()
+                        e.to_string().as_str(),
                     );
 
                     fediproto_sync_db::operations::insert_mastodon_post_retry_queue_item(
                         db_connection,
-                        &new_retry_item
+                        &new_retry_item,
                     )?;
                 }
             }
@@ -360,14 +344,14 @@ pub async fn create_atp_agent(
 pub fn create_atp_service_client(
     hostname: &str,
     auth_token: Option<&str>,
-    config: &FediProtoSyncConfig
+    config: &FediProtoSyncConfig,
 ) -> Result<AtpServiceClient<ReqwestClient>, FediProtoSyncError> {
     let mut headers = reqwest::header::HeaderMap::new();
     if let Some(auth_token) = auth_token {
         headers.insert(
             reqwest::header::AUTHORIZATION,
             reqwest::header::HeaderValue::from_str(format!("Bearer {}", auth_token).as_str())
-                .map_err(|_| FediProtoSyncError::HttpClientCreationError)?
+                .map_err(|_| FediProtoSyncError::HttpClientCreationError)?,
         );
     }
 
@@ -378,7 +362,7 @@ pub fn create_atp_service_client(
                 .use_rustls_tls()
                 .default_headers(headers)
                 .build()
-                .map_err(|_| FediProtoSyncError::HttpClientCreationError)?
+                .map_err(|_| FediProtoSyncError::HttpClientCreationError)?,
         )
         .build();
 
@@ -388,44 +372,44 @@ pub fn create_atp_service_client(
 }
 
 /// Create a Mastodon client with `Megalodon`.
-/// 
+///
 /// ## Arguments
-/// 
+///
 /// * `config` - The environment variables for the FediProto Sync application.
 /// * `db_connection_pool` - The database connection pool for the FediProto Sync application.
 async fn create_mastodon_client(
     config: &FediProtoSyncConfig,
-    db_connection_pool: &Pool<ConnectionManager<AnyConnection>>
+    db_connection_pool: &Pool<ConnectionManager<AnyConnection>>,
 ) -> Result<Box<dyn Megalodon + Send + Sync>, FediProtoSyncError> {
-    let db_connection = &mut db_connection_pool.get()
+    let db_connection = &mut db_connection_pool
+        .get()
         .map_err(|_| FediProtoSyncError::DatabaseConnectionPoolError)?;
 
     let cached_mastodon_token =
         fediproto_sync_db::operations::get_cached_service_token_by_service_name(
             db_connection,
-            "mastodon"
+            "mastodon",
         )
         .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?;
 
     let cached_mastodon_token = match cached_mastodon_token {
         Some(token) => token,
         None => {
-            return Err(FediProtoSyncError::AuthenticationError(
-                AuthenticationSource::Mastodon
-            )
-            .into());
+            return Err(
+                FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon).into(),
+            );
         }
     };
 
-    let decrypted_mastodon_token = cached_mastodon_token
-        .decrypt_access_token(&config.token_encryption_private_key)?;
+    let decrypted_mastodon_token =
+        cached_mastodon_token.decrypt_access_token(&config.token_encryption_private_key)?;
 
     // Create the Mastodon client and authenticate.
     let mastodon_client = megalodon::generator(
         megalodon::SNS::Mastodon,
         format!("https://{}", config.mastodon_server.clone()),
         Some(decrypted_mastodon_token),
-        Some(config.user_agent.clone())
+        Some(config.user_agent.clone()),
     )
     .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?;
 

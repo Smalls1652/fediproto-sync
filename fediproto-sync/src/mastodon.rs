@@ -102,11 +102,11 @@ impl ParsedMastodonPost {
     ///
     /// If the current content is already less than or equal to 300 characters,
     /// this method will just return without modifying the content.
-    pub fn truncate_post_content(&mut self) -> Result<()> {
+    pub fn truncate_post_content(&mut self) -> Result<Self> {
         // If the content is already less than or equal to 300 characters, we don't need
         // to truncate.
         if self.stripped_html.len() <= 300 {
-            return Ok(());
+            return Ok(self.to_owned());
         }
 
         // Define the ellipsis and read more, with the URL to the post on Mastodon,
@@ -162,7 +162,7 @@ impl ParsedMastodonPost {
         self.stripped_html = string_builder;
         self.found_links = vec![self.mastodon_status.url.as_ref().unwrap().to_string()];
 
-        Ok(())
+        Ok(self.to_owned())
     }
 
     /// Trim the post content to the specified length.

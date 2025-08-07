@@ -17,7 +17,7 @@ use image::{
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::bsky::MAX_IMAGE_SIZE;
+use crate::bsky_post_sync::MAX_IMAGE_SIZE;
 
 /// The max height/width, in pixels, for a resized image.
 const MAX_IMAGE_PIXELS: u32 = 1080;

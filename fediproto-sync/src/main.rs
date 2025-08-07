@@ -1,5 +1,5 @@
 /// BlueSky operations for syncing posts.
-mod bsky;
+mod bsky_post_sync;
 /// CLI operations for the application.
 mod cli;
 /// Core operations for the application.
