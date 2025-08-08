@@ -90,12 +90,7 @@ pub async fn handle_run_command(config: FediProtoSyncConfig) -> Result<()> {
 
             // Spawn the core loop for running the syncs.
             tokio::spawn(async move {
-                let mut fediprotosync_loop =
-                    core::FediProtoSyncLoop::new(&config_core, db_connection_pool_core)
-                        .await
-                        .unwrap();
-
-                let result = fediprotosync_loop.run_loop().await;
+                let result = core::run_sync_loop(&config_core, db_connection_pool_core).await;
 
                 match result {
                     Ok(_) => {
