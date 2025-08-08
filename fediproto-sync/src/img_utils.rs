@@ -3,16 +3,14 @@ use std::{io::Cursor, str::FromStr};
 use anyhow::Result;
 use fediproto_sync_lib::error::FediProtoSyncError;
 use image::{
-    DynamicImage,
-    GenericImageView,
-    ImageReader,
+    DynamicImage, GenericImageView, ImageReader,
     codecs::{
         bmp::BmpDecoder,
         jpeg::{JpegDecoder, JpegEncoder},
         png::PngDecoder,
-        webp::WebPDecoder
+        webp::WebPDecoder,
     },
-    imageops::FilterType
+    imageops::FilterType,
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -43,7 +41,7 @@ enum ImageFormatType {
     Bmp,
 
     /// An unknown/unsupported format.
-    Unknown
+    Unknown,
 }
 
 impl std::str::FromStr for ImageFormatType {
@@ -57,7 +55,7 @@ impl std::str::FromStr for ImageFormatType {
             ".png" => Ok(Self::Png),
             ".webp" => Ok(Self::WebP),
             ".bmp" => Ok(Self::Bmp),
-            _ => Ok(Self::Unknown)
+            _ => Ok(Self::Unknown),
         }
     }
 }
@@ -71,7 +69,7 @@ pub struct ImageAttachmentData {
     pub aspect_ratio_width: u32,
 
     /// The calculated aspect ratio height.
-    pub aspect_ratio_height: u32
+    pub aspect_ratio_height: u32,
 }
 
 impl ImageAttachmentData {
@@ -83,7 +81,7 @@ impl ImageAttachmentData {
     /// * `url` - The URL of the image.
     pub fn new(
         data: bytes::Bytes,
-        url: &str
+        url: &str,
     ) -> Result<Self> {
         let url_captures = IMAGE_URL_REGEX.captures(url);
 
@@ -94,7 +92,7 @@ impl ImageAttachmentData {
                 ImageFormatType::from_str(file_extension)?
             }
 
-            _ => ImageFormatType::Unknown
+            _ => ImageFormatType::Unknown,
         };
 
         tracing::info!("Image format: {:?}", image_format);
@@ -119,7 +117,7 @@ impl ImageAttachmentData {
         Ok(Self {
             image_bytes,
             aspect_ratio_width,
-            aspect_ratio_height
+            aspect_ratio_height,
         })
     }
 }
@@ -132,7 +130,7 @@ impl ImageAttachmentData {
 /// * `image_format` - The image format.
 fn decode_image(
     mut data_reader: Cursor<&bytes::Bytes>,
-    image_format: &ImageFormatType
+    image_format: &ImageFormatType,
 ) -> Result<DynamicImage> {
     let image = match image_format {
         ImageFormatType::Jpeg => {
@@ -209,23 +207,24 @@ impl<'a> ImageUtils for DynamicImage {
 
         let dimension_to_check = match is_height_greater_than_width {
             true => dimensions.1,
-            false => dimensions.0
+            false => dimensions.0,
         };
 
         if dimension_to_check <= MAX_IMAGE_PIXELS {
             return self;
         }
 
-        let new_height = match is_height_greater_than_width {
-            true => MAX_IMAGE_PIXELS,
-            false => (MAX_IMAGE_PIXELS as f32 * (dimensions.1 as f32 / dimensions.0 as f32)).round()
-                as u32
-        };
+        let new_height =
+            match is_height_greater_than_width {
+                true => MAX_IMAGE_PIXELS,
+                false => (MAX_IMAGE_PIXELS as f32 * (dimensions.1 as f32 / dimensions.0 as f32))
+                    .round() as u32,
+            };
 
         let new_width = match is_height_greater_than_width {
             true => (MAX_IMAGE_PIXELS as f32 * (dimensions.0 as f32 / dimensions.1 as f32)).round()
                 as u32,
-            false => MAX_IMAGE_PIXELS
+            false => MAX_IMAGE_PIXELS,
         };
 
         tracing::info!(
@@ -256,11 +255,11 @@ fn get_aspect_ratio(image: &DynamicImage) -> Result<(u32, u32)> {
 /// * `b` - The second number.
 fn greatest_common_divisor(
     a: u32,
-    b: u32
+    b: u32,
 ) -> u32 {
     let (mut a, mut b) = match a > b {
         true => (a, b),
-        false => (b, a)
+        false => (b, a),
     };
 
     while b != 0 {

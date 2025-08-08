@@ -47,7 +47,7 @@ macro_rules! set_package_version {
                 match git_version_tag_output == package_version {
                     true => package_version.to_string(),
 
-                    false => format!("{}-{}", git_version_tag_output, git_version_output)
+                    false => format!("{}-{}", git_version_tag_output, git_version_output),
                 }
             }
         };

@@ -7,7 +7,7 @@ use crate::error::FediProtoSyncError;
 /// * `public_key` - The public key to use for encryption.
 pub fn encrypt_string(
     public_key: &openssl::rsa::Rsa<openssl::pkey::Public>,
-    input_string: &str
+    input_string: &str,
 ) -> Result<String, FediProtoSyncError> {
     let mut encrypted_string = vec![0; public_key.size() as usize];
 
@@ -15,7 +15,7 @@ pub fn encrypt_string(
         .public_encrypt(
             input_string.as_bytes(),
             &mut encrypted_string,
-            openssl::rsa::Padding::PKCS1
+            openssl::rsa::Padding::PKCS1,
         )
         .map_err(|_| FediProtoSyncError::EncryptionError)?;
 
@@ -31,7 +31,7 @@ pub fn encrypt_string(
 /// * `private_key` - The private key to use for decryption.
 pub fn decrypt_string(
     private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
-    input_string: &str
+    input_string: &str,
 ) -> Result<String, FediProtoSyncError> {
     let mut decrypted_string = vec![0; private_key.size() as usize];
 
@@ -42,7 +42,7 @@ pub fn decrypt_string(
         .private_decrypt(
             &encrypted_string,
             &mut decrypted_string,
-            openssl::rsa::Padding::PKCS1
+            openssl::rsa::Padding::PKCS1,
         )
         .map_err(|_| FediProtoSyncError::DecryptionError)?;
 

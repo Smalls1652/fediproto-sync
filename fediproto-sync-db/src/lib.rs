@@ -28,7 +28,7 @@ use diesel::{
     deserialize::{self, FromSql},
     r2d2::{ConnectionManager, Pool},
     serialize::{self, IsNull, ToSql},
-    sql_types::HasSqlType
+    sql_types::HasSqlType,
 };
 use type_impls::{MultiBackendUuid, UuidProxy};
 
@@ -39,7 +39,7 @@ pub enum AnyConnection {
     Postgres(diesel::PgConnection),
 
     /// A SQLite connection.
-    SQLite(diesel::SqliteConnection)
+    SQLite(diesel::SqliteConnection),
 }
 
 pub fn create_database_connection(
@@ -87,7 +87,7 @@ impl ToSql<MultiBackendUuid, MultiBackend> for UuidProxy {
     /// * `out` - The output buffer to write the serialized value to.
     fn to_sql<'b>(
         &'b self,
-        out: &mut serialize::Output<'b, '_, MultiBackend>
+        out: &mut serialize::Output<'b, '_, MultiBackend>,
     ) -> serialize::Result {
         out.set_value((MultiBackendUuid, self));
         Ok(IsNull::No)

@@ -3,22 +3,18 @@ use async_session::{MemoryStore, Session, SessionStore};
 use axum::{
     extract::{Query, State},
     http::{HeaderMap, header::SET_COOKIE},
-    response::{Html, IntoResponse, Redirect}
+    response::{Html, IntoResponse, Redirect},
 };
 use axum_extra::{TypedHeader, headers};
 use fediproto_sync_db::{models::NewCachedServiceToken, operations::insert_cached_service_token};
 use oauth2::{
-    AuthorizationCode,
-    CsrfToken,
-    PkceCodeVerifier,
-    TokenResponse,
-    reqwest::async_http_client
+    AuthorizationCode, CsrfToken, PkceCodeVerifier, TokenResponse, reqwest::async_http_client,
 };
 
 use crate::{
     FediProtoSyncWebServerAppState,
     error::FediProtoSyncWebError,
-    web::{AuthRequest, check_for_existing_token}
+    web::{AuthRequest, check_for_existing_token},
 };
 
 static AUTH_SESSION: &str = "MASTODON_AUTH_SESSION";
@@ -84,7 +80,7 @@ pub async fn login_endpoint(
     let mut headers = HeaderMap::new();
     headers.insert(
         SET_COOKIE,
-        cookie.parse().context("Failed to parse the cookie.")?
+        cookie.parse().context("Failed to parse the cookie.")?,
     );
 
     Ok((headers, Redirect::to(auth_url.as_ref())))
@@ -100,7 +96,7 @@ pub async fn login_endpoint(
 async fn validate_csrf(
     auth_request: &AuthRequest,
     cookies: &headers::Cookie,
-    memory_store: &MemoryStore
+    memory_store: &MemoryStore,
 ) -> Result<PkceCodeVerifier, FediProtoSyncWebError> {
     tracing::info!("Mastodon auth: Validating the CSRF token...");
 
@@ -117,7 +113,7 @@ async fn validate_csrf(
         .context("Failed to load the session.")?
     {
         Some(session) => session,
-        None => return Err(anyhow::anyhow!("Session not found.").into())
+        None => return Err(anyhow::anyhow!("Session not found.").into()),
     };
 
     // Get the CSRF token and PKCE verifier secret from the session.
@@ -160,7 +156,7 @@ async fn validate_csrf(
 pub async fn authorized_endpoint(
     Query(query): Query<AuthRequest>,
     State(app_state): State<FediProtoSyncWebServerAppState>,
-    TypedHeader(cookies): TypedHeader<headers::Cookie>
+    TypedHeader(cookies): TypedHeader<headers::Cookie>,
 ) -> Result<impl IntoResponse, FediProtoSyncWebError> {
     // Validate the CSRF token and get the PKCE verifier.
     let pkce_verifier = validate_csrf(&query, &cookies, &app_state.memory_store).await?;
@@ -196,9 +192,9 @@ pub async fn authorized_endpoint(
                 .iter()
                 .map(|scope| scope.to_string())
                 .collect::<Vec<String>>()
-                .join(" ")
+                .join(" "),
         ),
-        None => None
+        None => None,
     };
 
     // Create a new token and insert it into the database.
@@ -208,12 +204,12 @@ pub async fn authorized_endpoint(
         &access_token,
         None,
         None,
-        scopes
+        scopes,
     );
 
     let new_token = match new_token {
         Ok(token) => token,
-        Err(e) => return Err(anyhow::anyhow!("Failed to create new token: {:?}", e).into())
+        Err(e) => return Err(anyhow::anyhow!("Failed to create new token: {:?}", e).into()),
     };
 
     let insert_result = insert_cached_service_token(db_connection, &new_token);
@@ -222,7 +218,7 @@ pub async fn authorized_endpoint(
         Ok(_) => (),
         Err(e) => {
             return Err(
-                anyhow::anyhow!("Failed to insert the token into the database: {:?}", e).into()
+                anyhow::anyhow!("Failed to insert the token into the database: {:?}", e).into(),
             );
         }
     }

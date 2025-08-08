@@ -1,7 +1,7 @@
 use anyhow::Context;
 use axum::{
     extract::State,
-    response::{Html, IntoResponse}
+    response::{Html, IntoResponse},
 };
 
 use super::check_for_existing_token;
@@ -22,10 +22,10 @@ pub async fn root_endpoint(
 
     match mastodon_token_exists {
         true => html_output.push_str(
-            "<h1>Mastodon</h1>\n<p><font style=\"font-style: bold;\">Configured</font></p>\n"
+            "<h1>Mastodon</h1>\n<p><font style=\"font-style: bold;\">Configured</font></p>\n",
         ),
         false => html_output
-            .push_str("<h1>Mastodon</h1>\n<p><a href=\"/auth/mastodon/login\">Configure</a></p>\n")
+            .push_str("<h1>Mastodon</h1>\n<p><a href=\"/auth/mastodon/login\">Configure</a></p>\n"),
     }
 
     html_output.push_str("</body>\n</html>");

@@ -1,6 +1,6 @@
 use axum::{
     http::StatusCode,
-    response::{IntoResponse, Response}
+    response::{IntoResponse, Response},
 };
 
 /// Represents an error that occurred in the FediProtoSync web server.
@@ -17,7 +17,7 @@ impl IntoResponse for FediProtoSyncWebError {
 
 impl<E> From<E> for FediProtoSyncWebError
 where
-    E: Into<anyhow::Error>
+    E: Into<anyhow::Error>,
 {
     fn from(err: E) -> Self {
         Self(err.into())

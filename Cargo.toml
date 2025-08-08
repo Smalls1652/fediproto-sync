@@ -28,6 +28,7 @@ axum = { version = "0.8.3", features = ["macros"] }
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
 bytes = "1.10.1"
 chrono = { version = "0.4.41", features = ["serde"] }
+clap = { version = "4.5.43", features = ["derive", "env"]}
 diesel = { version = "2.2.12", features = [
     "32-column-tables",
     "chrono",

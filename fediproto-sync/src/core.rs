@@ -272,7 +272,8 @@ impl FediProtoSyncLoop {
                 db_connection_pool: self.db_connection_pool.clone(),
             };
 
-            let sync_result = bsky_post_sync::sync_post(&post_item, &self.atp_agent, &sync_config).await;
+            let sync_result =
+                bsky_post_sync::sync_post(&post_item, &self.atp_agent, &sync_config).await;
 
             match sync_result {
                 Ok(_) => {

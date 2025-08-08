@@ -1,6 +1,6 @@
 use fediproto_sync_lib::{
     config::FediProtoSyncConfig,
-    error::{AuthenticationSource, FediProtoSyncError}
+    error::{AuthenticationSource, FediProtoSyncError},
 };
 use oauth2::basic::BasicClient;
 
@@ -12,11 +12,11 @@ use oauth2::basic::BasicClient;
 /// * `redirect_uri` - The redirect URI.
 pub fn get_mastodon_oauth_client(
     config: &FediProtoSyncConfig,
-    redirect_uri: &str
+    redirect_uri: &str,
 ) -> Result<BasicClient, FediProtoSyncError> {
     let client_id = oauth2::ClientId::new(config.mastodon_client_id.clone());
     let client_secret = Some(oauth2::ClientSecret::new(
-        config.mastodon_client_secret.clone()
+        config.mastodon_client_secret.clone(),
     ));
 
     let auth_url = oauth2::AuthUrl::new(format!(
@@ -30,7 +30,7 @@ pub fn get_mastodon_oauth_client(
             "https://{}/oauth/token",
             config.mastodon_server.clone()
         ))
-        .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?
+        .map_err(|_| FediProtoSyncError::AuthenticationError(AuthenticationSource::Mastodon))?,
     );
 
     let redirect_url = oauth2::RedirectUrl::new(redirect_uri.to_string())

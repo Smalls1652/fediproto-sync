@@ -35,7 +35,7 @@ pub struct MastodonPost {
     pub bsky_post_id: Option<String>,
 
     /// The root Mastodon post ID in the thread, if any.
-    pub root_mastodon_post_id: Option<String>
+    pub root_mastodon_post_id: Option<String>,
 }
 
 /// Represents a new Mastodon post to insert into the `mastodon_posts` table.
@@ -67,7 +67,7 @@ pub struct NewMastodonPost {
     pub bsky_post_id: Option<String>,
 
     /// The root Mastodon post ID in the thread, if any.
-    pub root_mastodon_post_id: Option<String>
+    pub root_mastodon_post_id: Option<String>,
 }
 
 impl NewMastodonPost {
@@ -82,7 +82,7 @@ impl NewMastodonPost {
     pub fn new(
         post: &Status,
         bsky_post_id: Option<String>,
-        root_mastodon_post_id: Option<String>
+        root_mastodon_post_id: Option<String>,
     ) -> Self {
         let time_context = uuid::ContextV7::new();
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
@@ -102,14 +102,14 @@ impl NewMastodonPost {
                 post_in_reply_to_account_id == account_id
             }
 
-            false => false
+            false => false,
         };
 
         let is_boosted_post = post.reblog.is_some();
 
         let previous_post_id = match is_thread_post {
             true => Some(post_in_reply_to_id.unwrap()),
-            false => None
+            false => None,
         };
 
         Self {
@@ -121,7 +121,7 @@ impl NewMastodonPost {
             is_boosted_post,
             previous_post_id,
             bsky_post_id,
-            root_mastodon_post_id
+            root_mastodon_post_id,
         }
     }
 }
@@ -141,7 +141,7 @@ pub struct SyncedPostBlueSkyData {
     pub bsky_post_cid: String,
 
     /// The URI of the BlueSky post.
-    pub bsky_post_uri: String
+    pub bsky_post_uri: String,
 }
 
 /// Represents a new synced post to insert into the `synced_posts_bluesky_data`
@@ -159,7 +159,7 @@ pub struct NewSyncedPostBlueSkyData {
     pub bsky_post_cid: String,
 
     /// The URI of the BlueSky post.
-    pub bsky_post_uri: String
+    pub bsky_post_uri: String,
 }
 
 impl NewSyncedPostBlueSkyData {
@@ -173,7 +173,7 @@ impl NewSyncedPostBlueSkyData {
     pub fn new(
         mastodon_post_id: &str,
         bsky_post_cid: &str,
-        bsky_post_uri: &str
+        bsky_post_uri: &str,
     ) -> Self {
         let time_context = uuid::ContextV7::new();
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
@@ -182,7 +182,7 @@ impl NewSyncedPostBlueSkyData {
             id: UuidProxy(id),
             mastodon_post_id: mastodon_post_id.to_string(),
             bsky_post_cid: bsky_post_cid.to_string(),
-            bsky_post_uri: bsky_post_uri.to_string()
+            bsky_post_uri: bsky_post_uri.to_string(),
         }
     }
 }
@@ -196,7 +196,7 @@ pub struct CachedFile {
     pub id: crate::type_impls::UuidProxy,
 
     /// The path to the cached file.
-    pub file_path: String
+    pub file_path: String,
 }
 
 impl CachedFile {
@@ -207,7 +207,7 @@ impl CachedFile {
     /// * `db_connection` - The database connection to use.
     pub async fn remove_file(
         &self,
-        db_connection: &mut crate::AnyConnection
+        db_connection: &mut crate::AnyConnection,
     ) -> Result<(), FediProtoSyncError> {
         crate::operations::delete_cached_file_record(db_connection, self)
             .map_err(|_| FediProtoSyncError::TempFileRemovalError)?;
@@ -232,7 +232,7 @@ pub struct NewCachedFile {
     pub id: crate::type_impls::UuidProxy,
 
     /// The path to the cached file.
-    pub file_path: String
+    pub file_path: String,
 }
 
 impl NewCachedFile {
@@ -247,7 +247,7 @@ impl NewCachedFile {
 
         Self {
             id: UuidProxy(id),
-            file_path: file_path.to_string_lossy().to_string()
+            file_path: file_path.to_string_lossy().to_string(),
         }
     }
 }
@@ -273,7 +273,7 @@ pub struct CachedServiceToken {
     pub expires_in: Option<i32>,
 
     /// The scopes the access token has, if any.
-    pub scopes: Option<String>
+    pub scopes: Option<String>,
 }
 
 /// Trait for decrypting a cached service token's access and refresh tokens.
@@ -285,7 +285,7 @@ pub trait CachedServiceTokenDecrypt {
     /// * `encryption_private_key` - The private key to use for decryption.
     fn decrypt_access_token(
         &self,
-        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
     ) -> Result<String, FediProtoSyncError>;
 
     /// Decrypt the refresh token.
@@ -300,7 +300,7 @@ pub trait CachedServiceTokenDecrypt {
     #[allow(dead_code)]
     fn decrypt_refresh_token(
         &self,
-        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
     ) -> Result<Option<String>, FediProtoSyncError>;
 }
 
@@ -312,7 +312,7 @@ impl CachedServiceTokenDecrypt for CachedServiceToken {
     /// * `encryption_private_key` - The private key to use for decryption.
     fn decrypt_access_token(
         &self,
-        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
     ) -> Result<String, FediProtoSyncError> {
         let decrypted_access_token =
             fediproto_sync_lib::crypto::decrypt_string(encryption_private_key, &self.access_token)?;
@@ -332,19 +332,19 @@ impl CachedServiceTokenDecrypt for CachedServiceToken {
     #[allow(dead_code)]
     fn decrypt_refresh_token(
         &self,
-        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>
+        encryption_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
     ) -> Result<Option<String>, FediProtoSyncError> {
         let decrypted_refresh_token = match &self.refresh_token {
             Some(refresh_token) => {
                 let decrypted_refresh_token = fediproto_sync_lib::crypto::decrypt_string(
                     encryption_private_key,
-                    refresh_token
+                    refresh_token,
                 )?;
 
                 Some(decrypted_refresh_token)
             }
 
-            None => None
+            None => None,
         };
 
         Ok(decrypted_refresh_token)
@@ -372,7 +372,7 @@ pub struct NewCachedServiceToken {
     pub expires_in: Option<i32>,
 
     /// The scopes the access token has, if any.
-    pub scopes: Option<String>
+    pub scopes: Option<String>,
 }
 
 impl NewCachedServiceToken {
@@ -393,7 +393,7 @@ impl NewCachedServiceToken {
         access_token: &str,
         refresh_token: Option<String>,
         expires_in: Option<i32>,
-        scopes: Option<String>
+        scopes: Option<String>,
     ) -> Result<Self, FediProtoSyncError> {
         let time_context = uuid::ContextV7::new();
         let id = uuid::Uuid::new_v7(uuid::Timestamp::now(&time_context));
@@ -407,13 +407,13 @@ impl NewCachedServiceToken {
             Some(refresh_token) => {
                 let encrypted_refresh_token = fediproto_sync_lib::crypto::encrypt_string(
                     encryption_public_key,
-                    &refresh_token
+                    &refresh_token,
                 )?;
 
                 Some(encrypted_refresh_token)
             }
 
-            None => None
+            None => None,
         };
 
         Ok(Self {
@@ -422,7 +422,7 @@ impl NewCachedServiceToken {
             access_token: encrypted_access_token,
             refresh_token: encrypted_refresh_token,
             expires_in,
-            scopes
+            scopes,
         })
     }
 }
@@ -443,7 +443,7 @@ pub struct MastodonPostRetryQueueItem {
     pub last_retried_at: NaiveDateTime,
 
     /// The amount of times retries have been attempted.
-    pub retry_count: i32
+    pub retry_count: i32,
 }
 
 /// Represents a new Mastodon post to insert into the
@@ -461,7 +461,7 @@ pub struct NewMastodonPostRetryQueueItem {
     pub last_retried_at: NaiveDateTime,
 
     /// The amount of times retries have been attempted.
-    pub retry_count: i32
+    pub retry_count: i32,
 }
 
 impl NewMastodonPostRetryQueueItem {
@@ -473,13 +473,13 @@ impl NewMastodonPostRetryQueueItem {
     /// * `failure_reason` - The reason the post failed to sync.
     pub fn new(
         mastodon_post_id: &i64,
-        failure_reason: &str
+        failure_reason: &str,
     ) -> Self {
         Self {
             id: mastodon_post_id.clone(),
             failure_reason: failure_reason.to_string(),
             last_retried_at: Utc::now().naive_utc(),
-            retry_count: 0
+            retry_count: 0,
         }
     }
 }

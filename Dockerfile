@@ -52,4 +52,4 @@ COPY --from=build /tmp/fediproto-sync/linux_${TARGETARCH}/fediproto-sync /usr/lo
 
 WORKDIR /app
 
-CMD ["fediproto-sync"]
+CMD ["fediproto-sync", "run"]

@@ -22,15 +22,16 @@ use fediproto_sync_db::{
     AnyConnection,
     models::{NewCachedFile, NewMastodonPost, NewSyncedPostBlueSkyData},
 };
-use fediproto_sync_lib::{error::FediProtoSyncError, utils::new_random_file_name};
+use fediproto_sync_lib::{
+    config::FediProtoSyncConfig, error::FediProtoSyncError, utils::new_random_file_name,
+};
 use ipld_core::ipld::Ipld;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
-    FediProtoSyncConfig, core::create_http_client, img_utils::ImageAttachmentData,
-    mastodon::ParsedMastodonPost,
+    core::create_http_client, img_utils::ImageAttachmentData, mastodon::ParsedMastodonPost,
 };
 
 /// The maximum duration for a BlueSky video in seconds.

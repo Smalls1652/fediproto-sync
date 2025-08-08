@@ -27,6 +27,9 @@ pub enum FediProtoSyncError {
     #[error("Failed to generate key.")]
     KeyGenerationError,
 
+    #[error("Failed to load encryption key.")]
+    KeyLoadError,
+
     /// An error occurred while encrypting a value.
     #[error("Failed to encrypt value.")]
     EncryptionError,
@@ -53,23 +56,23 @@ pub enum FediProtoSyncError {
 
     /// An error occurred while trying to compress an image.
     #[error("Failed to compress image.")]
-    ImageCompressionError
+    ImageCompressionError,
 }
 
 #[derive(Debug, Clone)]
 pub enum AuthenticationSource {
     Mastodon,
-    BlueSky
+    BlueSky,
 }
 
 impl std::fmt::Display for AuthenticationSource {
     fn fmt(
         &self,
-        f: &mut std::fmt::Formatter<'_>
+        f: &mut std::fmt::Formatter<'_>,
     ) -> std::fmt::Result {
         match self {
             AuthenticationSource::Mastodon => write!(f, "Mastodon"),
-            AuthenticationSource::BlueSky => write!(f, "BlueSky")
+            AuthenticationSource::BlueSky => write!(f, "BlueSky"),
         }
     }
 }

@@ -9,6 +9,7 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
+clap = { workspace = true }
 rand = { workspace = true }
 thiserror = { workspace = true }
 

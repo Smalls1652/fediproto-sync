@@ -1,9 +1,9 @@
 use diesel::{
-    expression::AsExpression,
     deserialize::{self, FromSql, FromSqlRow},
+    expression::AsExpression,
     query_builder::QueryId,
     serialize::{self, IsNull, ToSql},
-    sql_types::*
+    sql_types::*,
 };
 
 /// Custom type for Diesel to handle UUIDs in both SQLite and PostgreSQL.
@@ -44,7 +44,7 @@ impl ToSql<MultiBackendUuid, diesel::sqlite::Sqlite> for UuidProxy {
     /// * `out` - The output buffer to write the serialized value to.
     fn to_sql<'b>(
         &'b self,
-        out: &mut serialize::Output<'b, '_, diesel::sqlite::Sqlite>
+        out: &mut serialize::Output<'b, '_, diesel::sqlite::Sqlite>,
     ) -> serialize::Result {
         out.set_value(self.0.to_string());
         Ok(IsNull::No)
@@ -84,7 +84,7 @@ impl ToSql<MultiBackendUuid, diesel::pg::Pg> for UuidProxy {
     /// `uuid::Uuid` for the PostgreSQL backend.
     fn to_sql<'b>(
         &'b self,
-        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> serialize::Result {
         <uuid::Uuid as ToSql<Uuid, diesel::pg::Pg>>::to_sql(&self.0, out)?;
 

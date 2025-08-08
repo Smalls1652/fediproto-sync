@@ -17,7 +17,7 @@ pub struct AuthRequest {
     pub code: String,
 
     /// The OAuth2 state.
-    pub state: String
+    pub state: String,
 }
 
 /// Check if a token already exists for the given service name.
@@ -28,11 +28,11 @@ pub struct AuthRequest {
 /// * `service_name` - The name of the service.
 pub fn check_for_existing_token(
     db_connection: &mut PooledConnection<ConnectionManager<AnyConnection>>,
-    service_name: &str
+    service_name: &str,
 ) -> Result<bool, FediProtoSyncWebError> {
     let result = fediproto_sync_db::operations::get_cached_service_token_by_service_name(
         db_connection,
-        service_name
+        service_name,
     );
 
     match result {
@@ -43,6 +43,6 @@ pub fn check_for_existing_token(
                 return Ok(false);
             }
         }
-        Err(e) => return Err(anyhow::anyhow!("Failed to get the token: {:?}", e).into())
+        Err(e) => return Err(anyhow::anyhow!("Failed to get the token: {:?}", e).into()),
     }
 }

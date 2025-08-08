@@ -26,7 +26,7 @@ pub struct FediProtoSyncWebServerAppState {
     pub mastodon_oauth_client: BasicClient,
 
     /// The memory store for storing session data.
-    pub memory_store: MemoryStore
+    pub memory_store: MemoryStore,
 }
 
 /// Represents the FediProtoSync web server.
@@ -35,7 +35,7 @@ pub struct FediProtoSyncWebServer {
     pub config: FediProtoSyncConfig,
 
     /// The database connection pool.
-    pub db_pool: Pool<ConnectionManager<AnyConnection>>
+    pub db_pool: Pool<ConnectionManager<AnyConnection>>,
 }
 
 impl FediProtoSyncWebServer {
@@ -47,7 +47,7 @@ impl FediProtoSyncWebServer {
     /// * `db_pool` - The database connection pool.
     pub fn new(
         config: &FediProtoSyncConfig,
-        db_pool: Pool<ConnectionManager<AnyConnection>>
+        db_pool: Pool<ConnectionManager<AnyConnection>>,
     ) -> Result<Self, FediProtoSyncError> {
         let config = config.clone();
 
@@ -84,9 +84,9 @@ impl FediProtoSyncWebServer {
             db_pool: self.db_pool.clone(),
             mastodon_oauth_client: auth::mastodon::get_mastodon_oauth_client(
                 &self.config,
-                &mastodon_redirect_uri
+                &mastodon_redirect_uri,
             )?,
-            memory_store
+            memory_store,
         };
 
         // Create the router and define the routes.
@@ -95,11 +95,11 @@ impl FediProtoSyncWebServer {
             .route("/auth/mastodon/login", get(mastodon_auth::login_endpoint))
             .route(
                 "/auth/mastodon/authorized",
-                get(mastodon_auth::authorized_endpoint)
+                get(mastodon_auth::authorized_endpoint),
             )
             .route(
                 "/auth/mastodon/already_authorized",
-                get(mastodon_auth::already_authorized_endpoint)
+                get(mastodon_auth::already_authorized_endpoint),
             )
             .with_state(app_state)
             .into_make_service();

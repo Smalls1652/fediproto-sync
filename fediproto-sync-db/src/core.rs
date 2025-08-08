@@ -27,7 +27,7 @@ pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediP
             apply_migrations(connection, POSTGRES_MIGRATIONS)
         }
 
-        crate::AnyConnection::SQLite(connection) => apply_migrations(connection, SQLITE_MIGRATIONS)
+        crate::AnyConnection::SQLite(connection) => apply_migrations(connection, SQLITE_MIGRATIONS),
     }
 }
 
@@ -45,7 +45,7 @@ pub fn run_migrations(connection: &mut crate::AnyConnection) -> Result<(), FediP
 /// directly.
 fn apply_migrations<T: diesel::backend::Backend + 'static>(
     connection: &mut impl diesel_migrations::MigrationHarness<T>,
-    migrations: diesel_migrations::EmbeddedMigrations
+    migrations: diesel_migrations::EmbeddedMigrations,
 ) -> Result<(), FediProtoSyncDbError> {
     let is_initial_run = connection
         .applied_migrations()

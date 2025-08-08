@@ -10,12 +10,12 @@ static TEST_PUBLIC_KEY: &str = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5C
 
 const TEST_ITEM_01: (&str, &str) = (
     "Hello world!",
-    "QcLodMk406EgFF2FhXF3kOG1ewl+hoFNEu0SO0+oSpDNPYqFqurqyfCp7WRFlaVo0qQefKCiSkBvWXj5HtZiYdJd8lOkTyzxgvSOMyPR1E8em916Wb5VfAyEaUe8sTa6pWhSwwpFqb2okSKUH6Pk7WLqcS7c44LBS1juzGQkJsDoGkgqKeZTTDn01+7UmpUE187erMcYFJd9NJCopM7duom47XyymCkmX4AURwQ+4i1vdYtELrCWWsuG409DyByrs4MoJGN5htY7vmts+0UuNSp0BnMg3C6f8uyQYdYJimglpD4QM1NGclwolvXsDi1YnDpQRwWOhQwv/gVNkPjpxA=="
+    "QcLodMk406EgFF2FhXF3kOG1ewl+hoFNEu0SO0+oSpDNPYqFqurqyfCp7WRFlaVo0qQefKCiSkBvWXj5HtZiYdJd8lOkTyzxgvSOMyPR1E8em916Wb5VfAyEaUe8sTa6pWhSwwpFqb2okSKUH6Pk7WLqcS7c44LBS1juzGQkJsDoGkgqKeZTTDn01+7UmpUE187erMcYFJd9NJCopM7duom47XyymCkmX4AURwQ+4i1vdYtELrCWWsuG409DyByrs4MoJGN5htY7vmts+0UuNSp0BnMg3C6f8uyQYdYJimglpD4QM1NGclwolvXsDi1YnDpQRwWOhQwv/gVNkPjpxA==",
 );
 
 const TEST_ITEM_02: (&str, &str) = (
     "FediProto Sync",
-    "FXCL6b0mPSEmdagkBPhsVJDd5MvZ2RevsTglNacZ/t2wFABq+SdICMOpiA2CHe3JicVWgATcuqUg9CYOzZTA00fDmGxGx3HB+BRTuEBuvJvAo/L4LbLIStxCu5SO82iHCS+QfcZknD8wcAa8G3WU4WxcuR0nVvRCl29jB+lvYMsvqy4Z/GsBkcb5crLuSCbtj90kGVHoFGLHbIy2NVQ7jy0oLCo9stWg0w8x5XqgVCoG1tRepZS+GXJjy/NDK6gQ+VWMcvo7pOrg/d8E145vt3yxqZNPGpYV9MHAsaM0N4RQUjK2yrEr8OQYIfIv3RmuluX8wtO59qub5AVKqgpusQ=="
+    "FXCL6b0mPSEmdagkBPhsVJDd5MvZ2RevsTglNacZ/t2wFABq+SdICMOpiA2CHe3JicVWgATcuqUg9CYOzZTA00fDmGxGx3HB+BRTuEBuvJvAo/L4LbLIStxCu5SO82iHCS+QfcZknD8wcAa8G3WU4WxcuR0nVvRCl29jB+lvYMsvqy4Z/GsBkcb5crLuSCbtj90kGVHoFGLHbIy2NVQ7jy0oLCo9stWg0w8x5XqgVCoG1tRepZS+GXJjy/NDK6gQ+VWMcvo7pOrg/d8E145vt3yxqZNPGpYV9MHAsaM0N4RQUjK2yrEr8OQYIfIv3RmuluX8wtO59qub5AVKqgpusQ==",
 );
 
 /// Loads the test private key.
@@ -44,7 +44,7 @@ fn test_public_key() -> openssl::rsa::Rsa<openssl::pkey::Public> {
 #[case(TEST_ITEM_02.0)]
 fn encrypt_string__is_encrypted(
     test_public_key: &openssl::rsa::Rsa<openssl::pkey::Public>,
-    #[case] input: &str
+    #[case] input: &str,
 ) {
     let encrypted_string =
         encrypt_string(test_public_key, input).unwrap_or_else(|_| "".to_string());
@@ -61,7 +61,7 @@ fn encrypt_string__is_encrypted(
 #[case(TEST_ITEM_02)]
 fn decrypt_string__is_correct_value(
     test_private_key: &openssl::rsa::Rsa<openssl::pkey::Private>,
-    #[case] test_item: (&str, &str)
+    #[case] test_item: (&str, &str),
 ) {
     let decrypted_string = decrypt_string(test_private_key, &test_item.1).unwrap();
 

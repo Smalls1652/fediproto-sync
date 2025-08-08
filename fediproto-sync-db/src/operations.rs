@@ -11,7 +11,7 @@ use crate::error::FediProtoSyncDbError;
 /// * `mastodon_post_id` - The Mastodon post ID to get.
 pub fn get_synced_mastodon_post_by_id(
     db_connection: &mut crate::AnyConnection,
-    mastodon_post_id: &str
+    mastodon_post_id: &str,
 ) -> Result<crate::models::MastodonPost, FediProtoSyncDbError> {
     let post = crate::schema::mastodon_posts::table
         .filter(crate::schema::mastodon_posts::post_id.eq(mastodon_post_id))
@@ -29,13 +29,13 @@ pub fn get_synced_mastodon_post_by_id(
 /// * `mastodon_post_id` - The Mastodon post ID to check.
 pub fn check_synced_mastodon_post_exists(
     db_connection: &mut crate::AnyConnection,
-    mastodon_post_id: &str
+    mastodon_post_id: &str,
 ) -> bool {
     let post = get_synced_mastodon_post_by_id(db_connection, &mastodon_post_id);
 
     let post_exists = match post {
         Ok(_) => true,
-        Err(_) => false
+        Err(_) => false,
     };
 
     return post_exists;
@@ -67,7 +67,7 @@ pub fn get_last_synced_mastodon_post_id(
 /// * `new_post` - The new post to insert.
 pub fn insert_new_synced_mastodon_post(
     db_connection: &mut crate::AnyConnection,
-    new_post: &crate::models::NewMastodonPost
+    new_post: &crate::models::NewMastodonPost,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::insert_into(crate::schema::mastodon_posts::table)
         .values(new_post)
@@ -85,7 +85,7 @@ pub fn insert_new_synced_mastodon_post(
 /// * `mastodon_post_id` - The Mastodon post ID to get.
 pub fn get_bluesky_data_by_mastodon_post_id(
     db_connection: &mut crate::AnyConnection,
-    mastodon_post_id: &str
+    mastodon_post_id: &str,
 ) -> Result<crate::models::SyncedPostBlueSkyData, FediProtoSyncDbError> {
     let synced_post = crate::schema::synced_posts_bluesky_data::table
         .filter(crate::schema::synced_posts_bluesky_data::mastodon_post_id.eq(mastodon_post_id))
@@ -103,7 +103,7 @@ pub fn get_bluesky_data_by_mastodon_post_id(
 /// * `synced_post_data` - The new synced post to insert.
 pub fn insert_new_bluesky_data_for_synced_mastodon_post(
     db_connection: &mut crate::AnyConnection,
-    synced_post_data: &crate::models::NewSyncedPostBlueSkyData
+    synced_post_data: &crate::models::NewSyncedPostBlueSkyData,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::insert_into(crate::schema::synced_posts_bluesky_data::table)
         .values(synced_post_data)
@@ -137,7 +137,7 @@ pub fn get_cached_file_records(
 /// * `new_cached_file` - The new cached file record to insert.
 pub fn insert_cached_file_record(
     db_connection: &mut crate::AnyConnection,
-    new_cached_file: &crate::models::NewCachedFile
+    new_cached_file: &crate::models::NewCachedFile,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::insert_into(crate::schema::cached_files::table)
         .values(new_cached_file)
@@ -155,7 +155,7 @@ pub fn insert_cached_file_record(
 /// * `cached_file` - The cached file record to delete.
 pub fn delete_cached_file_record(
     db_connection: &mut crate::AnyConnection,
-    cached_file: &crate::models::CachedFile
+    cached_file: &crate::models::CachedFile,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::delete(crate::schema::cached_files::table)
         .filter(crate::schema::cached_files::id.eq(cached_file.id))
@@ -173,7 +173,7 @@ pub fn delete_cached_file_record(
 /// * `service_name` - The service name to get.
 pub fn get_cached_service_token_by_service_name(
     db_connection: &mut crate::AnyConnection,
-    service_name: &str
+    service_name: &str,
 ) -> Result<Option<crate::models::CachedServiceToken>, FediProtoSyncDbError> {
     let token = crate::schema::cached_service_tokens::table
         .filter(crate::schema::cached_service_tokens::service_name.eq(service_name))
@@ -192,7 +192,7 @@ pub fn get_cached_service_token_by_service_name(
 /// * `new_token` - The new token to insert.
 pub fn insert_cached_service_token(
     db_connection: &mut crate::AnyConnection,
-    new_token: &crate::models::NewCachedServiceToken
+    new_token: &crate::models::NewCachedServiceToken,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::insert_into(crate::schema::cached_service_tokens::table)
         .values(new_token)
@@ -226,7 +226,7 @@ pub fn get_mastodon_post_retry_queue_items(
 /// * `mastodon_post_id` - The Mastodon post ID to get.
 pub fn get_mastodon_post_retry_queue_item_by_post_id(
     db_connection: &mut crate::AnyConnection,
-    mastodon_post_id: &i64
+    mastodon_post_id: &i64,
 ) -> Result<Option<crate::models::MastodonPostRetryQueueItem>, FediProtoSyncDbError> {
     let item = crate::schema::mastodon_post_retry_queue::table
         .filter(crate::schema::mastodon_post_retry_queue::id.eq(mastodon_post_id))
@@ -246,7 +246,7 @@ pub fn get_mastodon_post_retry_queue_item_by_post_id(
 /// * `new_item` - The new item to insert.
 pub fn insert_mastodon_post_retry_queue_item(
     db_connection: &mut crate::AnyConnection,
-    new_item: &crate::models::NewMastodonPostRetryQueueItem
+    new_item: &crate::models::NewMastodonPostRetryQueueItem,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::insert_into(crate::schema::mastodon_post_retry_queue::table)
         .values(new_item)
@@ -265,19 +265,19 @@ pub fn insert_mastodon_post_retry_queue_item(
 pub fn update_mastodon_post_retry_queue_item(
     db_connection: &mut crate::AnyConnection,
     item: &crate::models::MastodonPostRetryQueueItem,
-    new_reason: Option<&str>
+    new_reason: Option<&str>,
 ) -> Result<(), FediProtoSyncDbError> {
     use crate::schema::mastodon_post_retry_queue::dsl::*;
     let updated_reason = match new_reason {
         Some(reason) => reason,
-        None => item.failure_reason.as_str()
+        None => item.failure_reason.as_str(),
     };
 
     diesel::update(item)
         .set((
             failure_reason.eq(updated_reason),
             last_retried_at.eq(diesel::dsl::now),
-            retry_count.eq(retry_count + 1)
+            retry_count.eq(retry_count + 1),
         ))
         .execute(db_connection)
         .map_err(|e| FediProtoSyncDbError::DatabaseOperationError(e))?;
@@ -293,7 +293,7 @@ pub fn update_mastodon_post_retry_queue_item(
 /// * `item` - The item to delete.
 pub fn delete_mastodon_post_retry_queue_item(
     db_connection: &mut crate::AnyConnection,
-    item: &crate::models::MastodonPostRetryQueueItem
+    item: &crate::models::MastodonPostRetryQueueItem,
 ) -> Result<(), FediProtoSyncDbError> {
     diesel::delete(crate::schema::mastodon_post_retry_queue::table)
         .filter(crate::schema::mastodon_post_retry_queue::id.eq(&item.id))

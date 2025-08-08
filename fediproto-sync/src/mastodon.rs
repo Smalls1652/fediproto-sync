@@ -2,11 +2,12 @@ use anyhow::Result;
 
 /// Extension trait for the Mastodon API.
 pub trait MastodonApiExtensions {
+    #[allow(async_fn_in_trait)]
     async fn get_latest_posts(
         &self,
         account_id: &str,
         last_post_id: Option<String>,
-        include_unlisted: bool
+        include_unlisted: bool,
     ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error>;
 }
 
@@ -21,11 +22,11 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
         &self,
         account_id: &str,
         last_post_id: Option<String>,
-        include_unlisted: bool
+        include_unlisted: bool,
     ) -> Result<Vec<megalodon::entities::Status>, megalodon::error::Error> {
         let limit_value = match last_post_id {
             Some(_) => None,
-            None => Some(1)
+            None => Some(1),
         };
 
         let latest_statuses_options = megalodon::megalodon::GetAccountStatusesInputOptions {
@@ -36,7 +37,7 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
             exclude_replies: Some(true),
             exclude_reblogs: Some(false),
             only_media: Some(false),
-            only_public: Some(true)
+            only_public: Some(true),
         };
 
         let latest_posts = self
@@ -51,9 +52,9 @@ impl MastodonApiExtensions for Box<dyn megalodon::Megalodon + Send + Sync> {
                     item.visibility == megalodon::entities::status::StatusVisibility::Public
                         || item.visibility
                             == megalodon::entities::status::StatusVisibility::Unlisted
-                },
+                }
 
-                false => item.visibility == megalodon::entities::status::StatusVisibility::Public
+                false => item.visibility == megalodon::entities::status::StatusVisibility::Public,
             })
             .cloned()
             .collect();
@@ -68,7 +69,7 @@ pub struct ParsedMastodonPost {
     pub mastodon_status: megalodon::entities::Status,
     pub stripped_html: String,
     pub found_links: Vec<String>,
-    pub found_tags: Vec<String>
+    pub found_tags: Vec<String>,
 }
 
 impl ParsedMastodonPost {
@@ -91,7 +92,7 @@ impl ParsedMastodonPost {
             mastodon_status,
             stripped_html,
             found_links,
-            found_tags
+            found_tags,
         })
     }
 
@@ -173,7 +174,7 @@ impl ParsedMastodonPost {
     /// * `max_length` - The maximum length of the content.
     fn trim_post_string(
         content: &str,
-        max_length: usize
+        max_length: usize,
     ) -> String {
         if content.len() <= max_length {
             return content.to_string();
@@ -217,7 +218,7 @@ impl ParsedMastodonPost {
     /// * `tags` - The tags to ignore when getting links.
     fn get_links(
         document: &dom_query::Document,
-        tags: &Vec<megalodon::entities::status::Tag>
+        tags: &Vec<megalodon::entities::status::Tag>,
     ) -> Result<Vec<String>> {
         let mut links = Vec::new();
 
@@ -246,7 +247,7 @@ impl ParsedMastodonPost {
     /// * `tags` - The tags to get from the document.
     fn get_tags(
         document: &dom_query::Document,
-        tags: &Vec<megalodon::entities::status::Tag>
+        tags: &Vec<megalodon::entities::status::Tag>,
     ) -> Result<Vec<String>> {
         let mut found_tags = Vec::new();
 

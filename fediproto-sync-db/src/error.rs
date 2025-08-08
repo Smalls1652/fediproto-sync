@@ -12,5 +12,5 @@ pub enum FediProtoSyncDbError {
 
     /// An error occurred while running a database operation.
     #[error("An error occurred while running a database operation.")]
-    DatabaseOperationError(#[from] diesel::result::Error)
+    DatabaseOperationError(#[from] diesel::result::Error),
 }
