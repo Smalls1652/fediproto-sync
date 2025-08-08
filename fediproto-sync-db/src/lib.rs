@@ -22,7 +22,6 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use diesel::{
-    QueryResult,
     backend::Backend,
     connection::Connection,
     deserialize::{self, FromSql},
