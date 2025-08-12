@@ -269,7 +269,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e099e5171f79faef52364ef0657a4cab086a71b384a779a29597a91b780de0d5"
 dependencies = [
  "atrium-xrpc",
- "reqwest 0.12.22",
+ "reqwest 0.12.23",
 ]
 
 [[package]]
@@ -1203,7 +1203,7 @@ dependencies = [
  "once_cell",
  "openssl",
  "regex",
- "reqwest 0.12.22",
+ "reqwest 0.12.23",
  "serde",
  "serde_json",
  "snmalloc-rs",
@@ -2243,7 +2243,7 @@ dependencies = [
  "oauth2",
  "rand 0.8.5",
  "regex",
- "reqwest 0.12.22",
+ "reqwest 0.12.23",
  "serde",
  "serde_json",
  "sha1",
@@ -3117,9 +3117,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.22"
+version = "0.12.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc931937e6ca3a06e3b6c0aa7841849b160a90351d6ab467a8b9b9959767531"
+checksum = "d429f34c8092b2d42c7c93cec323bb4adeb7c67698f70839adec842ec10c7ceb"
 dependencies = [
  "async-compression",
  "base64 0.22.1",
