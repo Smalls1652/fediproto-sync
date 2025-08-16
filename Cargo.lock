@@ -214,9 +214,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-api"
-version = "0.25.4"
+version = "0.25.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46355d3245edc7b3160b2a45fe55d09a6963ebd3eee0252feb6b72fb0eb71463"
+checksum = "8bceed6a87be6213040945254aa94191490fea22b7f49dec584e349f336cc17a"
 dependencies = [
  "atrium-common",
  "atrium-xrpc",
@@ -1775,7 +1775,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.0",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -2247,7 +2247,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "thiserror 1.0.69",
+ "thiserror 2.0.14",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
@@ -2857,7 +2857,7 @@ dependencies = [
  "once_cell",
  "socket2 0.5.10",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3804,7 +3804,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
