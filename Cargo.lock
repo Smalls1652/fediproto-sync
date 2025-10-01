@@ -208,9 +208,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-api"
-version = "0.25.5"
+version = "0.25.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bceed6a87be6213040945254aa94191490fea22b7f49dec584e349f336cc17a"
+checksum = "ef9d5e9352fd27d99383ae1db2b6a6aa239e683a7e750e8d73a73996d82b1fd2"
 dependencies = [
  "atrium-common",
  "atrium-xrpc",
@@ -1807,7 +1807,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.0",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -2274,7 +2274,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
