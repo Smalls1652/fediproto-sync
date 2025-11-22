@@ -1250,7 +1250,7 @@ dependencies = [
  "fediproto-sync-build-macros",
  "fediproto-sync-db",
  "fediproto-sync-lib",
- "oauth2",
+ "oauth2 4.4.2",
  "serde",
  "tokio",
  "tracing",
@@ -2225,16 +2225,16 @@ dependencies = [
 
 [[package]]
 name = "megalodon"
-version = "1.0.3"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "573c2e534bb55f5ef3517dcc1465974465512cbca7bc8670a3df0b8370b99482"
+checksum = "9a6924be8c067f84990da4d8a4a47c7de3e810789dbd9af742c5fcc729a209ff"
 dependencies = [
  "async-trait",
  "chrono",
  "futures-util",
  "hex",
  "mime_guess",
- "oauth2",
+ "oauth2 5.0.0",
  "rand 0.8.5",
  "regex",
  "reqwest 0.12.24",
@@ -2491,6 +2491,26 @@ dependencies = [
  "http 0.2.12",
  "rand 0.8.5",
  "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "sha2 0.10.9",
+ "thiserror 1.0.69",
+ "url",
+]
+
+[[package]]
+name = "oauth2"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "getrandom 0.2.16",
+ "http 1.3.1",
+ "rand 0.8.5",
+ "reqwest 0.12.24",
  "serde",
  "serde_json",
  "serde_path_to_error",
