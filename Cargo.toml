@@ -57,6 +57,7 @@ regex = { version = "1.11.1", features = ["std"] }
 reqwest = { version = "0.13.0", features = [
     "json",
     "rustls",
+    "query"
 ], default-features = false }
 rstest = "0.26.0"
 serde = { version = "1.0.219", features = ["derive"] }
