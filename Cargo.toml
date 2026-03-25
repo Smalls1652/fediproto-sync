@@ -62,7 +62,7 @@ reqwest = { version = "0.13.0", features = [
 rstest = "0.26.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
-snmalloc-rs = { version = "0.3.8" }
+snmalloc-rs = { version = "0.7.0" }
 thiserror = "2.0.12"
 tikv-jemallocator = { version = "0.6.0" }
 tokio = { version = "1.47.1", features = ["full"] }
